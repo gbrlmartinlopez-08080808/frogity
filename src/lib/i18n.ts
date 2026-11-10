@@ -78,6 +78,7 @@ const PATTERNS: { re: RegExp; es: string; fr: string }[] = [
   { re: /^in (\d+) weeks$/, es: 'en $1 semanas', fr: 'dans $1 semaines' },
   { re: /^in (\d+) months$/, es: 'en $1 meses', fr: 'dans $1 mois' },
   { re: /^tomorrow$/, es: 'mañana', fr: 'demain' },
+  { re: /^nothing on your shelf matches “(.+)”$/, es: 'nada en tu estantería coincide con “$1”', fr: 'rien sur votre étagère ne correspond à « $1 »' },
 ];
 
 export function tr(s: string, lang: Lang = getLang()): string {

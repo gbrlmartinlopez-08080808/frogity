@@ -30,6 +30,7 @@ public class ListenPlugin extends Plugin {
         ListenService.title = call.getString("title", ListenService.title);
         ListenService.subtitle = call.getString("subtitle", ListenService.subtitle);
         ListenService.playing = Boolean.TRUE.equals(call.getBoolean("playing", ListenService.playing));
+        FrogityWebView.listening(ListenService.playing);
         String cover = call.getString("cover");
         if (cover != null && !cover.isEmpty()) {
             try {
@@ -54,7 +55,13 @@ public class ListenPlugin extends Plugin {
     public void update(PluginCall call) {
         apply(call);
         Context c = getContext();
-        c.startService(new Intent(c, ListenService.class).setAction(ListenService.A_UPDATE));
+        Intent i = new Intent(c, ListenService.class).setAction(ListenService.A_UPDATE);
+        try {
+            if (ListenService.playing) ContextCompat.startForegroundService(c, i);
+            else c.startService(i);
+        } catch (Exception e) {
+            /* Android refuses this from an app that is not on screen and not playing: the player is brought up to date the next time it is */
+        }
         call.resolve();
     }
 
@@ -62,7 +69,13 @@ public class ListenPlugin extends Plugin {
     public void stop(PluginCall call) {
         Context c = getContext();
         ListenService.cover = null;
-        c.startService(new Intent(c, ListenService.class).setAction(ListenService.A_STOP));
+        ListenService.playing = false;
+        FrogityWebView.listening(false);
+        try {
+            c.startService(new Intent(c, ListenService.class).setAction(ListenService.A_STOP));
+        } catch (Exception e) {
+            c.stopService(new Intent(c, ListenService.class));
+        }
         call.resolve();
     }
 }

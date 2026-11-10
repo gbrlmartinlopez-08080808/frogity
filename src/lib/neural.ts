@@ -173,7 +173,7 @@ export async function neuralRemove(id: VoiceId) {
 export class NeuralEngine {
   private w: Worker | null = null;
   private seq = 0;
-  private waits = new Map<number, { ok: (v: { samples: Float32Array; rate: number } | { rtf: number } | void) => void; fail: (e: Error) => void; say: boolean }>();
+  private waits = new Map<number, { ok: (v: { samples: Float32Array; rate: number; ms?: number } | { rtf: number } | void) => void; fail: (e: Error) => void; say: boolean }>();
   private voice = '';
   /** how long this phone takes to make one second of speech with the loaded voice (measured when it loaded) */
   rtf = 0;
@@ -183,13 +183,13 @@ export class NeuralEngine {
     if (!this.w) {
       this.w = new Worker(new URL('./piper.worker.ts', import.meta.url), { type: 'module' });
       this.w.onmessage = (e: MessageEvent) => {
-        const m = e.data as { type: string; id: number; samples?: Float32Array; rate?: number; message?: string; rtf?: number };
+        const m = e.data as { type: string; id: number; samples?: Float32Array; rate?: number; message?: string; rtf?: number; ms?: number };
         const t = this.waits.get(m.id);
         if (!t) return;
         this.waits.delete(m.id);
         if (m.type === 'error') t.fail(new Error(m.message));
         else if (m.type === 'ready') t.ok({ rtf: m.rtf ?? 0 });
-        else t.ok(m.samples ? { samples: m.samples, rate: m.rate! } : undefined);
+        else t.ok(m.samples ? { samples: m.samples, rate: m.rate!, ms: m.ms } : undefined);
       };
       this.w.onerror = (e) => {
         const err = new Error(e.message || 'the voice engine stopped');
@@ -225,7 +225,7 @@ export class NeuralEngine {
     }
   }
   say(text: string, rate: number) {
-    const job = this.call<{ samples: Float32Array; rate: number }>({ type: 'say', text, rate });
+    const job = this.call<{ samples: Float32Array; rate: number; ms?: number }>({ type: 'say', text, rate });
     // a piece that takes this long means the engine is stuck (a phone short of memory, a worker that died quietly):
     // start the engine afresh and say so, instead of waiting for ever
     let timer = 0;

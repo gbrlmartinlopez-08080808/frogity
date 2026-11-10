@@ -260,7 +260,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
     setBusy(true);
 
     // the pipeline: pieces being made (in order), what has been placed, how fast this phone is
-    type Job = { ch: NonNullable<ReturnType<typeof buildChunk>>; p: Promise<{ samples: Float32Array; rate: number }> };
+    type Job = { ch: NonNullable<ReturnType<typeof buildChunk>>; p: Promise<{ samples: Float32Array; rate: number; ms?: number }> };
     const jobs: Job[] = [];
     let at = from;
     let off = offset;
@@ -293,8 +293,21 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
       void run(here, 0);
     };
 
+    // The watcher follows the audio clock. It runs with the screen's frames while the book is on screen and on a timer
+    // when it is not (screen off, another app): the sleep timer, the end of the book and the lock-screen position must
+    // all keep working exactly then.
+    let raf = 0;
+    const beat = window.setInterval(() => document.hidden && watch(), 400);
+    const again = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(watch);
+    };
+    const endWatch = () => {
+      clearInterval(beat);
+      cancelAnimationFrame(raf);
+    };
     const watch = () => {
-      if (my !== token.current) return;
+      if (my !== token.current) return endWatch();
       const i = pl.current();
       if (i !== null && i !== shown) {
         shown = i;
@@ -308,7 +321,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
       if (!holding && pl.started() && !finished && pl.ahead() < 0.12 && (jobs.length || at < n)) {
         dry.push(now);
         while (dry.length && now - dry[0] > 90_000) dry.shift();
-        if (dry.length >= 3) return giveUp();
+        if (dry.length >= 3) return endWatch(), giveUp();
         holding = true;
         holdSince = now;
         pl.hold();
@@ -322,23 +335,28 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
         sleepAt.current = 0;
         setSleep(0);
         toast('Sleep timer — paused. Sweet dreams.');
+        endWatch();
         return pause();
       }
       if (finished && !holding && (pl.drained() || pl.empty())) {
+        endWatch();
         setPlaying(false);
         onPlaying(false);
         return;
       }
-      requestAnimationFrame(watch);
+      again();
     };
-    requestAnimationFrame(watch);
+    again();
 
     // how many characters may the next piece have, so it is ready before the speech ahead of it has been heard?
     const size = () => {
       if (made === 0) return 24;
       const ahead = pl.buffered() + jobs.reduce((x, j) => x + j.ch.text.length / (CPS * say), 0);
       const budget = Math.round(((ahead * CPS * say) / rtf) * 0.55);
-      return Math.max(made < 3 ? 30 : 110, Math.min(made < 3 ? 40 * 2 ** made : 340, budget));
+      // a piece cannot be interrupted once the phone has started making it, so none is longer than about four seconds of
+      // work: a skip, a tapped word or a new speed is answered in that time at worst, however slow the phone
+      const cap = Math.max(110, Math.min(340, Math.round((4 / rtf) * CPS * say)));
+      return Math.max(made < 3 ? 30 : 110, Math.min(made < 3 ? 40 * 2 ** made : cap, budget));
     };
     /** The next piece: whole sentences when they fit, otherwise the next phrase of a long sentence. */
     const piece = (target: number) => {
@@ -375,7 +393,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
         const t0 = performance.now();
         const p = eng.say(ch.text, say).then((r) => {
           const secs = r.samples.length / r.rate / say;
-          rtf = rtf * 0.6 + Math.max(0.1, (performance.now() - t0) / 1000 / Math.max(0.4, secs)) * 0.4;
+          rtf = rtf * 0.6 + Math.max(0.1, (r.ms ?? performance.now() - t0) / 1000 / Math.max(0.4, secs)) * 0.4;
           return r;
         });
         p.catch(() => {});
@@ -511,6 +529,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
         sleepAt.current = 0;
         setSleep(0);
         toast('Sleep timer — paused. Sweet dreams.');
+        pause(); // (the player, the lock screen and the reader all hear that it stopped)
         return { at, done: true };
       }
     }
@@ -548,6 +567,16 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
       void maybeAskBattery();
       const n = Number(root.dataset.wrapped ?? 0);
       const chosen = resolveVoice();
+      // nothing on this phone can speak (no speech engine, or none of its voices installed): say so, with the way out
+      if (!isNeural(chosen) && !(await listVoices()).length) {
+        if (my !== token.current) return;
+        setPlaying(false);
+        onPlaying(false);
+        const canStudio = neuralSupported();
+        toast(canStudio ? 'This phone has no voice of its own. Get a natural voice' : 'This phone has no voice installed. Install one', undefined, () => (canStudio ? setVoiceSheet(true) : openVoiceInstall()));
+        return;
+      }
+      if (my !== token.current) return;
       tellVoice();
       if (isNeural(chosen) && !neuralBroken.current && !neuralSlow.current) return runNeural(from, my, chosen, n, offset);
       await runSystem(from, my, n, offset, chosen);
@@ -659,8 +688,10 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
   const leftMin = Math.max(1, Math.round(leftWords / wpm));
   /** the whole track, in minutes (for the scrubber's label) */
   const leftAll = total ? (leftMin * total) / Math.max(1, total - idx) : 0;
-  const nv = isNeural(settings.ttsVoice) ? NEURAL_VOICES.find((v) => NEURAL_PREFIX + v.id === settings.ttsVoice) : undefined;
-  const voice = voices.find((v) => v.id === settings.ttsVoice) ?? (nv ? undefined : voices.find((v) => v.id === bestRef.current));
+  // the voice that will really read this book (a Spanish book is not read by the English voice that is the default)
+  const using = resolveVoice();
+  const nv = isNeural(using) && !neuralBroken.current && !neuralSlow.current ? NEURAL_VOICES.find((v) => NEURAL_PREFIX + v.id === using) : undefined;
+  const voice = nv ? undefined : voices.find((v) => v.id === using) ?? voices.find((v) => v.id === bestRef.current);
   const docLang = langTag.slice(0, 2);
   const pct = total > 1 ? Math.round((idx / (total - 1)) * 100) : 0;
   const status = note || (busy ? 'getting ready…' : playing ? 'reading aloud' : 'paused');
@@ -752,7 +783,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
           <Icon name="speed" size={15} /> {settings.ttsRate.toFixed(1)}×
         </button>
         <button onClick={() => setVoiceSheet(true)}>
-          <Icon name="voice" size={15} /> {nv ? nv.label : voice ? voice.name.replace(/^(Google|Microsoft)\s*/, '').slice(0, 12) : 'Voice'}
+          <Icon name="voice" size={15} /> {nv ? nv.label : voice ? (/^[a-z]{2,3}[-_]/i.test(voice.name) ? `Phone · ${voice.lang.slice(0, 2).toUpperCase()}` : voice.name.replace(/^(Google|Microsoft)\s*/, '').slice(0, 12)) : 'Voice'}
         </button>
         <button
           className={langAuto ? '' : 'on'}

@@ -12,7 +12,7 @@ import { foldSources } from './sources';
 import { openCached } from '../lib/pdfCache';
 import { EdgeScrub, Scrub } from './Scrub';
 import { FrEditor } from './FrEditor';
-import { goPage, pageCount, pageIndex, usePager } from './paged';
+import { goPage, pageCount, pageIndex, pageOf, usePager } from './paged';
 import { Icon, TypeGlyph } from '../ui/Icon';
 import { PixelBar, PixelLoader, Segmented, Sheet, toast } from '../ui/kit';
 import { PdfView, type PdfViewHandle } from './PdfView';
@@ -60,6 +60,16 @@ function prepLine(p: Prep): string {
   if (p.none) return 'liquid · no text found';
   const doing = p.info.startsWith('waiting') ? 'waiting' : p.info.startsWith('checking') ? 'checking' : p.info.startsWith('reading') ? 'reading' : 'converting';
   return `liquid · ${Math.round(p.progress * 100)}% · ${doing}`;
+}
+
+/** What went wrong, in words a reader can use (the technical reason is kept for the rare case nothing else fits). */
+function friendlyError(e: string, kind: string): string {
+  if (/zip|central directory|invalid pdf|pdf structure|unexpected end|not a valid|corrupt|bad (?:xref|header)|missing pdf/i.test(e))
+    return `This file looks damaged or incomplete${kind === 'pdf' ? ' — it isn’t a PDF Frogity can read' : ''}. Try downloading or copying it again.`;
+  if (/password|encrypted/i.test(e)) return 'This file is protected with a password, so Frogity can’t open it.';
+  if (/moved or deleted|not found|no such file|permission|ENOENT/i.test(e)) return 'The file isn’t where it was — it may have been moved, renamed or deleted on your phone.';
+  if (/memory|allocation|too large|quota/i.test(e)) return 'This file is too big for the memory the phone can spare right now. Close other apps and try again.';
+  return e.length > 160 ? e.slice(0, 160) + '…' : e;
 }
 
 const READY_PREP = { known: true, ready: true, none: false, progress: 1, busy: false, info: '', eta: 0, error: undefined } as unknown as Prep;
@@ -788,13 +798,32 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     [find, listen, thumbs], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
+  /** How far through the text the reader is (0–1), whether it scrolls or turns pages. */
+  const placeNow = () => {
+    if (!scroller) return 0;
+    if (live.current.paged) {
+      const n = pageCount(scroller);
+      return n > 1 ? pageIndex(scroller) / (n - 1) : 0;
+    }
+    const max = scroller.scrollHeight - scroller.clientHeight;
+    return max > 0 ? Math.min(1, scroller.scrollTop / max) : 0;
+  };
+  /** Brings a piece of the text into view: by turning to its page, or by scrolling to it. */
+  const showEl = (el: Element | null | undefined, block: ScrollLogicalPosition = 'start', smooth = false) => {
+    if (!el || !scroller) return;
+    if (live.current.paged) goPage(scroller, pageOf(scroller, el), false);
+    else el.scrollIntoView({ block, behavior: smooth ? 'smooth' : 'auto' });
+  };
+
   const close = () => {
     clearTimeout(saveT.current);
     if ((liveDoc.current.readMs ?? 0) >= AUTO_MARK_MS) autoMark.current();
     if (scroller && liquid && !isPdf) {
-      const max = scroller.scrollHeight - scroller.clientHeight;
-      const prog = max > 0 ? scroller.scrollTop / max : 0;
-      patchDoc(id, { progress: prog, position: { mode: 'liquid', value: prog, pick: pickRef.current } });
+      // only once the text is on screen and back at its place: a book closed while it is still opening keeps the place it had
+      if (flowReady && restoredLiquid.current && content?.type === 'flow') {
+        const prog = placeNow();
+        patchDoc(id, { progress: prog, position: { mode: 'liquid', value: prog, pick: pickRef.current } });
+      }
     } else if (isPdf) patchDoc(id, { position: { mode, value: page, pick: pickRef.current } });
     else if (isDocx && !liquid) patchDoc(id, { progress: progRef.current, position: { mode: 'page', value: progRef.current, pick: pickRef.current } });
     onClose();
@@ -847,8 +876,13 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       const href = a.getAttribute('href') ?? '';
       if (href.startsWith('#')) {
         e.preventDefault();
-        const el = flowRef.current?.querySelector(CSS.escape ? `#${CSS.escape(href.slice(1))}` : href);
-        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        let el: Element | null = null;
+        try {
+          el = flowRef.current?.querySelector(`#${CSS.escape(decodeURIComponent(href.slice(1)))}`) ?? null;
+        } catch {
+          /* not a place in this text */
+        }
+        showEl(el, 'start', true);
       }
       return;
     }
@@ -912,7 +946,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     if (isPdf) label = `Page ${page}`;
     if (liquid && scroller && flowRef.current) {
       const top = scroller.getBoundingClientRect().top + 90;
-      const el = Array.from(flowRef.current.querySelectorAll<HTMLElement>('p,h2,h3,li')).find((p) => p.getBoundingClientRect().bottom > top);
+      const el = paged ? firstSeen(flowRef.current, scroller, true) : Array.from(flowRef.current.querySelectorAll<HTMLElement>('p,h2,h3,li')).find((p) => p.getBoundingClientRect().bottom > top);
       const t = (el?.textContent ?? '').trim();
       if (t) label = (isPdf ? `p.${page} · ` : '') + (t.length > 70 ? t.slice(0, 70) + '…' : t);
     }
@@ -944,11 +978,13 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
 
   const goProgress = (p: number, pg?: number) => {
     if (isPdf && pg) {
-      if (liquid) flowRef.current?.querySelector<HTMLElement>(`#page-${pg}`)?.scrollIntoView({ block: 'start' });
+      if (liquid) showEl(flowRef.current?.querySelector<HTMLElement>(`#page-${pg}`));
       else pdfRef.current?.goTo(pg);
       return;
     }
-    if (scroller) scroller.scrollTop = p * (scroller.scrollHeight - scroller.clientHeight);
+    if (!scroller) return;
+    if (live.current.paged) goPage(scroller, Math.round(p * (pageCount(scroller) - 1)), false);
+    else scroller.scrollTop = p * (scroller.scrollHeight - scroller.clientHeight);
   };
 
   // ---------------------------------------------------------------- find
@@ -962,7 +998,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         setFindHits({ n: groups.length, cur: 0 });
         if (groups[0]) {
           groups[0].forEach((m) => m.classList.add('cur'));
-          groups[0][0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+          showEl(groups[0][0], 'center', true);
         }
       } else if (pdf) {
         const query = q.trim().toLowerCase();
@@ -1004,7 +1040,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       }
       const g = groups[cur];
       g?.forEach((m) => m.classList.add('cur'));
-      g?.[0]?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      showEl(g?.[0], 'center', true);
     } else if (findHits.pages) pdfRef.current?.goTo(findHits.pages[cur], true);
   };
   const closeFind = () => {
@@ -1186,7 +1222,9 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       if (final) setProgress(v);
     }
   };
-  const barOk = (liquid || isPdf) && content?.type !== 'sheet' && content?.type !== 'image';
+  /** something with running text in it (what Listen, the position bar and page turning are for) */
+  const textual = !error && (content?.type === 'flow' || content?.type === 'pdf');
+  const barOk = !error && !!content && (liquid || isPdf) && !['sheet', 'image', 'media', 'binary'].includes(content.type);
 
   // ---------------------------------------------------------------- derived
   const words = useMemo(() => {
@@ -1254,10 +1292,15 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         {error ? (
           <div className="empty" style={{ paddingTop: 140 }}>
             <h2>Couldn’t open this file</h2>
-            <p>{error}</p>
-            <button className="pill" onClick={close}>
-              Back to library
-            </button>
+            <p>{friendlyError(error, doc.kind)}</p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button className="pill" onClick={close}>
+                Back to library
+              </button>
+              <button className="pill ghost" onClick={() => setSheet('remove')}>
+                {doc.uri ? 'Remove from shelf' : 'Delete it'}
+              </button>
+            </div>
           </div>
         ) : !content ? (
           <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
@@ -1422,7 +1465,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
             <Icon name="clock" size={15} />
             <span>{clockMode === 'time' ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : `${minutesLeft}m left`}</span>
           </button>
-          {(liquid || isPdf) && content?.type !== 'sheet' ? (
+          {textual ? (
             <Segmented
               className="compact"
               value={listen ? 'listen' : 'read'}
@@ -1433,7 +1476,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
               ]}
             />
           ) : null}
-          {(liquid || !isPdf) && barOk && (
+          {(liquid || !isPdf) && barOk && textual && (
             <button className="pill round sm" onClick={toggleLayout} aria-label={paged ? 'Turning pages — switch to scrolling' : 'Scrolling — switch to turning pages'}>
               <Icon name={paged ? 'book' : 'scrollv'} size={20} />
             </button>
@@ -1491,7 +1534,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         onGo={(t) => {
           setSheet(null);
           if (t.page && isPdf) goProgress(0, t.page);
-          else flowRef.current?.querySelector(`#${CSS.escape(t.anchor)}`)?.scrollIntoView({ block: 'start' });
+          else if (t.anchor) showEl(flowRef.current?.querySelector(`#${CSS.escape(t.anchor)}`));
         }}
         onGoMark={(b) => {
           setSheet(null);
@@ -1500,7 +1543,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         onGoHighlight={(h) => {
           setSheet(null);
           if (!liquid) switchMode('liquid');
-          setTimeout(() => flowRef.current?.querySelector(`mark.hl[data-id="${h.id}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 200);
+          setTimeout(() => showEl(flowRef.current?.querySelector(`mark.hl[data-id="${h.id}"]`), 'center', true), 200);
         }}
         onDeleteMark={async (b) => {
           await db.del('marks', `${id}:b:${b.id}`);
@@ -1535,7 +1578,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
           }}
         />
       )}
-      <LiquidIntro open={intro} prep={liq} onClose={() => setIntro(false)} onTry={() => (setIntro(false), switchMode('liquid'))} />
+      <LiquidIntro open={intro && !error} prep={liq} onClose={() => setIntro(false)} onTry={() => (setIntro(false), switchMode('liquid'))} />
       <MoreSheet open={sheet === 'more'} onClose={() => setSheet(null)} actions={moreActions} onAction={onMore} title={doc.name} />
       <ConfirmSheet
         open={sheet === 'remove'}
@@ -1557,7 +1600,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
           {[
             ['name', doc.fileName],
             ['type', KIND_LABEL[doc.kind]],
-            ['size', `${(doc.size / 1024).toFixed(0)} KB`],
+            ['size', doc.size >= 1048576 ? `${(doc.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(doc.size / 1024))} KB`],
             ['pages', doc.pages ? String(doc.pages) : '—'],
             ['author', doc.author ?? '—'],
             ['added', new Date(doc.addedAt).toLocaleString()],

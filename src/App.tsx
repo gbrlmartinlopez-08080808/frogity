@@ -126,6 +126,8 @@ export default function App() {
 
   const saveLink = async (url: string) => {
     setLinkErr(null);
+    if (!looksLikeUrl(url)) return setLinkErr('That doesn’t look like a web address. Try something like example.com/article');
+    if (!navigator.onLine) return setLinkErr('You’re offline. Saving a page needs a connection.');
     setLinkBusy('fetching');
     try {
       const m = await importUrl(url, (l) => setLinkBusy(l));
@@ -383,7 +385,8 @@ export default function App() {
     let alive = true;
     const t = setTimeout(async () => {
       if ((await db.get<string>('kv', 'tour')) !== 'pending' || !alive) return;
-      if (document.querySelector('.carousel, .empty')) setTour(true);
+      // (not over a search or a selection that has just been started)
+      if (document.querySelector('.carousel, .empty') && !document.querySelector('.search-bar, .sel-bar')) setTour(true);
     }, 1400);
     return () => {
       alive = false;
@@ -465,7 +468,7 @@ export default function App() {
       )}
       <AddSheet
         open={addOpen}
-        onClose={() => setAddOpen(false)}
+        onClose={() => (setAddOpen(false), setLinkErr(null))}
         onFiles={pickFiles}
         onFolder={isNative ? pickFolder : undefined}
         onScan={() => camIn.current?.click()}

@@ -123,8 +123,10 @@ ctx.onmessage = (e: MessageEvent) => {
         ctx.postMessage({ type: 'ready', id: m.id, rtf: await benchmark() });
       } else {
         if (m.id <= cancelledUpTo) return ctx.postMessage({ type: 'error', id: m.id, message: 'stopped' });
+        const t0 = performance.now();
         const r = await say(m.text, m.rate);
-        ctx.postMessage({ type: 'audio', id: m.id, samples: r.samples, rate: r.rate }, [r.samples.buffer]);
+        // how long the making itself took (not the wait behind other pieces): this is what the pacing is planned from
+        ctx.postMessage({ type: 'audio', id: m.id, samples: r.samples, rate: r.rate, ms: performance.now() - t0 }, [r.samples.buffer]);
       }
     } catch (err) {
       ctx.postMessage({ type: 'error', id: (m as { id: number | string }).id, message: String((err as Error)?.message ?? err) });

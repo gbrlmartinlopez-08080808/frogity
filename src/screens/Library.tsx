@@ -10,7 +10,7 @@ import { Icon } from '../ui/Icon';
 import { Pixel, Screws, Sheet, toast } from '../ui/kit';
 import { ASCII } from '../lib/ascii';
 import { HomeTabs } from './Interesting';
-import { shareFile, tap } from '../lib/native';
+import { onBack, shareFile, tap } from '../lib/native';
 
 export function useCover(doc?: DocMeta) {
   const [url, setUrl] = useState<string>();
@@ -146,7 +146,23 @@ export function Library({
   const [active, setActive] = useState(0);
   const car = useRef<HTMLDivElement>(null);
 
-  const recent = useMemo(() => docs.filter((d) => !d.finished).slice(0, 8), [docs]);
+  // the phone's back button closes the search or the selection before it leaves the app
+  const searching = query !== null;
+  const choosing = !!picked;
+  useEffect(() => {
+    if (!searching && !choosing) return;
+    return onBack(() => {
+      if (searching) setQuery(null);
+      else setPicked(null);
+      return true;
+    });
+  }, [searching, choosing]);
+
+  // what is being read; when every book is finished, the latest ones stay on show instead of an empty stand
+  const recent = useMemo(() => {
+    const open = docs.filter((d) => !d.finished);
+    return (open.length ? open : docs).slice(0, 8);
+  }, [docs]);
   const hero = recent[active] ?? recent[0];
   const streak = streakInfo(days);
   const todayMs = days[dayKey()] ?? 0;
@@ -282,12 +298,12 @@ export function Library({
                   <b>“{hero.name}”</b>
                   {hero.author ? ` — ${hero.author}` : ''}
                 </div>
-                <div className="hint">{hero.progress > 0.01 ? `(${Math.round(hero.progress * 100)}% in, keep going!)` : '(tap 2 read!)'}</div>
+                <div className="hint">{hero.finished ? '(finished — read it again?)' : hero.progress > 0.01 ? `(${Math.round(hero.progress * 100)}% in, keep going!)` : '(tap 2 read!)'}</div>
               </div>
             )}
             <div className="hero-cta">
               <button className="pill ghost" onClick={() => hero && onOpen(hero.id)} style={{ padding: '0 22px', height: 46, fontSize: 16 }}>
-                {hero && hero.progress > 0.01 ? 'Continue' : 'Open Now'}
+                {hero?.finished ? 'Open again' : hero && hero.progress > 0.01 ? 'Continue' : 'Open Now'}
               </button>
             </div>
           </>
@@ -348,7 +364,11 @@ export function Library({
             ))}
           </div>
           <div className="shelf">
-            {list.length === 0 && <div style={{ padding: 30, textAlign: 'center' }} className="mono muted">nothing here yet</div>}
+            {list.length === 0 && (
+              <div style={{ padding: 30, textAlign: 'center' }} className="mono muted">
+                {query ? `nothing on your shelf matches “${query.length > 24 ? query.slice(0, 24) + '…' : query}”` : filter === 'done' ? 'nothing finished yet' : filter === 'reading' ? 'nothing in progress — open a book to start' : filter === 'all' ? 'nothing here yet' : 'nothing of this kind on your shelf yet'}
+              </div>
+            )}
             {list.map((d) => (
               <ShelfRow
                 key={d.id}

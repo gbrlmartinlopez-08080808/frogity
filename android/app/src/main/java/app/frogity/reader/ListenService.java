@@ -38,6 +38,7 @@ public class ListenService extends Service {
     public static final String A_TOGGLE = "app.frogity.reader.listen.TOGGLE";
     public static final String A_NEXT = "app.frogity.reader.listen.NEXT";
     public static final String A_PREV = "app.frogity.reader.listen.PREV";
+    public static final String A_GONE = "app.frogity.reader.listen.GONE";
 
     static Listener listener;
     static volatile String title = "Frogity";
@@ -50,6 +51,19 @@ public class ListenService extends Service {
     private AudioManager audio;
     private AudioFocusRequest focus;
     private boolean foreground = false;
+    /** paused by the phone for a moment (a call, a spoken direction): reading picks up again when it is over */
+    private boolean resumeOnGain = false;
+    private boolean noisyOn = false;
+    /** headphones pulled out, a speaker switched off: the book must not carry on out loud */
+    private final android.content.BroadcastReceiver noisy = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction()) && playing) {
+                resumeOnGain = false;
+                fire("pause");
+            }
+        }
+    };
 
     @Override
     public void onCreate() {
@@ -87,8 +101,16 @@ public class ListenService extends Service {
             shutdown();
             return START_NOT_STICKY;
         }
-        if (A_TOGGLE.equals(a)) fire("toggle");
-        else if (A_NEXT.equals(a)) fire("next");
+        if (A_GONE.equals(a)) {
+            // the paused player was swiped away
+            fire("stop");
+            shutdown();
+            return START_NOT_STICKY;
+        }
+        if (A_TOGGLE.equals(a)) {
+            resumeOnGain = false; // the reader decides now
+            fire("toggle");
+        } else if (A_NEXT.equals(a)) fire("next");
         else if (A_PREV.equals(a)) fire("prev");
         refresh();
         return START_NOT_STICKY;
@@ -115,10 +137,18 @@ public class ListenService extends Service {
 
         if (playing) {
             if (!wake.isHeld()) wake.acquire(6 * 60 * 60 * 1000L);
+            resumeOnGain = false;
             requestFocus();
+            if (!noisyOn) {
+                android.content.IntentFilter f = new android.content.IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+                if (Build.VERSION.SDK_INT >= 33) registerReceiver(noisy, f, Context.RECEIVER_NOT_EXPORTED);
+                else registerReceiver(noisy, f);
+                noisyOn = true;
+            }
         } else {
             if (wake.isHeld()) wake.release();
-            abandonFocus();
+            if (!resumeOnGain) abandonFocus(); // (kept while waiting for a call to end, so the phone can say when it has)
+            dropNoisy();
         }
 
         Intent open = new Intent(this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -129,6 +159,7 @@ public class ListenService extends Service {
             .setContentText(subtitle)
             .setLargeIcon(cover)
             .setContentIntent(content)
+            .setDeleteIntent(act(A_GONE, 4))
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .setOngoing(playing)
@@ -158,7 +189,18 @@ public class ListenService extends Service {
     private void requestFocus() {
         if (focus != null) return;
         AudioManager.OnAudioFocusChangeListener l = change -> {
-            if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) fire("pause");
+            if (change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                if (playing) {
+                    resumeOnGain = true;
+                    fire("pause");
+                }
+            } else if (change == AudioManager.AUDIOFOCUS_LOSS) {
+                resumeOnGain = false;
+                if (playing) fire("pause");
+            } else if (change == AudioManager.AUDIOFOCUS_GAIN && resumeOnGain) {
+                resumeOnGain = false;
+                if (!playing) fire("play");
+            }
         };
         if (Build.VERSION.SDK_INT >= 26) {
             focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
@@ -174,8 +216,21 @@ public class ListenService extends Service {
         focus = null;
     }
 
+    private void dropNoisy() {
+        if (!noisyOn) return;
+        noisyOn = false;
+        try {
+            unregisterReceiver(noisy);
+        } catch (Exception ignored) {
+            /* already gone */
+        }
+    }
+
     private void shutdown() {
         playing = false;
+        resumeOnGain = false;
+        dropNoisy();
+        FrogityWebView.listening(false);
         if (wake.isHeld()) wake.release();
         abandonFocus();
         stopForeground(true);
@@ -186,6 +241,8 @@ public class ListenService extends Service {
 
     @Override
     public void onDestroy() {
+        dropNoisy();
+        FrogityWebView.listening(false);
         if (wake != null && wake.isHeld()) wake.release();
         abandonFocus();
         if (session != null) {

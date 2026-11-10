@@ -414,13 +414,16 @@ textarea {
   font-family: var(--mono);
   font-size: 12.5px;
   padding: 10px 16px;
-  border-radius: 999px;
   box-shadow: var(--shadow-lg);
   animation: rise 0.35s var(--spring);
-  white-space: nowrap;
-  max-width: calc(100vw - 32px);
+  /* one line when it fits; a long message wraps to a second line instead of being cut off */
+  width: max-content;
+  max-width: min(380px, calc(100vw - 32px));
+  white-space: normal;
+  text-align: center;
+  line-height: 1.4;
+  border-radius: 18px;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* pixel loader */

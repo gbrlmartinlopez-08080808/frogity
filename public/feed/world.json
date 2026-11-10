@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-04T11:20:59.729Z",
+ "built": "2026-11-10T10:21:21.768Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -1578,7 +1578,7 @@
    "k": "election",
    "t": "Spanish general election",
    "w": "Spain",
-   "a": "2027-05-23",
+   "a": "2026-11-29",
    "cc": [
     "es"
    ],
@@ -2059,21 +2059,6 @@
   },
   {
    "k": "election",
-   "t": "Bosnian parliamentary election",
-   "w": "Bosnia and Herzegovina",
-   "a": "2026-10-04",
-   "cc": [
-    "ba"
-   ],
-   "icon": {
-    "cc": "ba"
-   },
-   "level": "national",
-   "wiki": "2026 Bosnian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Brazilian presidential election",
    "w": "Brazil",
    "a": "2026-10-04",
@@ -2086,6 +2071,21 @@
    },
    "level": "national",
    "wiki": "2026 Brazilian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Bosnian parliamentary election",
+   "w": "Bosnia and Herzegovina",
+   "a": "2026-10-04",
+   "cc": [
+    "ba"
+   ],
+   "icon": {
+    "cc": "ba"
+   },
+   "level": "national",
+   "wiki": "2026 Bosnian parliamentary election",
    "auto": true
   },
   {
@@ -2302,6 +2302,21 @@
   },
   {
    "k": "election",
+   "t": "Grenadian general election",
+   "w": "Grenada",
+   "a": "2026-11-05",
+   "cc": [
+    "gd"
+   ],
+   "icon": {
+    "cc": "gd"
+   },
+   "level": "national",
+   "wiki": "2026 Grenadian general election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "New Zealand general election",
    "w": "New Zealand",
    "a": "2026-11-07",
@@ -2437,38 +2452,6 @@
   },
   {
    "k": "election",
-   "t": "Slovenian presidential election",
-   "w": "Slovenia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "si"
-   ],
-   "icon": {
-    "cc": "si"
-   },
-   "level": "national",
-   "wiki": "2027 Slovenian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Papua New Guinean general election",
-   "w": "Papua New Guinea",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "pg"
-   ],
-   "icon": {
-    "cc": "pg"
-   },
-   "level": "national",
-   "wiki": "Papua New Guinean general election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Serbian presidential election",
    "w": "Serbia",
    "a": "2027-01-01",
@@ -2481,22 +2464,6 @@
    },
    "level": "national",
    "wiki": "2027 Serbian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Gambian parliamentary election",
-   "w": "The Gambia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "gm"
-   ],
-   "icon": {
-    "cc": "gm"
-   },
-   "level": "national",
-   "wiki": "2027 Gambian parliamentary election",
    "auto": true
   },
   {
@@ -2533,6 +2500,38 @@
   },
   {
    "k": "election",
+   "t": "Slovenian presidential election",
+   "w": "Slovenia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "si"
+   ],
+   "icon": {
+    "cc": "si"
+   },
+   "level": "national",
+   "wiki": "2027 Slovenian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Papua New Guinean general election",
+   "w": "Papua New Guinea",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "pg"
+   ],
+   "icon": {
+    "cc": "pg"
+   },
+   "level": "national",
+   "wiki": "Papua New Guinean general election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Slovak parliamentary election",
    "w": "Slovakia",
    "a": "2027-01-01",
@@ -2545,6 +2544,22 @@
    },
    "level": "national",
    "wiki": "Slovak parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Gambian parliamentary election",
+   "w": "The Gambia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "gm"
+   ],
+   "icon": {
+    "cc": "gm"
+   },
+   "level": "national",
+   "wiki": "2027 Gambian parliamentary election",
    "auto": true
   },
   {
@@ -2910,6 +2925,51 @@
   },
   {
    "k": "election",
+   "t": "Madrilenian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Madrilenian regional election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Cantabrian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Cantabrian regional election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Valencian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Valencian regional election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Sarawak state election",
    "w": "Malaysia",
    "a": "2027-06-16",
@@ -2921,21 +2981,6 @@
    },
    "level": "regional",
    "wiki": "Sarawak state election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Grenadian general election",
-   "w": "Grenada",
-   "a": "2027-06-30",
-   "cc": [
-    "gd"
-   ],
-   "icon": {
-    "cc": "gd"
-   },
-   "level": "national",
-   "wiki": "2026 Grenadian general election",
    "auto": true
   },
   {
@@ -2996,6 +3041,21 @@
    },
    "level": "national",
    "wiki": "Palestinian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Palestinian general election",
+   "w": "Palestine",
+   "a": "2027-09-11",
+   "cc": [
+    "ps"
+   ],
+   "icon": {
+    "cc": "ps"
+   },
+   "level": "national",
+   "wiki": "2027 Palestinian general election",
    "auto": true
   },
   {
@@ -3166,22 +3226,6 @@
   },
   {
    "k": "election",
-   "t": "Hungarian presidential election",
-   "w": "Hungary",
-   "a": "2028-01-01",
-   "when": "2028",
-   "cc": [
-    "hu"
-   ],
-   "icon": {
-    "cc": "hu"
-   },
-   "level": "national",
-   "wiki": "2028 Hungarian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Israeli presidential election",
    "w": "Israel",
    "a": "2028-01-01",
@@ -3194,6 +3238,22 @@
    },
    "level": "national",
    "wiki": "2028 Israeli presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Hungarian presidential election",
+   "w": "Hungary",
+   "a": "2028-01-01",
+   "when": "2028",
+   "cc": [
+    "hu"
+   ],
+   "icon": {
+    "cc": "hu"
+   },
+   "level": "national",
+   "wiki": "2028 Hungarian presidential election",
    "auto": true
   },
   {

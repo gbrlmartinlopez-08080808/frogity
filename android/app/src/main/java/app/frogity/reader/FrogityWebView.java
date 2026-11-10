@@ -109,7 +109,13 @@ public class FrogityWebView extends CapacitorWebView {
      * the app itself alive; this keeps its work going at full speed. Turned off again as soon as the work is done.
      */
     static volatile boolean keepWorking = false;
+    /** the same while a book is being read aloud: the voice is made in the page, a few sentences ahead of what is heard */
+    static volatile boolean keepListening = false;
     static volatile FrogityWebView current;
+
+    private static boolean awake() {
+        return keepWorking || keepListening;
+    }
 
     @Override
     protected void onAttachedToWindow() {
@@ -119,19 +125,30 @@ public class FrogityWebView extends CapacitorWebView {
 
     @Override
     protected void onWindowVisibilityChanged(int visibility) {
-        if (keepWorking && visibility != View.VISIBLE) return;
+        if (awake() && visibility != View.VISIBLE) return;
         super.onWindowVisibilityChanged(visibility);
     }
 
     @Override
     protected void onVisibilityChanged(View changedView, int visibility) {
-        if (keepWorking && visibility != View.VISIBLE) return;
+        if (awake() && visibility != View.VISIBLE) return;
         super.onVisibilityChanged(changedView, visibility);
     }
 
     /** Work is over: if the app is not on screen any more, the page may now rest like any page in the background. */
     static void letRest() {
         keepWorking = false;
+        settle();
+    }
+
+    /** Listening paused or stopped. */
+    static void listening(boolean on) {
+        keepListening = on;
+        if (!on) settle();
+    }
+
+    private static void settle() {
+        if (awake()) return;
         final FrogityWebView w = current;
         if (w == null) return;
         w.post(() -> {

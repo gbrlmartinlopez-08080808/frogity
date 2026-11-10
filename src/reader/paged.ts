@@ -38,6 +38,8 @@ export function pageCount(sc: HTMLElement): number {
   if (pad.style.left !== left) pad.style.left = left;
   return n;
 }
+/** The page an element starts on. */
+export const pageOf = (sc: HTMLElement, el: Element) => Math.max(0, Math.min(pageCount(sc) - 1, Math.floor((el.getBoundingClientRect().left - sc.getBoundingClientRect().left + sc.scrollLeft + 6) / width(sc))));
 export const pageIndex = (sc: HTMLElement) => Math.max(0, Math.min(pageCount(sc) - 1, Math.round(sc.scrollLeft / width(sc))));
 
 // ---------------------------------------------------------------------------------------------------------------- slide
@@ -166,7 +168,7 @@ function refresh(sc: HTMLElement, c: Curl) {
   if (!c.stale || c.root.dataset.on) return;
   const copy = c.src.cloneNode(true) as HTMLElement;
   copy.querySelectorAll('[id]').forEach((e) => e.removeAttribute('id'));
-  copy.querySelectorAll('.saying, .cur').forEach((e) => e.classList.remove('saying', 'cur'));
+  copy.querySelectorAll('.say, .cur').forEach((e) => e.classList.remove('say', 'cur'));
   c.host.replaceChildren(copy);
   c.stale = false;
   void c.host.scrollWidth; // lay it out now, in the background, not when a finger is waiting
@@ -296,6 +298,7 @@ export function usePager(sc: HTMLElement | null, on: boolean) {
   useEffect(() => {
     if (!sc || !on) return;
     fitWidth(sc);
+    sc.scrollTop = 0; // pages only ever move sideways (the place it had while scrolling must not push the page up)
     sc.scrollLeft = Math.round(sc.scrollLeft / width(sc)) * width(sc);
     pageCount(sc);
     let x0 = 0;
@@ -419,6 +422,7 @@ export function usePager(sc: HTMLElement | null, on: boolean) {
     };
     // anything else that moves the scroller (a contents entry, a search hit, reading aloud) ends up on a whole page
     const scrolled = () => {
+      if (sc.scrollTop) sc.scrollTop = 0; // something asked the browser to bring a line into view: never vertically
       clearTimeout(settle);
       settle = window.setTimeout(snap, 140);
     };
