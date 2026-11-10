@@ -1,5 +1,5 @@
 import { Module } from "@/types";
-import { allModules as modulesPart2 } from "./modules-part2";
+import { modulesPartTwo } from "./modules-part2";
 
 const modulesPartOne: Module[] = [
   {
@@ -448,7 +448,7 @@ const modulesPartOne: Module[] = [
           },
           {
             type: "example",
-            content: "1. Apps (Mint, YNAB, PocketGuard)\n2. Spreadsheet (Google Sheets)\n3. Notebook (old school but works!)\n4. Bank app transaction history",
+            content: "1. Apps (YNAB, Goodbudget, PocketGuard)\n2. Spreadsheet (Google Sheets)\n3. Notebook (old school but works!)\n4. Bank app transaction history",
           },
           {
             type: "scenario",
@@ -520,7 +520,7 @@ const modulesPartOne: Module[] = [
           },
           {
             type: "scenario",
-            content: "If you save $50/month from age 16 to 66 at 7% return:\n- You invested: $30,000\n- You'll have: ~$150,000!\nTime is your superpower! ⚡",
+            content: "If you save $50/month from age 16 to 66 at 7% return:\n- You invested: $30,000\n- You'll have: ~$245,000!\nTime is your superpower! ⚡",
           },
           {
             type: "tip",
@@ -584,7 +584,7 @@ const modulesPartOne: Module[] = [
           },
           {
             type: "scenario",
-            content: "The Marshmallow Test: Kids who waited for 2 marshmallows instead of eating 1 immediately were more successful in life. Science!",
+            content: "The Marshmallow Test: Kids who waited for 2 marshmallows instead of eating 1 immediately tended to do better later in life. Patience pays!",
           },
           {
             type: "example",
@@ -1350,11 +1350,11 @@ const modulesPartOne: Module[] = [
           },
           {
             type: "example",
-            content: "FDIC Insurance:\n- Covers up to $250,000 per account\n- Protects checking, savings, CDs\n- Automatic (no cost to you)\n- Government-backed\n- Since 1933, no one has lost insured money",
+            content: "FDIC Insurance:\n- Covers up to $250,000 per depositor, per bank\n- Protects checking, savings, CDs\n- Automatic (no cost to you)\n- Government-backed\n- Since 1933, no one has lost insured money",
           },
           {
             type: "text",
-            content: "Always verify:\n✓ Bank is FDIC-insured (look for logo)\n✓ Keep under $250K per account\n✓ Avoid non-bank financial services claiming 'bank-like' features",
+            content: "Always verify:\n✓ Bank is FDIC-insured (look for logo)\n✓ Keep under $250K per bank\n✓ Avoid non-bank financial services claiming 'bank-like' features",
           },
           {
             type: "tip",
@@ -1378,7 +1378,7 @@ const modulesPartOne: Module[] = [
           },
           {
             id: "bank-10-q2",
-            question: "How much money does FDIC insurance cover per account?",
+            question: "How much does FDIC insurance cover per depositor, per bank?",
             options: [
               "$1,000",
               "$10,000",
@@ -2099,4 +2099,4 @@ const modulesPartOne: Module[] = [
 ];
 
 // Export combined modules
-export const modules: Module[] = [...modulesPartOne, ...modulesPart2];
+export const modules: Module[] = [...modulesPartOne, ...modulesPartTwo];

@@ -1,242 +1,182 @@
 "use client";
 
-import { useApp } from "@/context/AppContext";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useEffect } from "react";
 import AchievementBadge from "@/components/AchievementBadge";
+import AppShell from "@/components/AppShell";
+import LevelBar from "@/components/LevelBar";
+import ProgressBar from "@/components/ProgressBar";
+import { useApp } from "@/context/AppContext";
 import { achievements } from "@/data/achievements";
 import { modules } from "@/data/modules";
+import { addDays } from "@/lib/dates";
+import { getModuleProgress, levelFromXp } from "@/lib/progress";
+
+const card = "rounded-xl border border-gray-200 bg-white shadow-md dark:border-gray-700 dark:bg-gray-800";
 
 export default function ProgressPage() {
-  const { userProfile, userProgress } = useApp();
-  const router = useRouter();
+  const { userProgress, today, streak } = useApp();
 
-  useEffect(() => {
-    if (!userProfile) {
-      router.push("/onboarding");
-    }
-  }, [userProfile, router]);
+  const totalLessons = modules.reduce((sum, module) => sum + module.lessons.length, 0);
+  const completed = userProgress.completedLessons.length;
+  const overallProgress = (completed / totalLessons) * 100;
+  const modulesStarted = modules.filter((m) => getModuleProgress(userProgress, m).completedLessons > 0).length;
+  const hasQuizData = userProgress.quizAttempts > 0;
 
-  if (!userProfile) {
-    return null;
-  }
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const day = addDays(today, i - 6);
+    const [y, m, d] = day.split("-").map(Number);
+    return {
+      day,
+      label: new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2),
+      active: userProgress.activeDays.includes(day),
+      isToday: day === today,
+    };
+  });
 
-  const totalLessons = modules.reduce((acc, module) => acc + module.lessons.length, 0);
-  const overallProgress = (userProgress.completedLessons.length / totalLessons) * 100;
+  const stats = [
+    { icon: "🔥", value: streak, label: "Current streak" },
+    { icon: "⚡", value: userProgress.longestStreak, label: "Longest streak" },
+    { icon: "🎯", value: hasQuizData ? `${Math.round(userProgress.averageAccuracy)}%` : "—", label: "Quiz accuracy" },
+    { icon: "📈", value: levelFromXp(userProgress.xp), label: "Current level" },
+  ];
+
+  const totals = [
+    { value: completed, label: "Lessons done" },
+    { value: userProgress.quizzesPassed, label: "Quizzes passed" },
+    { value: userProgress.xp.toLocaleString(), label: "Total XP" },
+    { value: modulesStarted, label: "Modules started" },
+  ];
+
+  // Unlocked badges first, each group in its original order.
+  const sortedAchievements = [...achievements].sort(
+    (a, b) =>
+      Number(userProgress.unlockedBadges.includes(b.id)) - Number(userProgress.unlockedBadges.includes(a.id))
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-pink-900/20 pb-20 md:pb-8">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link href="/dashboard" className="text-2xl hover:scale-110 transition-transform">
-                ←
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                  Your Progress
-                </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-500">Track your journey</p>
-              </div>
+    <AppShell title="Your Progress" subtitle="Track your journey" backHref="/dashboard">
+      <section aria-label="Key stats" className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className={`${card} p-4`}>
+            <div className="mb-1 text-3xl" aria-hidden="true">
+              {stat.icon}
             </div>
+            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{stat.value}</div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">{stat.label}</div>
           </div>
+        ))}
+      </section>
+
+      <section className={`${card} mb-6 p-5`}>
+        <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl dark:text-gray-100">This week</h2>
+        <ol className="flex justify-between gap-1">
+          {week.map((d) => (
+            <li key={d.day} className="flex flex-1 flex-col items-center gap-1">
+              <span
+                aria-label={`${d.day}: ${d.active ? "lesson completed" : "no lesson"}`}
+                className={`flex h-10 w-10 items-center justify-center rounded-full text-lg ${
+                  d.active
+                    ? "bg-gradient-to-br from-orange-400 to-red-500 text-white shadow"
+                    : "bg-gray-100 text-gray-400 dark:bg-gray-700"
+                } ${d.isToday ? "ring-2 ring-purple-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-800" : ""}`}
+              >
+                <span aria-hidden="true">{d.active ? "🔥" : "·"}</span>
+              </span>
+              <span
+                aria-hidden="true"
+                className={`text-xs ${d.isToday ? "font-bold text-purple-600 dark:text-purple-400" : "text-gray-500 dark:text-gray-400"}`}
+              >
+                {d.label}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className={`${card} mb-6 p-5`}>
+        <LevelBar xp={userProgress.xp} />
+      </section>
+
+      <section className={`${card} mb-6 p-5`}>
+        <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl dark:text-gray-100">Overall Progress</h2>
+        <div className="mb-2 flex justify-between text-sm">
+          <span className="text-gray-600 dark:text-gray-400">
+            {completed} / {totalLessons} lessons
+          </span>
+          <span className="font-bold text-gray-800 dark:text-gray-100">{Math.round(overallProgress)}%</span>
         </div>
-      </header>
+        <ProgressBar value={overallProgress} label="Overall course progress" />
+        <dl className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {totals.map((item) => (
+            <div key={item.label} className="flex flex-col-reverse text-center">
+              <dt className="text-xs text-gray-600 dark:text-gray-400">{item.label}</dt>
+              <dd className="text-2xl font-bold text-gray-800 dark:text-gray-100">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-700">
-            <div className="text-3xl mb-2">🔥</div>
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-              {userProgress.currentStreak}
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">Current Streak</div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-700">
-            <div className="text-3xl mb-2">⚡</div>
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-              {userProgress.longestStreak}
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">Longest Streak</div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-700">
-            <div className="text-3xl mb-2">🎯</div>
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-              {Math.round(userProgress.averageAccuracy)}%
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">Average Accuracy</div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-700">
-            <div className="text-3xl mb-2">📊</div>
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-              {userProgress.level}
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">Current Level</div>
-          </div>
-        </div>
-
-        {/* Overall Progress */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700 mb-8">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-            Overall Progress
-          </h2>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex-1">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600 dark:text-gray-400">
-                  {userProgress.completedLessons.length} / {totalLessons} lessons
-                </span>
-                <span className="font-bold text-gray-800 dark:text-gray-100">
-                  {Math.round(overallProgress)}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-500 rounded-full"
-                  style={{ width: `${overallProgress}%` }}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                {userProgress.totalLessonsCompleted}
-              </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Lessons Done</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                {userProgress.totalQuizzesCompleted}
-              </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Quizzes Passed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                {userProgress.xp}
-              </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Total XP</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                {Object.keys(userProgress.moduleProgress).length}
-              </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Modules Started</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Module Progress */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700 mb-8">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-            Module Breakdown
-          </h2>
-          <div className="space-y-4">
-            {modules.map((module) => {
-              const moduleProgress = userProgress.moduleProgress[module.id];
-              const percentComplete = moduleProgress?.percentComplete || 0;
-              const completed = moduleProgress?.completedLessons.length || 0;
-              const total = module.lessons.length;
-
-              return (
-                <div key={module.id}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{module.icon}</span>
-                      <span className="font-semibold text-gray-800 dark:text-gray-100">
-                        {module.title}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {completed} / {total} lessons
-                    </div>
+      <section className={`${card} mb-6 p-5`}>
+        <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl dark:text-gray-100">Module Breakdown</h2>
+        <ul className="space-y-4">
+          {modules.map((module) => {
+            const progress = getModuleProgress(userProgress, module);
+            return (
+              <li key={module.id}>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="text-2xl" aria-hidden="true">
+                      {module.icon}
+                    </span>
+                    <span className="truncate font-semibold text-gray-800 dark:text-gray-100">{module.title}</span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 rounded-full ${module.color}`}
-                      style={{ width: `${percentComplete}%` }}
-                    />
+                  <div className="shrink-0 text-sm text-gray-600 dark:text-gray-400">
+                    {progress.completedLessons} / {progress.totalLessons}
                   </div>
                 </div>
-              );
-            })}
+                <ProgressBar
+                  value={progress.percentComplete}
+                  label={`${module.title} progress`}
+                  height="h-2"
+                  barClassName={module.color}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section className={`${card} p-5`}>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-800 sm:text-xl dark:text-gray-100">Achievements</h2>
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            {userProgress.unlockedBadges.length} / {achievements.length} unlocked
           </div>
         </div>
-
-        {/* Achievements */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Achievements</h2>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {userProgress.unlockedBadges.length} / {achievements.length} unlocked
-            </div>
-          </div>
-          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-6">
-            {achievements.map((achievement) => (
+        <ul className="grid grid-cols-3 gap-x-3 gap-y-6 md:grid-cols-5 lg:grid-cols-6">
+          {sortedAchievements.map((achievement) => (
+            <li key={achievement.id}>
               <AchievementBadge
-                key={achievement.id}
                 achievement={achievement}
                 isUnlocked={userProgress.unlockedBadges.includes(achievement.id)}
-                size="medium"
               />
-            ))}
-          </div>
-        </div>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-        {/* Motivational Section */}
-        <div className="mt-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-6 shadow-xl">
-          <div className="text-center text-white">
-            <div className="text-4xl mb-3">🎊</div>
-            <h3 className="text-xl font-bold mb-2">Keep Up the Great Work!</h3>
-            <p className="text-white/90 text-sm max-w-md mx-auto">
-              You&apos;ve completed {userProgress.completedLessons.length} lessons and earned{" "}
-              {userProgress.xp} XP. You&apos;re building real financial skills!
-            </p>
-          </div>
+      <section className="mt-8 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-center text-white shadow-xl">
+        <div className="mb-2 text-4xl" aria-hidden="true">
+          {completed === 0 ? "🌱" : "🎊"}
         </div>
-      </main>
-
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg md:hidden">
-        <div className="flex items-center justify-around py-3">
-          <Link
-            href="/dashboard"
-            className="flex flex-col items-center gap-1 text-gray-500 dark:text-gray-500"
-          >
-            <span className="text-2xl">🏠</span>
-            <span className="text-xs font-medium">Home</span>
-          </Link>
-          <Link
-            href="/learn"
-            className="flex flex-col items-center gap-1 text-gray-500 dark:text-gray-500"
-          >
-            <span className="text-2xl">📚</span>
-            <span className="text-xs font-medium">Learn</span>
-          </Link>
-          <Link
-            href="/progress"
-            className="flex flex-col items-center gap-1 text-purple-600 dark:text-purple-400"
-          >
-            <span className="text-2xl">📊</span>
-            <span className="text-xs font-medium">Progress</span>
-          </Link>
-          <Link
-            href="/settings"
-            className="flex flex-col items-center gap-1 text-gray-500 dark:text-gray-500"
-          >
-            <span className="text-2xl">⚙️</span>
-            <span className="text-xs font-medium">Settings</span>
-          </Link>
-        </div>
-      </nav>
-    </div>
+        <h3 className="mb-1 text-xl font-bold">
+          {completed === 0 ? "Your journey starts here" : "Keep up the great work!"}
+        </h3>
+        <p className="mx-auto max-w-md text-sm text-white/90">
+          {completed === 0
+            ? "Finish your first lesson to start filling this page with progress."
+            : `You've completed ${completed} lesson${completed === 1 ? "" : "s"} and earned ${userProgress.xp.toLocaleString()} XP. You're building real financial skills!`}
+        </p>
+      </section>
+    </AppShell>
   );
 }

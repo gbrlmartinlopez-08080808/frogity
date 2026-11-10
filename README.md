@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Financedly
 
-## Getting Started
+Gamified financial-literacy lessons for teens: 7 modules, 50 bite-sized lessons with quizzes,
+XP, levels, streaks, daily goals and achievements. Lessons can be read or listened to.
 
-First, run the development server:
+It is a statically exported [Next.js](https://nextjs.org) app, packaged for Android with
+[Capacitor](https://capacitorjs.com). All content ships with the app and progress is stored
+on the device, so it works offline.
+
+## Develop
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+npm run lint
+npm run typecheck
+npm test           # unit tests for streaks, XP, achievements, migration, read-aloud text
+npm run build      # static site in out/
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build the Android app
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Requires JDK 21 and the Android SDK (platform 36). Set `ANDROID_HOME`, or put
+`sdk.dir=/path/to/sdk` in `android/local.properties`.
 
-## Learn More
+```bash
+npm run android:apk
+```
 
-To learn more about Next.js, take a look at the following resources:
+The APK is written to `android/app/build/outputs/apk/release/app-release.apk`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+To sign with your own key, create `android/keystore.properties` (never commit it):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```properties
+storeFile=financedly-release.jks
+storePassword=...
+keyAlias=financedly
+keyPassword=...
+```
 
-## Deploy on Vercel
+Without that file the release build is signed with the debug key, which is fine for testing
+but can't be updated in place by a build signed with a different key.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Where things live
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Path | What |
+| --- | --- |
+| `app/` | Screens (onboarding, dashboard, learn, lesson player, progress, settings) |
+| `components/` | Shared UI (app shell, navigation, toasts, dialogs, listen button) |
+| `data/` | Lesson content and achievements |
+| `lib/progress.ts` | Game rules: XP, levels, streaks, daily goal, achievements, saved-data migration |
+| `lib/speech.ts` | Read-aloud (native text-to-speech in the app, Web Speech in browsers) |
+| `lib/reminders.ts` | Daily reminder notifications (Android app only) |
+| `lib/sound.ts`, `lib/native.ts` | Sound effects, haptics, Android back button |
+| `android/` | Capacitor Android project |

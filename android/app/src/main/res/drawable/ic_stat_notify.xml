@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon for reminders: a coin with a dollar sign, white on transparent. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <path
+        android:pathData="M256,96a160,160 0,1 0,0 320a160,160 0,1 0,0 -320z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="36" />
+    <path
+        android:pathData="M300,208c-9,-19 -26,-29 -48,-29c-30,0 -50,17 -50,39c0,53 104,24 104,77c0,23 -21,40 -52,40c-25,0 -45,-11 -55,-31"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="32"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M254,150v212"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="30"
+        android:strokeLineCap="round" />
+</vector>

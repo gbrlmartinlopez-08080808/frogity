@@ -1,0 +1,13 @@
+{
+  "name": "Financedly - Learn Money Skills",
+  "short_name": "Financedly",
+  "description": "Master financial literacy through fun, gamified lessons designed for teens",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#8b5cf6",
+  "theme_color": "#8b5cf6",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

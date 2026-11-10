@@ -1,56 +1,38 @@
-"use client";
+const COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E2"];
 
-import { useMemo } from "react";
-
-interface Confetto {
-  id: number;
-  left: number;
-  animationDuration: number;
-  backgroundColor: string;
-}
+// Deterministic pieces: no randomness at render time, and identical on every run.
+const PIECES = Array.from({ length: 60 }, (_, i) => ({
+  id: i,
+  left: (i * 37) % 100,
+  duration: 2.2 + (i % 5) * 0.35,
+  delay: (i % 12) * 0.07,
+  drift: ((i * 53) % 120) - 60,
+  size: 6 + (i % 3) * 3,
+  color: COLORS[i % COLORS.length],
+  round: i % 4 === 0,
+}));
 
 export default function ConfettiAnimation({ show }: { show: boolean }) {
-  const confetti = useMemo(() => {
-    if (!show) return [];
-    
-    const colors = [
-      "#FF6B6B",
-      "#4ECDC4",
-      "#45B7D1",
-      "#FFA07A",
-      "#98D8C8",
-      "#F7DC6F",
-      "#BB8FCE",
-      "#85C1E2",
-    ];
-
-    const newConfetti: Confetto[] = [];
-    for (let i = 0; i < 50; i++) {
-      newConfetti.push({
-        id: i,
-        left: (i * 2.5) % 100,
-        animationDuration: 2 + (i % 3),
-        backgroundColor: colors[i % colors.length],
-      });
-    }
-    return newConfetti;
-  }, [show]);
-
-  if (!show || confetti.length === 0) return null;
+  if (!show) return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {confetti.map((conf) => (
+    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden="true">
+      {PIECES.map((piece) => (
         <div
-          key={conf.id}
-          className="absolute w-2 h-2 rounded-sm animate-confetti-fall"
-          style={{
-            left: `${conf.left}%`,
-            top: "-10px",
-            backgroundColor: conf.backgroundColor,
-            animationDuration: `${conf.animationDuration}s`,
-            animationDelay: `${(conf.id % 10) * 0.05}s`,
-          }}
+          key={piece.id}
+          className={`absolute animate-confetti-fall ${piece.round ? "rounded-full" : "rounded-sm"}`}
+          style={
+            {
+              left: `${piece.left}%`,
+              top: "-16px",
+              width: piece.size,
+              height: piece.size,
+              backgroundColor: piece.color,
+              animationDuration: `${piece.duration}s`,
+              animationDelay: `${piece.delay}s`,
+              "--drift": `${piece.drift}px`,
+            } as React.CSSProperties
+          }
         />
       ))}
     </div>

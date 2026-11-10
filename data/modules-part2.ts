@@ -1,6 +1,6 @@
 import { Module } from "@/types";
 
-export const modulesPart2: Module[] = [
+export const modulesPartTwo: Module[] = [
   {
     id: "earning",
     title: "Earning Money",
@@ -641,7 +641,7 @@ export const modulesPart2: Module[] = [
         content: [
           {
             type: "text",
-            content: "Compound interest is growth on growth. Einstein called it the 8th wonder of the world! 🪄",
+            content: "Compound interest is growth on growth. It's often called the 8th wonder of the world! 🪄",
           },
           {
             type: "example",
@@ -649,7 +649,7 @@ export const modulesPart2: Module[] = [
           },
           {
             type: "scenario",
-            content: "Invest $100/month from age 16-66 at 8%:\n- You invested: $60,000\n- You'll have: ~$350,000!\n\nMagic? No. Compound interest!",
+            content: "Invest $100/month from age 16-66 at 8%:\n- You invested: $60,000\n- You'll have: ~$690,000!\n\nMagic? No. Compound interest!",
           },
           {
             type: "tip",
@@ -863,7 +863,7 @@ export const modulesPart2: Module[] = [
           },
           {
             type: "scenario",
-            content: "$1,000 balance at 20% APR:\nPay minimum only ($25): Takes 5 YEARS, costs $600 interest!\nPay in full monthly: 0 interest!\n\nTHAT'S the difference!",
+            content: "$1,000 balance at 20% APR:\nPay minimum only ($25): Takes over 5 YEARS, costs about $660 in interest!\nPay in full monthly: 0 interest!\n\nTHAT'S the difference!",
           },
           {
             type: "tip",
@@ -1077,7 +1077,7 @@ export const modulesPart2: Module[] = [
           },
           {
             type: "text",
-            content: "Do you need to file taxes?\n- If you earned income: Usually YES\n- Income under ~$12,950 (2023): Might not owe, but file for refunds!\n- Self-employed over $400: Definitely YES",
+            content: "Do you need to file taxes?\n- If you earned income: Usually YES\n- Income under the standard deduction (about $15,000): Might not owe, but file for refunds!\n- Self-employed over $400: Definitely YES",
           },
           {
             type: "tip",
@@ -1400,4 +1400,3 @@ export const modulesPart2: Module[] = [
 ];
 
 // Combine all modules
-export const allModules = modulesPart2;

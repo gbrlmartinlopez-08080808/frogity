@@ -1,70 +1,55 @@
-"use client";
-
-import { Module, ModuleProgress } from "@/types";
 import Link from "next/link";
+import type { Module, ModuleProgress } from "@/types";
 
 interface ModuleCardProps {
   module: Module;
-  progress?: ModuleProgress;
-  isLocked?: boolean;
+  progress: ModuleProgress;
+  /** One of the topics the learner picked as a priority. */
+  recommended?: boolean;
 }
 
-export default function ModuleCard({ module, progress, isLocked = false }: ModuleCardProps) {
-  const percentComplete = progress?.percentComplete || 0;
-  const completedLessons = progress?.completedLessons.length || 0;
-  const totalLessons = module.lessons.length;
+export default function ModuleCard({ module, progress, recommended = false }: ModuleCardProps) {
+  const { percentComplete, completedLessons, totalLessons } = progress;
+  const isComplete = totalLessons > 0 && completedLessons === totalLessons;
+  const action = isComplete ? "Review" : completedLessons > 0 ? "Continue" : "Start learning";
 
   return (
     <Link
-      href={isLocked ? "#" : `/learn/${module.id}`}
-      className={`block group ${isLocked ? "cursor-not-allowed opacity-60" : "hover:scale-105"} transition-transform duration-200`}
+      href={`/learn/${module.id}`}
+      className="group block h-full rounded-2xl transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
     >
-      <div className={`${module.color} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow`}>
-        <div className="flex items-start justify-between mb-4">
-          <div className="text-5xl mb-2">{module.icon}</div>
-          {isLocked && (
-            <div className="bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full text-white text-xs font-bold">
-              🔒 LOCKED
-            </div>
-          )}
-          {percentComplete === 100 && (
-            <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-white text-xs font-bold">
-              ✓ COMPLETE
-            </div>
+      <div className={`${module.color} flex h-full flex-col rounded-2xl p-5 shadow-lg`}>
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div className="text-4xl sm:text-5xl" aria-hidden="true">
+            {module.icon}
+          </div>
+          {isComplete ? (
+            <div className="rounded-full bg-white/25 px-3 py-1 text-xs font-bold text-white">✓ COMPLETE</div>
+          ) : (
+            recommended && (
+              <div className="rounded-full bg-white/25 px-3 py-1 text-xs font-bold text-white">★ FOR YOU</div>
+            )
           )}
         </div>
-        
-        <h3 className="text-xl font-bold text-white mb-2">{module.title}</h3>
-        <p className="text-white/90 text-sm mb-4">{module.description}</p>
-        
-        {!isLocked && (
-          <>
-            <div className="mb-2">
-              <div className="flex justify-between text-white text-xs mb-1">
-                <span>{completedLessons} / {totalLessons} lessons</span>
-                <span>{Math.round(percentComplete)}%</span>
-              </div>
-              <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-white h-full transition-all duration-500 rounded-full"
-                  style={{ width: `${percentComplete}%` }}
-                />
-              </div>
-            </div>
-            
-            <div className="text-white/80 text-xs mt-3">
-              {percentComplete === 0 && "Start learning →"}
-              {percentComplete > 0 && percentComplete < 100 && "Continue →"}
-              {percentComplete === 100 && "Review →"}
-            </div>
-          </>
-        )}
-        
-        {isLocked && (
-          <p className="text-white/80 text-xs mt-3">
-            Complete previous modules to unlock
-          </p>
-        )}
+
+        <h3 className="mb-1 text-xl font-bold text-white">{module.title}</h3>
+        <p className="mb-4 flex-1 text-sm text-white/90">{module.description}</p>
+
+        <div className="mb-1 flex justify-between text-xs text-white">
+          <span>
+            {completedLessons} / {totalLessons} lessons
+          </span>
+          <span>{Math.round(percentComplete)}%</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-white/25">
+          <div
+            className="h-full rounded-full bg-white transition-[width] duration-500"
+            style={{ width: `${percentComplete}%` }}
+          />
+        </div>
+        <div className="mt-3 text-xs font-semibold text-white/90">
+          {action} <span aria-hidden="true">→</span>
+        </div>
       </div>
     </Link>
   );
