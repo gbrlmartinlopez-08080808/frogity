@@ -89,33 +89,53 @@ export async function saveDoc(doc: DocMeta) {
 }
 
 export async function patchDoc(id: string, patch: Partial<DocMeta>, resort = false) {
-  const cur = state.docs.find((d) => d.id === id);
-  if (!cur) return;
-  const next = { ...cur, ...patch };
-  await db.put('docs', id, next);
+  const next = await db.patch<DocMeta>('docs', id, patch);
+  if (!next) return;
   const docs = state.docs.map((d) => (d.id === id ? next : d));
   set({ docs: resort ? sortDocs(docs) : docs });
 }
 
+let removed: { store: db.StoreName; key: string; value: unknown }[] = [];
+let undoTimer = 0;
+export async function undoRemoval() {
+  const snapshot = removed; removed = []; clearTimeout(undoTimer);
+  await db.batch(['docs', 'files', 'blobs', 'cache', 'marks', 'kv'], tx => { for (const r of snapshot) tx.objectStore(r.store).put(r.value, r.key); });
+  await init();
+}
 export async function removeDoc(id: string) {
-  const cur = state.docs.find((d) => d.id === id);
-  await db.del('docs', id);
-  await db.del('files', id);
-  if (cur?.coverId) await db.del('blobs', cur.coverId);
-  for (const p of cur?.scanPages ?? []) await db.del('blobs', p);
-  await db.delPrefix('cache', id + ':');
-  await db.delPrefix('marks', id + ':');
-  void import('./pdfCache').then((m) => m.forget(id));
-  set({ docs: state.docs.filter((d) => d.id !== id) });
+  const cur = state.docs.find(d => d.id === id);
+  const snapshot: typeof removed = [];
+  const capture = async (store: db.StoreName, key: string) => { const value = await db.get(store, key); if (value !== undefined) snapshot.push({ store, key, value }); };
+  await capture('docs', id); await capture('files', id);
+  if (cur?.coverId) await capture('blobs', cur.coverId);
+  for (const key of cur?.scanPages ?? []) await capture('blobs', key);
+  for (const store of ['cache', 'marks'] as const) for (const key of await db.keys(store, id + ':')) await capture(store, key);
+  for (const prefix of ['froggy:', 'formoffer:']) await capture('kv', prefix + id);
+  for (const key of await db.keys('kv', 'fa:' + id + ':')) await capture('kv', key);
+  await db.batch(['docs', 'files', 'blobs', 'cache', 'marks', 'kv'], tx => {
+    tx.objectStore('docs').delete(id);
+    tx.objectStore('files').delete(id);
+    if (cur?.coverId) tx.objectStore('blobs').delete(cur.coverId);
+    for (const page of cur?.scanPages ?? []) tx.objectStore('blobs').delete(page);
+    for (const name of ['cache', 'marks'] as const) tx.objectStore(name).delete(IDBKeyRange.bound(id + ':', id + ':\uffff'));
+    for (const prefix of ['froggy:', 'formoffer:']) tx.objectStore('kv').delete(prefix + id);
+    tx.objectStore('kv').delete(IDBKeyRange.bound('fa:' + id + ':', 'fa:' + id + ':\uffff'));
+    // Old answer caches did not retain ownership. Purge them on deletion too.
+    const cursor = tx.objectStore('kv').openCursor(IDBKeyRange.bound('fa:', 'fa:\uffff'));
+    cursor.onsuccess = () => { const c = cursor.result; if (c) { c.delete(); c.continue(); } };
+  });
+  try { localStorage.removeItem('draft:' + id); } catch { /* optional draft store */ }
+  removed.push(...snapshot); clearTimeout(undoTimer); undoTimer = window.setTimeout(() => { removed = []; }, 10000);
+  void import('./pdfCache').then(m => m.forget(id));
+  set({ docs: state.docs.filter(d => d.id !== id) });
 }
 
-let saveT = 0;
+
 /** Applies instantly; the disk write is debounced so dragging a slider doesn't hammer IndexedDB. */
 export function updateSettings(patch: Partial<Settings>) {
   const settings = { ...state.settings, ...patch };
   set({ settings });
-  clearTimeout(saveT);
-  saveT = window.setTimeout(() => db.put('kv', 'settings', state.settings), 400);
+  return db.put('kv', 'settings', settings);
 }
 
 // ---------- reading time / streaks ----------
@@ -123,7 +143,7 @@ export function updateSettings(patch: Partial<Settings>) {
 export const dayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-let hoursT = 0;
+
 export async function addReading(ms: number, docId?: string) {
   if (ms <= 0) return;
   const k = dayKey();
@@ -135,8 +155,7 @@ export async function addReading(ms: number, docId?: string) {
   const row = [...(state.hours[k] ?? new Array(24).fill(0))];
   row[h] += ms;
   set({ days, hours: { ...state.hours, [k]: row } });
-  clearTimeout(hoursT);
-  hoursT = window.setTimeout(() => db.put('kv', 'hours', state.hours), 1500);
+  await db.put('kv', 'hours', state.hours);
   await db.put('days', k, days[k]);
   if (docId) {
     const d = state.docs.find((x) => x.id === docId);
@@ -167,7 +186,7 @@ export function streakInfo(days: Record<string, number>, frozen: string[] = stat
     const [y, m, dd] = k.split('-').map(Number);
     const date = new Date(y, m - 1, dd);
     const gap = prev ? Math.round((date.getTime() - prev.getTime()) / 864e5) : 0;
-    const bridged = prev && gap === 2 && fz.has(dayKey(new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1)));
+    const bridged = prev && gap > 1 && Array.from({ length: gap - 1 }, (_, i) => fz.has(dayKey(new Date(date.getFullYear(), date.getMonth(), date.getDate() - i - 1)))).every(Boolean);
     run = prev && (gap === 1 || bridged) ? run + 1 : 1;
     longest = Math.max(longest, run);
     prev = date;

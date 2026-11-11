@@ -34,10 +34,17 @@ jobs:
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           PROPS
-      - run: cd android && ./gradlew assembleRelease bundleRelease --no-daemon
+      - name: Build signed release
+        if: env.KS_B64 != ''
+        env:
+          FROGITY_REQUIRE_SIGNING: 'true'
+        run: cd android && ./gradlew assembleRelease bundleRelease --no-daemon
+      - name: Build debug test APK (release key unavailable)
+        if: env.KS_B64 == ''
+        run: cd android && ./gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: Frogity-android
           path: |
-            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/apk/**/*.apk
             android/app/build/outputs/bundle/release/app-release.aab

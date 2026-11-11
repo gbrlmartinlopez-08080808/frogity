@@ -16,3 +16,6 @@ android/quire-release.jks
 android/keystore.properties
 *.jks
 android/upload.jks
+
+/test-results/
+/playwright-report/

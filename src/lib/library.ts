@@ -191,20 +191,24 @@ export async function extractMeta(file: Blob, name: string, kind: DocKind, title
 }
 
 export async function importFile(file: Blob, name: string, opts: { kind?: DocKind; title?: string; author?: string; cover?: Blob; open?: boolean } = {}): Promise<DocMeta> {
-  // no copies of the file in memory: the blob is stored as it is, and only its first bytes are looked at
+  // Keep large files as blobs; hash small files to recognize exact duplicate imports.
+  if (file.size > 150_000_000) throw new Error('This file is larger than 150 MB. Choose a smaller file.');
   const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
   const kind = opts.kind ?? detectKind(name, file.type, head);
+  const fingerprint = file.size <= 10_000_000 ? Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()))).map(n => n.toString(16).padStart(2, '0')).join('') : undefined;
+  const existing = fingerprint && getState().docs.find(d => d.fingerprint === fingerprint && d.fileName === name);
+  if (existing) return existing;
   const id = db.uid();
   const mime = file.type || mimeFor(kind, name);
   const blob = file.type === mime ? file : file.slice(0, file.size, mime);
-  const saved = db.put('files', id, blob);
+
   // a cover that came with the book (a catalogue thumbnail) means the slow part, opening the file to draw one, can wait:
   // the real cover is drawn later in the background (see upgradeCovers)
   const quick = !!opts.cover && !!opts.title && ['pdf', 'epub'].includes(kind);
   const x = quick ? { title: opts.title!, author: opts.author, pages: undefined as number | undefined, cover: opts.cover } : await extractMeta(blob, name, kind, opts.title);
   const cover = x.cover ?? (await generatedCover(x.title, kind, x.author));
   const coverId = id + ':cover';
-  await Promise.all([saved, db.put('blobs', coverId, cover)]);
+
   const now = Date.now();
   const meta: DocMeta = {
     id,
@@ -213,6 +217,7 @@ export async function importFile(file: Blob, name: string, opts: { kind?: DocKin
     kind,
     mime,
     size: file.size,
+    fingerprint,
     addedAt: now,
     openedAt: now,
     progress: 0,
@@ -222,6 +227,7 @@ export async function importFile(file: Blob, name: string, opts: { kind?: DocKin
     coverV: quick && kind === 'pdf' ? 1 : COVER_V,
     readMs: 0,
   };
+  await db.batch(['files', 'blobs', 'docs'], tx => { tx.objectStore('files').put(blob, id); tx.objectStore('blobs').put(cover, coverId); tx.objectStore('docs').put(meta, id); });
   await saveDoc(meta);
   if (quick && kind === 'pdf') setTimeout(() => upgradeCovers(), 4000);
   return meta;
@@ -352,8 +358,11 @@ export async function loadContent(meta: DocMeta): Promise<Content> {
   if (!blob) throw new Error('The file for this document is missing.');
   // a PDF is not read here at all: pdf.js reads just the parts it needs, straight from the file
   if (meta.kind === 'pdf') return { type: 'pdf', blob };
+  if (meta.kind === 'image') return { type: 'image', url: URL.createObjectURL(blob), blob };
+  if (meta.kind === 'audio' || meta.kind === 'video') return { type: 'media', url: URL.createObjectURL(blob), kind: meta.kind };
   const buf = await blob.arrayBuffer();
   const f = await import('./formats/flow');
+  if (['text', 'markdown', 'fr', 'html'].includes(meta.kind)) { const text = new TextDecoder().decode(buf).replace(/<[^>]*>/g, ' ').toLowerCase().slice(0, 250000); void db.put('cache', meta.id + ':search', text).catch(() => {}); }
   switch (meta.kind) {
     case 'epub':
       return { type: 'flow', liquid: await f.epubToLiquid(buf) };
@@ -385,13 +394,6 @@ export async function loadContent(meta: DocMeta): Promise<Content> {
     }
     case 'sheet':
       return { type: 'sheet', sheets: await f.readSheets(buf, meta.fileName) };
-    case 'image': {
-      const url = URL.createObjectURL(blob);
-      return { type: 'image', url, blob };
-    }
-    case 'audio':
-    case 'video':
-      return { type: 'media', url: URL.createObjectURL(blob), kind: meta.kind };
     case 'code':
       return { type: 'code', text: f.decodeText(buf), ext: meta.fileName.split('.').pop() ?? '' };
     default: {

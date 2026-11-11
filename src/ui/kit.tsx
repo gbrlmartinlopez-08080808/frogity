@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { tr } from '../lib/i18n';
 import { createPortal } from 'react-dom';
 import { pixelRects, type PixelName } from '../lib/pixels';
 import { onBack, tap } from '../lib/native';
@@ -88,6 +89,24 @@ export function Sheet({
     });
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open || !mounted) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const panel = ref.current;
+    if (!panel) return;
+    const frame = requestAnimationFrame(() => (panel.querySelector<HTMLElement>('input, button, [tabindex="0"]') ?? panel).focus());
+    const key = (e: KeyboardEvent) => {
+      const panels = Array.from(document.querySelectorAll('.sheet[role="dialog"]'));
+      if (panels.at(-1) !== panel || e.key !== 'Tab') return;
+      const nodes = Array.from(panel.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea, select, a[href], [tabindex="0"]')).filter(n => n.getClientRects().length);
+      if (!nodes.length) { e.preventDefault(); panel.focus(); return; }
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', key);
+    return () => { cancelAnimationFrame(frame); document.removeEventListener('keydown', key); if (previous?.isConnected) previous.focus(); };
+  }, [open, mounted]);
   if (!mounted) return null;
   const onStart = (e: React.TouchEvent) => {
     const body = ref.current?.querySelector('.sheet-body');
@@ -113,12 +132,12 @@ export function Sheet({
   return createPortal(
     <>
       <div className={`scrim${closing ? ' out' : ''}${className?.includes('over') ? ' over' : ''}`} onClick={onClose} />
-      <div ref={ref} className={`sheet${closing ? ' out' : ''} ${className ?? ''}`} data-dark={dark ? '1' : undefined} onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd} onTouchCancel={onEnd} role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined}>
+      <div ref={ref} className={`sheet${closing ? ' out' : ''} ${className ?? ''}`} data-dark={dark ? '1' : undefined} onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd} onTouchCancel={onEnd} role="dialog" tabIndex={-1} aria-modal="true" aria-label={typeof title === 'string' ? title : 'Frogity options'}>
         {!noGrip && <div className="sheet-grip" />}
         {title !== undefined && (
           <div className="sheet-head">
             {onBackBtn ? (
-              <button className="sheet-back" onClick={onBackBtn} aria-label="Back">
+              <button className="sheet-back" onClick={onBackBtn} aria-label={tr("Back")}>
                 <Icon name="back" size={22} />
               </button>
             ) : (
@@ -325,11 +344,14 @@ export function Toasts() {
     },
     () => toastMsg,
   );
-  return msg ? (
+  return msg ? createPortal(
     <div
-      className={`toast${msg.kind ? ' ' + msg.kind : ''}${msg.onClick ? ' tappable' : ''}`}
+      className={`frogity-toast${msg.kind ? ' ' + msg.kind : ''}${msg.onClick ? ' tappable' : ''}`}
       key={msg.id}
       role={msg.onClick ? 'button' : 'status'}
+      tabIndex={msg.onClick ? 0 : undefined}
+      aria-live="polite"
+      onKeyDown={e => { if (msg.onClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); msg.onClick(); } }}
       onClick={() => {
         const f = msg.onClick;
         if (!f) return;
@@ -338,9 +360,9 @@ export function Toasts() {
         f();
       }}
     >
-      {msg.text}
-      {msg.onClick && <span aria-hidden> →</span>}
-    </div>
+      {tr(msg.text)}
+      {msg.onClick && <span aria-hidden>{tr(" →")}</span>}
+    </div>, document.body
   ) : null;
 }
 

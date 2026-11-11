@@ -32,7 +32,8 @@ android {
     }
     buildTypes {
         release {
-            signingConfig keystorePropsFile.exists() ? signingConfigs.release : signingConfigs.debug
+            if (keystorePropsFile.exists()) signingConfig signingConfigs.release
+            else if (System.getenv('FROGITY_REQUIRE_SIGNING') == 'true') throw new GradleException('Release signing is required. Configure the upload keystore.')
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

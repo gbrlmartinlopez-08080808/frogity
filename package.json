@@ -5,14 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/offline.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "android:sync": "npm run build && npx cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleRelease",
     "predev": "node scripts/copy-assets.mjs",
     "prebuild": "node scripts/copy-assets.mjs",
-    "privacy": "node scripts/privacy.mjs"
+    "privacy": "node scripts/privacy.mjs",
+    "test": "playwright test"
   },
   "dependencies": {
     "@capacitor-community/text-to-speech": "^8.0.2",
@@ -36,6 +37,7 @@
     "@fontsource/opendyslexic": "^5.3.0",
     "@fontsource/source-serif-4": "^5.3.1",
     "docx-preview": "^0.4.1",
+    "dompurify": "^3.4.17",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
     "katex": "^0.19.1",
@@ -47,10 +49,11 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "tesseract.js": "^7.0.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.6.0",
+    "@playwright/test": "^1.65.0",
     "@tesseract.js-data/eng": "^1.0.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

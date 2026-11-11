@@ -6,12 +6,13 @@
 // Only reaching the top counts: that is the block. Unlimited tries (a block is still earned once a day). Everything is made on the phone.
 import * as db from './db';
 
-export type Variant = 'sling' | 'deep';
+export type Variant = 'sling' | 'deep' | 'pond';
 export type Levels = Record<Variant, number>;
 
 export async function getLevels(): Promise<Levels> {
   const l = await db.get<Partial<Levels>>('kv', 'games2').catch(() => undefined);
-  return { sling: l?.sling ?? 1, deep: l?.deep ?? 1 };
+  const level = (n: unknown) => typeof n === 'number' && Number.isFinite(n) ? Math.max(1, Math.min(1000, Math.floor(n))) : 1;
+  return { sling: level(l?.sling), deep: level(l?.deep), pond: level(l?.pond) };
 }
 export const setLevels = (l: Levels) => db.put('kv', 'games2', l);
 
@@ -35,10 +36,10 @@ export interface SlingCfg {
   gap: number; // the usual distance between flies
 }
 export const slingLevel = (n: number): SlingCfg => ({
-  goal: Math.min(8500, 3800 + (n - 1) * 300),
-  hold: Math.max(1.9, 3.1 - n * 0.1),
+  goal: Math.min(8500, 2200 + (n - 1) * 280),
+  hold: Math.max(1.9, 4.1 - Math.min(n, 20) * 0.1),
   bees: Math.min(0.4, 0.02 + 0.04 * n),
-  drift: 20 + n * 4,
+  drift: 20 + Math.min(n, 30) * 4,
   gap: Math.min(220, 142 + n * 7),
 });
 

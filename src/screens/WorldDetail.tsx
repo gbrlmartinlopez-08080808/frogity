@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { countdown, dateLabel, daysTo, isOn, isOver, type CurveChart, type SeatsChart, type WorldEvent } from '../lib/world';
 import { loadLive, type Live, type Match } from '../lib/sports';
@@ -62,7 +63,7 @@ function Timeline({ e }: { e: WorldEvent }) {
   const show = sel ?? (cur >= 0 ? cur : null);
   return (
     <section className="wd-sec">
-      <h5 className="mono">The calendar</h5>
+      <h5 className="mono">{tr("The calendar")}</h5>
       <div className="wd-bar" role="img" aria-label={`${done}% of the way through`}>
         {ph.length
           ? ph.map((p, i) => {
@@ -140,17 +141,17 @@ export function LivePanel({ e }: { e: WorldEvent }) {
     const t = setInterval(() => setTick((x) => x + 1), 90_000);
     return () => clearInterval(t);
   }, []);
-  if (err && !d) return <p className="wd-empty mono">live numbers need a connection</p>;
+  if (err && !d) return <p className="wd-empty mono">{tr("live numbers need a connection")}</p>;
   if (!d) return <PixelLoader size={4} gap={2} label="live" />;
   const today = d.next.filter((m) => new Date(m.at).toDateString() === new Date().toDateString());
   return (
     <section className="wd-sec">
       <h5 className="mono">
-        <span className="livedot" /> Live · {today.length ? `${today.length} on today` : `updated ${new Date(updated).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`}
+        <span className="livedot" />{tr(" Live · ")}{today.length ? `${today.length} on today` : `updated ${new Date(updated).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`}
       </h5>
       {!!d.clasico.length && (
         <>
-          <h6 className="mono">El Clásico this season</h6>
+          <h6 className="mono">{tr("El Clásico this season")}</h6>
           <ul className="mlist">
             {d.clasico.map((m) => (
               <MatchRow key={m.id} m={m} />
@@ -160,18 +161,18 @@ export function LivePanel({ e }: { e: WorldEvent }) {
       )}
       {!!d.table.length && (
         <>
-          <h6 className="mono">Table</h6>
+          <h6 className="mono">{tr("Table")}</h6>
           <div className="wd-table mono" role="table">
             <div className="tr th" role="row">
-              <span>#</span>
+              <span>{tr("#")}</span>
               <span />
-              <span>team</span>
-              <span>P</span>
-              <span>W</span>
-              <span>D</span>
-              <span>L</span>
-              <span>GD</span>
-              <span>Pts</span>
+              <span>{tr("team")}</span>
+              <span>{tr("P")}</span>
+              <span>{tr("W")}</span>
+              <span>{tr("D")}</span>
+              <span>{tr("L")}</span>
+              <span>{tr("GD")}</span>
+              <span>{tr("Pts")}</span>
             </div>
             {d.table.slice(0, all ? 40 : 8).map((r) => (
               <div key={r.team} className="tr" role="row">
@@ -197,7 +198,7 @@ export function LivePanel({ e }: { e: WorldEvent }) {
       )}
       {!!d.last.length && (
         <>
-          <h6 className="mono">Latest results</h6>
+          <h6 className="mono">{tr("Latest results")}</h6>
           <ul className="mlist">
             {d.last.map((m) => (
               <MatchRow key={m.id} m={m} />
@@ -207,7 +208,7 @@ export function LivePanel({ e }: { e: WorldEvent }) {
       )}
       {!!d.next.length && (
         <>
-          <h6 className="mono">Next</h6>
+          <h6 className="mono">{tr("Next")}</h6>
           <ul className="mlist">
             {d.next.map((m) => (
               <MatchRow key={m.id} m={m} />
@@ -215,7 +216,7 @@ export function LivePanel({ e }: { e: WorldEvent }) {
           </ul>
         </>
       )}
-      <p className="wd-src mono">data: TheSportsDB · refreshes every 90 seconds while this is open</p>
+      <p className="wd-src mono">{tr("data: TheSportsDB · refreshes every 90 seconds while this is open")}</p>
     </section>
   );
 }
@@ -262,7 +263,7 @@ export function Seats({ chart }: { chart: SeatsChart }) {
   const win = lead.c >= ch.majority;
   return (
     <section className="wd-sec">
-      <h5 className="mono">The seats</h5>
+      <h5 className="mono">{tr("The seats")}</h5>
       {chart.chambers.length > 1 && (
         <div className="topics" role="tablist">
           {chart.chambers.map((c, i) => (
@@ -290,7 +291,7 @@ export function Seats({ chart }: { chart: SeatsChart }) {
           {win ? ch.parties[lead.i].n : none ? `${none} open` : 'no majority'}
         </text>
         <text x="110" y="106" textAnchor="middle" className="seat-s">
-          {ch.majority} needed of {ch.total}
+          {ch.majority}{tr(" needed of ")}{ch.total}
         </text>
       </svg>
       <div className="wd-legend">
@@ -307,9 +308,7 @@ export function Seats({ chart }: { chart: SeatsChart }) {
         ))}
         <em style={{ left: `${(ch.majority / ch.total) * 100}%` }} />
       </div>
-      <button className="wd-more" onClick={() => setOwn(base)}>
-        Reset
-      </button>
+      <button className="wd-more" onClick={() => setOwn(base)}>{tr("Reset")}</button>
       {chart.note && <p className="wd-src mono">{chart.note}</p>}
     </section>
   );
@@ -328,18 +327,18 @@ function Curve({ chart }: { chart: CurveChart }) {
   const date = new Date(peak + (i - 5) * DAY);
   return (
     <section className="wd-sec">
-      <h5 className="mono">Night by night</h5>
-      <svg viewBox={`0 0 ${W} ${H}`} className="wd-curve" role="img" aria-label="Expected meteors per hour across the nights around the peak">
+      <h5 className="mono">{tr("Night by night")}</h5>
+      <svg viewBox={`0 0 ${W} ${H}`} className="wd-curve" role="img" aria-label={tr("Expected meteors per hour across the nights around the peak")}>
         <path d={`${d} L${pts[days - 1][0]},${H - 8} L${pts[0][0]},${H - 8} Z`} className="fill" />
         <path d={d} className="line" />
         {pts.map((p, k) => (
           <circle key={k} cx={p[0]} cy={p[1]} r={k === i ? 4 : 2} className={k === i ? 'sel' : ''} onClick={() => (tap('select'), setI(k))} />
         ))}
       </svg>
-      <input type="range" min={0} max={days - 1} value={i} onChange={(e) => setI(Number(e.target.value))} aria-label="Night" className="wd-range" />
+      <input type="range" min={0} max={days - 1} value={i} onChange={(e) => setI(Number(e.target.value))} aria-label={tr("Night")} className="wd-range" />
       <p className="wd-read">
         <b className="mono">{Math.round(rate(i))}</b> {chart.unit}
-        <span className="mono"> · night of {date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}{i === 5 ? ' · the peak' : ''}</span>
+        <span className="mono">{tr(" · night of ")}{date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}{i === 5 ? ' · the peak' : ''}</span>
       </p>
       {chart.note && <p className="wd-src mono">{chart.note}</p>}
     </section>
@@ -359,8 +358,7 @@ export function InTheNews({ e, d, open }: { e: WorldEvent; d?: Daily; open: (s: 
   if (!hits.length) return null;
   return (
     <section className="wd-sec">
-      <h5 className="mono">
-        In the news · {hits.length} stor{hits.length === 1 ? 'y' : 'ies'} · {outlets} outlet{outlets === 1 ? '' : 's'}
+      <h5 className="mono">{tr("In the news · ")}{hits.length}{tr(" stor")}{hits.length === 1 ? 'y' : 'ies'}{tr(" · ")}{outlets}{tr(" outlet")}{outlets === 1 ? '' : 's'}
       </h5>
       <ul className="wd-news">
         {hits.slice(0, 5).map((s) => (
@@ -368,7 +366,7 @@ export function InTheNews({ e, d, open }: { e: WorldEvent; d?: Daily; open: (s: 
             <button onClick={() => open(s)}>
               <b>{s.title}</b>
               <small className="mono">
-                {new Set(s.sources.map((x) => x.id ?? x.name)).size} outlets · {(s.sources[0]?.id && d?.sources?.[s.sources[0].id!]?.name) || s.sources[0]?.name || ''}
+                {new Set(s.sources.map((x) => x.id ?? x.name)).size}{tr(" outlets · ")}{(s.sources[0]?.id && d?.sources?.[s.sources[0].id!]?.name) || s.sources[0]?.name || ''}
               </small>
             </button>
           </li>
@@ -395,13 +393,13 @@ function About({ e, wiki }: { e: WorldEvent; wiki: (t: string) => void }) {
     <>
       {sum?.extract && (
         <section className="wd-sec">
-          <h5 className="mono">About</h5>
+          <h5 className="mono">{tr("About")}</h5>
           <p className="wd-note">{sum.extract}</p>
         </section>
       )}
       {!!cands?.length && (
         <section className="wd-sec">
-          <h5 className="mono">Candidates and parties</h5>
+          <h5 className="mono">{tr("Candidates and parties")}</h5>
           {cands.slice(0, 5).map((g) => (
             <div key={g.group} className="cand">
               <h6 className="mono">{g.group}</h6>
@@ -431,7 +429,7 @@ export function WorldDetail({ e, d, wiki, openStory }: { e: WorldEvent; d?: Dail
         <div>
           <h3>{e.t}</h3>
           <span className="mono">
-            {e.w} · {dateLabel(e)}
+            {e.w}{tr(" · ")}{dateLabel(e)}
           </span>
           <span className={`wd-when mono${isOn(e) || (!isOver(e) && daysTo(e) <= 7) ? ' hot' : ''}`}>{countdown(e)}</span>
         </div>
@@ -442,7 +440,7 @@ export function WorldDetail({ e, d, wiki, openStory }: { e: WorldEvent; d?: Dail
       <Timeline e={e} />
       {!!e.sides?.length && (
         <section className="wd-sec">
-          <h5 className="mono">Taking part</h5>
+          <h5 className="mono">{tr("Taking part")}</h5>
           <ul className="wd-sides">
             {e.sides.map((s) => (
               <li key={s.n}>
@@ -460,9 +458,7 @@ export function WorldDetail({ e, d, wiki, openStory }: { e: WorldEvent; d?: Dail
       {e.chart?.type === 'curve' && <Curve chart={e.chart} />}
       <InTheNews e={e} d={d} open={openStory} />
       {e.wiki && (
-        <button className="pill ghost wd-wiki" onClick={() => wiki(e.wiki!)}>
-          Read about it
-        </button>
+        <button className="pill ghost wd-wiki" onClick={() => wiki(e.wiki!)}>{tr("Read about it")}</button>
       )}
     </div>
   );

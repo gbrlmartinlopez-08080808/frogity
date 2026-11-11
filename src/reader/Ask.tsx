@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as db from '../lib/db';
 import { ask, askQuota, chunk, type Msg } from '../lib/ai';
@@ -117,9 +118,9 @@ export function AskSheet({
     setMood('dizzy');
     abort.current = new AbortController();
     try {
-      if (!passages.current) passages.current = chunk(await getText());
+      passages.current = chunk(await getText());
       const r = await ask({ title, docId, passages: passages.current, question, history, selection: sel.current, lang, signal: abort.current.signal });
-      setMsgs((m) => [...m, { role: 'assistant', content: r.text }]);
+      setMsgs((m) => [...m, { role: 'assistant', content: r.text, sources: r.sources }]);
       setMood(r.text.length > 500 ? 'smug' : 'happy');
       setTalk(true);
       setTimeout(() => setTalk(false), Math.min(2600, 600 + r.text.length * 8));
@@ -149,22 +150,17 @@ export function AskSheet({
             <div className="ask-frog">
               <Froggy mood="happy" size="lg" />
             </div>
-            <h4>Meet Froggy</h4>
-            <p>
-              Froggy reads along and answers questions about this document. It is free and needs no account. When you ask, your question and a few short
-              excerpts from the document are sent to an open AI service (Pollinations). Nothing else leaves your phone.
-            </p>
-            <p className="muted">Skip it for private documents. Everything else in Frogity stays on the device.</p>
-            <button className="pill" onClick={onConsent}>
-              Say hello to Froggy
-            </button>
+            <h4>{tr("Meet Froggy")}</h4>
+            <p>{tr("Froggy reads along and answers questions about this document. It is free and needs no account. When you ask, the document title, recent conversation, your question and a few short excerpts from the document are sent to an open AI service (Pollinations). Nothing else leaves your phone.")}</p>
+            <p className="muted">{tr("Skip it for private documents. Everything else in Frogity stays on the device.")}</p>
+            <button className="pill" onClick={onConsent}>{tr("Say hello to Froggy")}</button>
           </div>
         ) : (
           <>
             <div className="ask-head">
               <Froggy mood={face} talk={talk} size="sm" />
               <div className="ask-who">
-                <b>Froggy</b>
+                <b>{tr("Froggy")}</b>
                 <span className="mono">{busy ? line('thinking', seed.current + msgs.length) : sel.current ? 'about your selection' : title.length > 30 ? title.slice(0, 30) + '…' : title}</span>
               </div>
               {!!msgs.length && (
@@ -177,9 +173,7 @@ export function AskSheet({
                     setMood('wink');
                     passages.current = null;
                   }}
-                >
-                  new chat
-                </button>
+                >{tr("new chat")}</button>
               )}
             </div>
             <div className="ask-scroll">
@@ -200,24 +194,21 @@ export function AskSheet({
                 m.role === 'assistant' ? (
                   <div key={i} className="ask-wrap">
                     <div className="ask-msg assistant rich" dangerouslySetInnerHTML={{ __html: renderRich(m.content, true) }} />
+                    {!!m.sources?.length && <details className="answer-sources"><summary>{tr('Source excerpts used')}</summary>{m.sources.map((source, n) => <blockquote key={n}><b>[{n+1}]</b> {source}<button className="pill sm ghost" onClick={() => { window.dispatchEvent(new CustomEvent('frogity:passage', { detail: source.slice(0,60) })); onClose(); }}>{tr('Find passage')}</button></blockquote>)}</details>}
                     <div className="ask-acts">
                       <button
                         onClick={() => {
                           navigator.clipboard?.writeText(m.content);
                           toast('Copied');
                         }}
-                      >
-                        Copy
-                      </button>
-                      <button onClick={() => shareText(`${m.content}\n\n— Froggy, reading “${title}”`)}>Share</button>
+                      >{tr("Copy")}</button>
+                      <button onClick={() => shareText(`${m.content}\n\n— Froggy, reading “${title}”`)}>{tr("Share")}</button>
                       <button
                         className="ask-report"
                         onClick={() =>
                           openExternal(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Frogity: problem with an AI answer')}&body=${encodeURIComponent(`Question: ${msgs[i - 1]?.content ?? ''}\n\nAnswer: ${m.content}\n\nWhat was wrong:\n`)}`)
                         }
-                      >
-                        Report
-                      </button>
+                      >{tr("Report")}</button>
                     </div>
                   </div>
                 ) : (
@@ -230,11 +221,8 @@ export function AskSheet({
                 <div className="ask-msg assistant">
                   <PixelLoader size={4} gap={2} label="Froggy is thinking" />
                   {slow && (
-                    <p className="ask-slow mono">
-                      still thinking — the free service can be slow.{' '}
-                      <button onClick={() => abort.current?.abort()} style={{ textDecoration: 'underline' }}>
-                        stop
-                      </button>
+                    <p className="ask-slow mono">{tr("still thinking — the free service can be slow.")}{' '}
+                      <button onClick={() => abort.current?.abort()} style={{ textDecoration: 'underline' }}>{tr("stop")}</button>
                     </p>
                   )}
                 </div>
@@ -243,9 +231,7 @@ export function AskSheet({
                 <div className="ask-msg err">
                   {err}{' '}
                   {!/today/.test(err) && (
-                    <button onClick={() => send(msgs[msgs.length - 1]?.content ?? '', true)} style={{ fontWeight: 600, textDecoration: 'underline' }}>
-                      Retry
-                    </button>
+                    <button onClick={() => send(msgs[msgs.length - 1]?.content ?? '', true)} style={{ fontWeight: 600, textDecoration: 'underline' }}>{tr("Retry")}</button>
                   )}
                 </div>
               )}
@@ -267,8 +253,8 @@ export function AskSheet({
                 send(input);
               }}
             >
-              <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask Froggy about this document" enterKeyHint="send" />
-              <button className="pill round sm" disabled={!input.trim() || busy} aria-label="Send">
+              <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={tr("Ask Froggy about this document")} enterKeyHint="send" />
+              <button className="pill round sm" disabled={!input.trim() || busy} aria-label={tr("Send")}>
                 <Icon name="up" size={18} stroke={2.4} />
               </button>
             </form>
@@ -277,11 +263,8 @@ export function AskSheet({
                 {left.left <= 0 ? 'Froggy is asleep until midnight' : `${left.left} of ${left.cap} free questions left today`}
               </p>
             )}
-            <p className="ask-ai mono">
-              Froggy is an AI and can be wrong. Check anything that matters in the document itself.{' '}
-              <button onClick={() => window.dispatchEvent(new CustomEvent('frogity:about', { detail: 'ai' }))} style={{ textDecoration: 'underline' }}>
-                How it works
-              </button>
+            <p className="ask-ai mono">{tr("Froggy is an AI and can be wrong. Check anything that matters in the document itself.")}{' '}
+              <button onClick={() => window.dispatchEvent(new CustomEvent('frogity:about', { detail: 'ai' }))} style={{ textDecoration: 'underline' }}>{tr("How it works")}</button>
             </p>
           </>
         )}

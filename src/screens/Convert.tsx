@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { Art } from '../ui/Art';
 import { useEffect, useState } from 'react';
 import type { DocMeta } from '../lib/types';
@@ -133,7 +134,7 @@ export function ConvertSheet({ doc, root, onClose, onOpenDoc }: { doc: DocMeta |
   };
 
   return (
-    <Sheet open={!!doc} onClose={onClose} title="Convert">
+    <Sheet open={!!doc} onClose={onClose} title={tr("Convert")}>
       <div className="sheet-body" style={{ paddingBottom: 16 }}>
         <Art name="convert" />
         <div className="mono muted" style={{ fontSize: 12, textAlign: 'center', margin: '-4px 0 16px' }}>
@@ -153,17 +154,14 @@ export function ConvertSheet({ doc, root, onClose, onOpenDoc }: { doc: DocMeta |
                   {result.name}
                 </div>
                 <div className="muted mono" style={{ fontSize: 11 }}>
-                  {(result.blob.size / 1024).toFixed(0)} KB · ready
-                </div>
+                  {(result.blob.size / 1024).toFixed(0)}{tr(" KB · ready")}</div>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <button className="pill" onClick={async () => toast(await saveFile(result.blob, result.name))}>
-                <Icon name="down" size={18} /> Save
-              </button>
+                <Icon name="down" size={18} />{tr(" Save")}</button>
               <button className="pill ghost" onClick={() => shareFile(result.blob, result.name).catch(() => {})}>
-                <Icon name="share" size={18} /> Share
-              </button>
+                <Icon name="share" size={18} />{tr(" Share")}</button>
             </div>
             {!/\.(zip)$/.test(result.name) && (
               <button
@@ -175,8 +173,7 @@ export function ConvertSheet({ doc, root, onClose, onOpenDoc }: { doc: DocMeta |
                   onOpenDoc(m.id);
                 }}
               >
-                <Icon name="book" size={18} /> Add to library & open
-              </button>
+                <Icon name="book" size={18} />{tr(" Add to library & open")}</button>
             )}
           </div>
         ) : targets.length ? (
@@ -190,9 +187,7 @@ export function ConvertSheet({ doc, root, onClose, onOpenDoc }: { doc: DocMeta |
             ))}
           </div>
         ) : (
-          <p className="muted" style={{ textAlign: 'center', padding: 20 }}>
-            Nothing to convert this file to yet.
-          </p>
+          <p className="muted" style={{ textAlign: 'center', padding: 20 }}>{tr("Nothing to convert this file to yet.")}</p>
         )}
       </div>
     </Sheet>

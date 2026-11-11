@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SheetData } from '../lib/formats/flow';
 import { blobToAscii } from '../lib/ascii';
@@ -33,15 +34,14 @@ export function SheetView({ sheets }: { sheets: SheetData[] }) {
           </div>
         )}
         <span className="mono" style={{ fontSize: 11, color: 'var(--r-muted)', marginLeft: 'auto' }}>
-          {Math.max(0, s.rows.length - 1)} rows · {header.length} cols
-        </span>
+          {Math.max(0, s.rows.length - 1)}{tr(" rows · ")}{header.length}{tr(" cols")}</span>
       </div>
       {mode === 'grid' ? (
         <div style={{ overflowX: 'auto', padding: '0 0 0 0' }}>
           <table className="grid-table">
             <thead>
               <tr>
-                <th>#</th>
+                <th>{tr("#")}</th>
                 {header.map((h, i) => (
                   <th key={i}>{h || colName(i)}</th>
                 ))}
@@ -63,7 +63,7 @@ export function SheetView({ sheets }: { sheets: SheetData[] }) {
         <div className="cards">
           {body.map((r, ri) => (
             <div className="card-row" key={ri}>
-              <div className="n">row {ri + 1}</div>
+              <div className="n">{tr("row ")}{ri + 1}</div>
               <dl>
                 {header.map((h, ci) =>
                   r[ci] ? (
@@ -80,9 +80,7 @@ export function SheetView({ sheets }: { sheets: SheetData[] }) {
       )}
       {s.rows.length - 1 > limit && (
         <div style={{ textAlign: 'center', padding: 20 }}>
-          <button className="pill ghost sm" onClick={() => setLimit((l) => l + 500)}>
-            Show more rows
-          </button>
+          <button className="pill ghost sm" onClick={() => setLimit((l) => l + 500)}>{tr("Show more rows")}</button>
         </div>
       )}
     </div>
@@ -201,11 +199,9 @@ export function CodeView({ text, onTap }: { text: string; onTap: () => void }) {
 export function BinaryView({ hex, size, onAsText }: { hex: string; size: number; onAsText: () => void }) {
   return (
     <div className="binary">
-      <p style={{ fontFamily: 'var(--sans)', fontSize: 15 }}>This file type can’t be previewed yet. Here are its first bytes ({size.toLocaleString()} bytes total).</p>
+      <p style={{ fontFamily: 'var(--sans)', fontSize: 15 }}>{tr("This file type can’t be previewed yet. Here are its first bytes (")}{size.toLocaleString()}{tr(" bytes total).")}</p>
       <p style={{ opacity: 0.7, lineHeight: 1.7 }}>{hex}</p>
-      <button className="pill ghost" onClick={onAsText}>
-        Try opening as text
-      </button>
+      <button className="pill ghost" onClick={onAsText}>{tr("Try opening as text")}</button>
     </div>
   );
 }

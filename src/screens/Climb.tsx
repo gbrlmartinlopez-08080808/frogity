@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { deepLevel, rng, slingLevel } from '../lib/games';
 import { deepestOf, pickPrompt, scoreAnswer, type Prompt } from '../data/deepcuts';
@@ -306,6 +307,7 @@ function useStage(frame: (c: CanvasRenderingContext2D, W: number, H: number, dt:
     const loop = (now: number) => {
       const dt = Math.min(0.04, (now - last) / 1000);
       last = now;
+      if (document.hidden || el.closest('[data-paused="true"]')) { raf = requestAnimationFrame(loop); return; }
       c.clearRect(0, 0, W, H);
       f.current(c, W, H, dt, k);
       raf = requestAnimationFrame(loop);
@@ -316,6 +318,7 @@ function useStage(frame: (c: CanvasRenderingContext2D, W: number, H: number, dt:
       return [e.clientX - r.left, e.clientY - r.top] as const;
     };
     const dn = (e: PointerEvent) => {
+      if (el.closest('[data-paused="true"]')) return;
       el.setPointerCapture(e.pointerId);
       p.current?.down(...pos(e));
     };
@@ -353,8 +356,8 @@ interface Fly {
   dragon?: boolean; // a dragonfly: quick and wide, a big swing
   gone: number; // seconds since it flew off (0 = still there)
 }
-export function Sling({ level, onEnd }: { level: number; onEnd: (win: boolean, text: string) => void }) {
-  const cfg = useRef(slingLevel(level)).current;
+export function Sling({ level, onEnd, practice = false }: { practice?: boolean; level: number; onEnd: (win: boolean, text: string) => void }) {
+  const cfg = useRef(practice ? { ...slingLevel(1), goal: 1400, hold: 8, bees: 0, drift: 12 } : slingLevel(level)).current;
   const [hud, setHud] = useState({ m: 0, goal: Math.round(cfg.goal / 10), hint: true, saves: 1 });
   const S = useRef(null as null | ReturnType<typeof initSling>);
   if (!S.current) S.current = initSling(cfg, level);
@@ -434,18 +437,23 @@ export function Sling({ level, onEnd }: { level: number; onEnd: (win: boolean, t
     <div className="stagebox">
       <div className="game-hud mono">
         <span>
-          {hud.m} m of {hud.goal} m
-        </span>
+          {hud.m}{tr(" m of ")}{hud.goal}{tr(" m")}</span>
         <span>
           {s.mode === 'rope' ? 'swinging' : s.mode === 'rest' ? 'on the pad' : s.mode === 'free' ? 'falling · shoot a fly!' : ''}
         </span>
-        <span title="a lily rises under Froggy once if it is about to hit the water">
-          <b style={{ color: hud.saves ? CO.green : undefined }}>{'●'.repeat(Math.max(0, hud.saves))}{'○'.repeat(Math.max(0, 1 - hud.saves))}</b> save
-        </span>
+        <span title={tr("a lily rises under Froggy once if it is about to hit the water")}>
+          <b style={{ color: hud.saves ? CO.green : undefined }}>{'●'.repeat(Math.max(0, hud.saves))}{'○'.repeat(Math.max(0, 1 - hud.saves))}</b>{tr(" save")}</span>
       </div>
       <div className="stage">
-        <canvas ref={cv} aria-label="Froggy on a lily pad, slinging its tongue at flies" />
-        {hud.hint && <p className="stage-hint mono">pull back anywhere with your thumb, aim at a fly, let go{'\n'}falling? just tap: the tongue grabs the nearest thing</p>}
+        <canvas ref={cv} tabIndex={0} aria-label={tr("Sling. Arrow keys aim left, right or up. Space grabs the nearest safe fly.")} onKeyDown={e => {
+          if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', ' '].includes(e.key) || e.currentTarget.closest('[data-paused="true"]') || done.current) return;
+          e.preventDefault(); s.started = true;
+          const target = s.flies.filter(f => !f.gone && !f.bee && f !== s.anchor && f.y > s.frog.y).sort((a, b) => Math.hypot(a.x-s.frog.x,a.y-s.frog.y)-Math.hypot(b.x-s.frog.x,b.y-s.frog.y))[0];
+          let dx = e.key === 'ArrowLeft' ? -.6 : e.key === 'ArrowRight' ? .6 : 0, dy = .8;
+          if (e.key === ' ' && target) { const dist = Math.hypot(target.x-s.frog.x, target.y-s.frog.y); dx = (target.x-s.frog.x)/dist; dy = (target.y-s.frog.y)/dist; }
+          const len = Math.hypot(dx,dy); s.tongue = { dx: dx/len, dy: dy/len, len: 0, max: 500, out: true };
+        }} />
+        {hud.hint && <p className="stage-hint mono">{tr("pull back anywhere with your thumb, aim at a fly, let go")}{'\n'}{tr("falling? just tap: the tongue grabs the nearest thing")}</p>}
       </div>
     </div>
   );
@@ -1104,24 +1112,22 @@ function RankCard({ n }: { n: Extract<Note, { kind: 'rank' }> }) {
         ))}
       </div>
       <div className="rank-axis mono">
-        <span>familiar</span>
-        <span>rare</span>
+        <span>{tr("familiar")}</span>
+        <span>{tr("rare")}</span>
       </div>
       <div className="rank-row mono">
-        <span>
-          #{n.rank} of {n.of}
+        <span>{tr("#")}{n.rank}{tr(" of ")}{n.of}
         </span>
-        <b>
-          +{n.gain} m{n.streak ? ` · streak +${n.streak}%` : ''}
+        <b>{tr("+")}{n.gain}{tr(" m")}{n.streak ? ` · streak +${n.streak}%` : ''}
         </b>
       </div>
-      <p>Rarest of all: {n.rare.join(', ')}.</p>
+      <p>{tr("Rarest of all: ")}{n.rare.join(', ')}{tr(".")}</p>
     </div>
   );
 }
 const PPM = 5; // pixels per metre
-export function Deep({ level, onEnd }: { level: number; onEnd: (win: boolean, text: string) => void }) {
-  const cfg = useRef(deepLevel(level)).current;
+export function Deep({ level, onEnd, practice = false }: { practice?: boolean; level: number; onEnd: (win: boolean, text: string) => void }) {
+  const cfg = useRef(practice ? { ...deepLevel(1), goal: 220, seconds: 55, slack: 5 } : deepLevel(level)).current;
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [answer, setAnswer] = useState('');
   const [note, setNote] = useState<null | Note>(null);
@@ -1343,23 +1349,22 @@ export function Deep({ level, onEnd }: { level: number; onEnd: (win: boolean, te
     <div className="stagebox deepbox">
       <div className="game-hud mono">
         <span>
-          {m} m of {cfg.goal} m
-        </span>
+          {m}{tr(" m of ")}{cfg.goal}{tr(" m")}</span>
         <span>
           <b style={{ color: CO.coral }}>{'♥'.repeat(slack)}</b>
           <span style={{ opacity: 0.35 }}>{'♥'.repeat(Math.max(0, cfg.slack - slack))}</span>
           {streak > 0 ? ` · streak ×${streak}` : ''}
         </span>
-        <span>{Math.round((m / cfg.goal) * 100)}%</span>
+        <span>{Math.round((m / cfg.goal) * 100)}{tr("%")}</span>
       </div>
       <div className="stage short">
-        <canvas ref={cv} aria-label="Froggy's tongue soaring up from a lily pad" />
+        <canvas ref={cv} aria-label={tr("Froggy's tongue soaring up from a lily pad")} />
       </div>
       <div className="deep2">
         {prompt && (
           <>
             <div className="timer" key={prompt.id} style={{ animationDuration: `${cfg.seconds}s` }} onAnimationEnd={() => slip('Time ran out, and the tongue lost its grip.')} />
-            <p className="tag mono">deep cut · the rarer, the higher</p>
+            <p className="tag mono">{tr("deep cut · the rarer, the higher")}</p>
             <h2>{prompt.q}</h2>
             <form
               className="ask-input"
@@ -1368,8 +1373,8 @@ export function Deep({ level, onEnd }: { level: number; onEnd: (win: boolean, te
                 submit();
               }}
             >
-              <input autoFocus value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="name something rare" autoCapitalize="words" enterKeyHint="send" />
-              <button className="pill round sm" disabled={answer.trim().length < 2} aria-label="Fire the tongue">
+              <input autoFocus value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder={tr("name something rare")} autoCapitalize="words" enterKeyHint="send" />
+              <button className="pill round sm" disabled={answer.trim().length < 2} aria-label={tr("Fire the tongue")}>
                 <Icon name="up" size={18} stroke={2.4} />
               </button>
             </form>
@@ -1463,13 +1468,13 @@ export function Pick({ onPick, levels, inline = false }: { onPick: (v: 'sling' |
     <div className={inline ? 'stagebox inline' : 'stagebox'}>
       {!inline && (
         <div className="game-hud mono">
-          <span>Froggy has to get up</span>
+          <span>{tr("Froggy has to get up")}</span>
           <span />
-          <span>pick a way</span>
+          <span>{tr("pick a way")}</span>
         </div>
       )}
       <div className="stage" ref={box}>
-        <canvas ref={cv} aria-label="Froggy on a lily pad, looking up at two cards" />
+        <canvas ref={cv} aria-label={tr("Froggy on a lily pad, looking up at two cards")} />
         <div className="pickcards">
           {ways.map((w) => (
             <button key={w.id} ref={(el) => void (cards.current[w.id] = el)} className="pickcard" onClick={() => go(w.id)}>
@@ -1478,7 +1483,7 @@ export function Pick({ onPick, levels, inline = false }: { onPick: (v: 'sling' |
               </pre>
               <b>{w.title}</b>
               <small>{w.sub}</small>
-              <span className="mono">level {levels[w.id]}</span>
+              <span className="mono">{tr("level ")}{levels[w.id]}</span>
             </button>
           ))}
         </div>

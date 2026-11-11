@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { onBack, tap } from '../lib/native';
 
@@ -108,14 +109,12 @@ export function Tour({ onDone }: { onDone: () => void }) {
       <div className="tour-card" ref={card} style={{ top: cardTop, bottom: cardBottom }} key={i}>
         <i className={`arrow ${below ? 'up' : 'down'}`} style={{ left: cx - 20 }} />
         <div className="mono tour-count">
-          {i + 1} / {steps.length}
+          {i + 1}{tr(" / ")}{steps.length}
         </div>
         <h3>{step.title}</h3>
         <p>{step.text}</p>
         <div className="tour-row">
-          <button className="tour-skip" onClick={onDone}>
-            skip
-          </button>
+          <button className="tour-skip" onClick={onDone}>{tr("skip")}</button>
           <span className="tour-dots" aria-hidden>
             {steps.map((_, k) => (
               <b key={k} className={k === i ? 'on' : ''} />

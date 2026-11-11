@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { countdown, daysTo, dateLabel, isOn, isOver, loadWorld, type World as WorldData, type WorldEvent } from '../lib/world';
 import { COUNTRIES, SECTIONS, TOP, concerns, country, countryOrder, holidays, isRecent, relevant, sectionOf, useHome, emojiFor, type Holiday, type Section } from '../lib/worldx';
@@ -25,12 +26,12 @@ function EventRow({ e, onOpen, flag }: { e: WorldEvent; onOpen: (e: WorldEvent) 
       <span className="wev-b">
         <b>{e.t}</b>
         <small className="mono">
-          {flag && <Flag cc={flag} size={14} />} {e.w} · {dateLabel(e)}
+          {flag && <Flag cc={flag} size={14} />} {e.w}{tr(" · ")}{dateLabel(e)}
         </small>
         <span className="wev-tags">
           <span className={`wev-c mono${!over && (isOn(e) || daysTo(e) <= 7) ? ' hot' : ''}`}>{over ? `ended ${Math.abs(daysTo(e))} days ago` : countdown(e)}</span>
           {e.level && <span className="wtag mono">{e.level}</span>}
-          {isMidterms(e) && <span className="wtag mono live">interactive</span>}
+          {isMidterms(e) && <span className="wtag mono live">{tr("interactive")}</span>}
         </span>
       </span>
       <Icon name="right" size={16} />
@@ -45,7 +46,7 @@ function CountryGroup({ cc, count, open: init, children, note }: { cc: string; c
   return (
     <section className={`cg${open ? ' open' : ''}`}>
       <button className="cg-h" onClick={() => (tap('select'), setOpen(!open))} aria-expanded={open}>
-        {cc === 'world' ? <span className="ico ph mono" style={{ width: 28, height: 20 }}>●</span> : <Flag cc={cc} size={28} />}
+        {cc === 'world' ? <span className="ico ph mono" style={{ width: 28, height: 20 }}>{tr("●")}</span> : <Flag cc={cc} size={28} />}
         <b>{cc === 'world' ? 'Elsewhere and everywhere' : c?.name ?? cc.toUpperCase()}</b>
         <small className="mono">{count}</small>
         <Icon name={open ? 'up' : 'down'} size={16} />
@@ -103,7 +104,7 @@ export function WorldInfo({ wiki, d, openStory, mode }: { wiki: (title: string) 
             if (!items.length && c.cc !== home) return null;
             return (
               <CountryGroup key={c.cc} cc={c.cc} count={items.length} open={i === 0} note={emptyNote?.(c.cc)}>
-                {items.length ? list(items) : <p className="cg-note mono">nothing listed for {c.name} yet</p>}
+                {items.length ? list(items) : <p className="cg-note mono">{tr("nothing listed for ")}{c.name}{tr(" yet")}</p>}
               </CountryGroup>
             );
           })}
@@ -112,7 +113,7 @@ export function WorldInfo({ wiki, d, openStory, mode }: { wiki: (title: string) 
             {list(globalList)}
           </CountryGroup>
         )}
-        {!!rest.length && <h4 className="mono wsub">Other countries · {rest.length}</h4>}
+        {!!rest.length && <h4 className="mono wsub">{tr("Other countries · ")}{rest.length}</h4>}
         {rest.map(([cc, items]) => (
           <CountryGroup key={cc} cc={cc} count={items.length} open={false}>
             {list(items)}
@@ -132,10 +133,10 @@ export function WorldInfo({ wiki, d, openStory, mode }: { wiki: (title: string) 
     <div className="int-scroll world">
       {mode}
       <div className="world-top">
-        <button className="home-chip" onClick={() => (tap('select'), setPicker(true))} aria-label="Choose your country">
+        <button className="home-chip" onClick={() => (tap('select'), setPicker(true))} aria-label={tr("Choose your country")}>
           <Flag cc={hc.cc} size={26} />
           <span>
-            <small className="mono">your country</small>
+            <small className="mono">{tr("your country")}</small>
             <b>{hc.name}</b>
           </span>
           <Icon name="down" size={15} />
@@ -152,7 +153,7 @@ export function WorldInfo({ wiki, d, openStory, mode }: { wiki: (title: string) 
       {section === 'general' && (
         <>
           <section className="wblock">
-            <h4 className="mono">Closest for {hc.name}</h4>
+            <h4 className="mono">{tr("Closest for ")}{hc.name}</h4>
             <div className="wlist">
               <NextHolidays cc={hc.cc} n={2} />
               {list(soon(hc.cc, 6))}
@@ -166,12 +167,12 @@ export function WorldInfo({ wiki, d, openStory, mode }: { wiki: (title: string) 
               </CountryGroup>
             ) : null;
           })}
-          <p className="int-foot mono">· · ·{'\n'}use the tabs for politics, the economy, sports, events and holidays</p>
+          <p className="int-foot mono">{tr("· · ·")}{'\n'}{tr("use the tabs for politics, the economy, sports, events and holidays")}</p>
         </>
       )}
       {section === 'politics' && (
         <section className="wblock">
-          <h4 className="mono">Next votes anywhere</h4>
+          <h4 className="mono">{tr("Next votes anywhere")}</h4>
           <div className="wlist">
             {list(events.filter((e) => e.k === 'election' && !isOver(e) && e.level !== 'regional').slice(0, 5), true)}
           </div>
@@ -197,7 +198,7 @@ export function WorldInfo({ wiki, d, openStory, mode }: { wiki: (title: string) 
         <>
           <SportsHub home={hc.cc} d={d} wiki={wiki} openStory={openStory} />
           <section className="wblock">
-            <h4 className="mono">On the calendar</h4>
+            <h4 className="mono">{tr("On the calendar")}</h4>
             <div className="wlist">
               {list([...events.filter((e) => sectionOf(e) === 'sports' && e.cc?.includes(hc.cc)), ...events.filter((e) => sectionOf(e) === 'sports' && !e.cc?.includes(hc.cc))].slice(0, 12), true)}
             </div>
@@ -220,9 +221,9 @@ export function WorldInfo({ wiki, d, openStory, mode }: { wiki: (title: string) 
         </>
       )}
 
-      <p className="int-foot mono">· · ·{'\n'}{data.note}</p>
+      <p className="int-foot mono">{tr("· · ·")}{'\n'}{data.note}</p>
 
-      <Sheet open={picker} onClose={() => setPicker(false)} title="Your country">
+      <Sheet open={picker} onClose={() => setPicker(false)} title={tr("Your country")}>
         <div className="cpick">
           {COUNTRIES.map((c) => (
             <button key={c.cc} className={c.cc === home ? 'on' : ''} onClick={() => (tap('select'), setHome(c.cc), setPicker(false))}>
@@ -265,8 +266,8 @@ function NextHolidays({ cc, n }: { cc: string; n: number }) {
       live = false;
     };
   }, [cc]);
-  if (!h) return <p className="cg-note mono">loading holidays…</p>;
-  if (!h.length) return <p className="cg-note mono">holidays need a connection</p>;
+  if (!h) return <p className="cg-note mono">{tr("loading holidays…")}</p>;
+  if (!h.length) return <p className="cg-note mono">{tr("holidays need a connection")}</p>;
   return (
     <>
       {h.slice(0, n).map((x) => {

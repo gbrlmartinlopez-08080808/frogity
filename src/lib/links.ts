@@ -14,10 +14,14 @@ export const normalizeUrl = (s: string) => {
 
 export const NOISE = /(comment|sidebar|share|social|promo|newsletter|cookie|consent|advert|\bads?\b|related|recommend|footer|menu|navbar|breadcrumb|subscribe|popup|modal|toolbar|paywall|signup|login)/i;
 
-export async function fetchBlob(url: string, max = 25_000_000): Promise<{ blob: Blob; type: string; finalUrl: string }> {
-  const r = await fetch(url, { redirect: 'follow', headers: { Accept: 'text/html,application/xhtml+xml,application/pdf,*/*;q=0.8' } });
+export async function fetchBlob(url: string, max = 25_000_000, signal?: AbortSignal): Promise<{ blob: Blob; type: string; finalUrl: string }> {
+  const r = await fetch(url, { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(20000)]) : AbortSignal.timeout(20000), redirect: 'follow', headers: { Accept: 'text/html,application/xhtml+xml,application/pdf,*/*;q=0.8' } });
   if (!r.ok) throw new Error(`The site answered ${r.status}.`);
-  const blob = await r.blob();
+  if (Number(r.headers.get('content-length')) > max) throw new Error('That page is too large to save.');
+  const reader = r.body?.getReader();
+  const parts: Uint8Array<ArrayBuffer>[] = []; let size = 0;
+  if (reader) { while (true) { const { done, value } = await reader.read(); if (done) break; size += value.byteLength; if (size > max) { await reader.cancel(); throw new Error('That page is too large to save.'); } parts.push(new Uint8Array(value)); } }
+  const blob = reader ? new Blob(parts, { type: r.headers.get('content-type') || '' }) : await r.blob();
   if (blob.size > max) throw new Error('That page is too large to save.');
   return { blob, type: (r.headers.get('content-type') ?? blob.type ?? '').split(';')[0].trim().toLowerCase(), finalUrl: r.url || url };
 }
@@ -63,10 +67,11 @@ export interface LinkProgress {
   (label: string): void;
 }
 
-export async function importUrl(input: string, progress?: LinkProgress): Promise<DocMeta> {
+export async function importUrl(input: string, progress?: LinkProgress, signal?: AbortSignal): Promise<DocMeta> {
   const url = normalizeUrl(input);
   progress?.('fetching page');
-  const got = await fetchBlob(url);
+  const got = await fetchBlob(url, 25_000_000, signal);
+  signal?.throwIfAborted();
   const last = decodeURIComponent(new URL(got.finalUrl).pathname.split('/').filter(Boolean).pop() ?? '');
   // direct file links: PDFs, books, images…
   if (got.type && !/html|xml/.test(got.type)) {
@@ -115,7 +120,7 @@ export async function importUrl(input: string, progress?: LinkProgress): Promise
   const wanted = imgs.map((i) => i.getAttribute('src') ?? '').filter((s) => /^https?:/i.test(s));
   for (const src of [...new Set(wanted)].slice(0, 14)) {
     try {
-      const r = await fetch(src);
+      const r = await fetch(src, { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12000)]) : AbortSignal.timeout(12000) });
       if (!r.ok) continue;
       const b = await r.blob();
       if (!b.type.startsWith('image/') || b.size > 3_000_000 || b.size < 1_500 || b.size > budget) continue;
@@ -126,6 +131,7 @@ export async function importUrl(input: string, progress?: LinkProgress): Promise
     }
   }
 
+  signal?.throwIfAborted();
   const clean = sanitizeHtml(main, { resolveSrc: (s) => inline.get(s) });
   const text = (new DOMParser().parseFromString(clean, 'text/html').body.textContent ?? '').trim();
   if (text.length < 200) throw new Error('This page has no readable article text (it may need you to be signed in).');
@@ -138,7 +144,7 @@ export async function importUrl(input: string, progress?: LinkProgress): Promise
   const leadSrc = ogImage || wanted[0];
   if (leadSrc) {
     try {
-      const r = await fetch(leadSrc);
+      const r = await fetch(leadSrc, { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12000)]) : AbortSignal.timeout(12000) });
       const b = await r.blob();
       if (r.ok && b.type.startsWith('image/') && b.size > 3000) cover = b;
     } catch {

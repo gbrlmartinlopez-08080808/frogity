@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { displayName } from '../lib/cheer';
 import { tap } from '../lib/native';
@@ -155,15 +156,13 @@ export function FrogScene({ count, minutes, goal, name, onEnd }: { count: number
   const extra = minutes - goal;
   const line = extra >= goal ? `${minutes} minutes — double your goal.` : extra > 0 ? `${minutes} minutes — ${extra} over your goal.` : `${minutes} minutes — right on your goal.`;
   return (
-    <div className={`ascii-card frog${t >= 8.7 ? ' out' : ''}`} onClick={finish} role="img" aria-label="A frog with a jetpack flies across the sky, towing one @ for every day you reached your goal">
+    <div className={`ascii-card frog${t >= 8.7 ? ' out' : ''}`} onClick={finish} role="img" aria-label={tr("A frog with a jetpack flies across the sky, towing one @ for every day you reached your goal")}>
       <pre dangerouslySetInnerHTML={{ __html: render(t, count, count) }} />
       <p className={`frog-msg mono${t > 6.6 ? ' in' : ''}`}>
-        <b>
-          yesterday’s light · {count} on your map
-        </b>
+        <b>{tr("yesterday’s light · ")}{count}{tr(" on your map")}</b>
         <span>{who ? `${who}, ${line}` : line}</span>
       </p>
-      <span className="sig mono">tap to skip</span>
+      <span className="sig mono">{tr("tap to skip")}</span>
     </div>
   );
 }

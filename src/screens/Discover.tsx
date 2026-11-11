@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { SOURCES, archivePdf, featuredNow, fetchFile, fetchThumb, peek, search, type Item, type SourceId } from '../lib/catalog';
 import { importFile } from '../lib/library';
@@ -89,12 +90,12 @@ export function Discover({ onClose, onOpen, initial }: { onClose: () => void; on
   };
 
   return (
-    <div className="disc" role="dialog" aria-label="Find free books">
+    <div className="disc" role="dialog" aria-label={tr("Find free books")}>
       <div className="disc-top">
-        <button className="r-ibtn" onClick={onClose} aria-label="Back">
+        <button className="r-ibtn" onClick={onClose} aria-label={tr("Back")}>
           <Icon name="back" size={24} />
         </button>
-        <h2>Find free books</h2>
+        <h2>{tr("Find free books")}</h2>
       </div>
       <form
         className="disc-search"
@@ -167,9 +168,7 @@ export function Discover({ onClose, onOpen, initial }: { onClose: () => void; on
                   {it.tag && <span className={`tag mono ${/sale|preview|info/.test(it.tag) ? 'web' : ''}`}>{it.tag}</span>}
                   {canGet ? (
                     have ? (
-                      <button className="get done" onClick={() => (onClose(), onOpen(have))}>
-                        Open
-                      </button>
+                      <button className="get done" onClick={() => (onClose(), onOpen(have))}>{tr("Open")}</button>
                     ) : (
                       <button className="get" disabled={adding.has(it.id)} onClick={() => add(it)}>
                         {adding.has(it.id) ? <PixelLoader size={3} gap={2} /> : 'Add'}
@@ -177,7 +176,7 @@ export function Discover({ onClose, onOpen, initial }: { onClose: () => void; on
                     )
                   ) : null}
                   {it.web && (
-                    <button className="web-link" onClick={() => openExternal(it.web!)} aria-label="Open on the web">
+                    <button className="web-link" onClick={() => openExternal(it.web!)} aria-label={tr("Open on the web")}>
                       <Icon name="globe" size={17} />
                     </button>
                   )}
@@ -206,18 +205,14 @@ export function Discover({ onClose, onOpen, initial }: { onClose: () => void; on
         {err && (
           <div className="disc-err">
             {err}
-            <button onClick={() => load(1)}>Try again</button>
+            <button onClick={() => load(1)}>{tr("Try again")}</button>
           </div>
         )}
         {!loading && !err && !items.length && <div className="disc-load mono muted">{source === 'shop' && !q ? 'search for a title or an author' : 'nothing found — try another word'}</div>}
         {!loading && next && (
-          <button className="pill ghost" style={{ margin: '14px auto 30px', display: 'flex' }} onClick={() => load(next)}>
-            More
-          </button>
+          <button className="pill ghost" style={{ margin: '14px auto 30px', display: 'flex' }} onClick={() => load(next)}>{tr("More")}</button>
         )}
-        <p className="disc-fine mono">
-          Frogity only fetches files these sites offer for free (public-domain and open-access works). Rights and licences are the sites’ own — check the page behind the globe icon if you plan to share anything.
-        </p>
+        <p className="disc-fine mono">{tr("Frogity only fetches files these sites offer for free (public-domain and open-access works). Rights and licences are the sites’ own — check the page behind the globe icon if you plan to share anything.")}</p>
       </div>
     </div>
   );

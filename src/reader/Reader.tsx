@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as db from '../lib/db';
 import { addReading, patchDoc, removeDoc, useStore, updateSettings } from '../lib/store';
@@ -1043,6 +1044,11 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       showEl(g?.[0], 'center', true);
     } else if (findHits.pages) pdfRef.current?.goTo(findHits.pages[cur], true);
   };
+  useEffect(() => { const go = (event: Event) => setFind(String((event as CustomEvent).detail)); window.addEventListener('frogity:passage', go); return () => window.removeEventListener('frogity:passage', go); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => { const text = flowRef.current?.textContent; if (text?.trim()) void db.put('cache', id + ':search', text.slice(0,250000).toLowerCase()).catch(() => {}); }, 2000);
+    return () => clearTimeout(timer);
+  }, [content, mode, liq.ready, id]);
   const closeFind = () => {
     setFind(null);
     if (flowRef.current) clearMarks(flowRef.current, 'find');
@@ -1291,12 +1297,10 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       <div className={`reader-scroll${paged ? ' paged' : ''}`} ref={setScroller} style={{ paddingLeft: showPdfPages && thumbs ? 84 : 0 }}>
         {error ? (
           <div className="empty" style={{ paddingTop: 140 }}>
-            <h2>Couldn’t open this file</h2>
+            <h2>{tr("Couldn’t open this file")}</h2>
             <p>{friendlyError(error, doc.kind)}</p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button className="pill" onClick={close}>
-                Back to library
-              </button>
+              <button className="pill" onClick={close}>{tr("Back to library")}</button>
               <button className="pill ghost" onClick={() => setSheet('remove')}>
                 {doc.uri ? 'Remove from shelf' : 'Delete it'}
               </button>
@@ -1370,19 +1374,19 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
             onKeyDown={(e) => e.key === 'Enter' && stepFind(e.shiftKey ? -1 : 1)}
           />
           <span className="count">{findHits.n ? `${findHits.cur + 1}/${findHits.n}${findHits.pages ? 'p' : ''}` : find.length > 1 ? '0' : ''}</span>
-          <button className="r-ibtn" onClick={() => stepFind(-1)} aria-label="Previous match">
+          <button className="r-ibtn" onClick={() => stepFind(-1)} aria-label={tr("Previous match")}>
             <Icon name="up" />
           </button>
-          <button className="r-ibtn" onClick={() => stepFind(1)} aria-label="Next match">
+          <button className="r-ibtn" onClick={() => stepFind(1)} aria-label={tr("Next match")}>
             <Icon name="down" />
           </button>
-          <button className="r-ibtn" onClick={closeFind} aria-label="Close search">
+          <button className="r-ibtn" onClick={closeFind} aria-label={tr("Close search")}>
             <Icon name="close" />
           </button>
         </div>
       ) : (
         <div className={`r-top${chrome ? '' : ' hide'}`}>
-          <button className="r-ibtn" onClick={close} aria-label="Back to library">
+          <button className="r-ibtn" onClick={close} aria-label={tr("Back to library")}>
             <Icon name="back" size={24} />
           </button>
           <button className="title" onClick={() => isPdf && setSheet('type')} tabIndex={isPdf ? 0 : -1} aria-label={isPdf ? `${doc.name}, view and reading settings` : doc.name}>
@@ -1398,7 +1402,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
               setAskSel(undefined);
               setSheet('ask');
             }}
-            aria-label="Ask Froggy"
+            aria-label={tr("Ask Froggy")}
           >
             <Icon name="frog" />
           </button>
@@ -1407,7 +1411,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
           <button className={`r-ibtn${hereMark ? ' on' : ''}`} onClick={addBookmark} aria-label={hereMark ? 'Remove bookmark' : 'Bookmark this spot'}>
             <Icon name="bookmark" />
           </button>
-          <button className="r-ibtn" onClick={() => setSheet('more')} aria-label="More">
+          <button className="r-ibtn" onClick={() => setSheet('more')} aria-label={tr("More")}>
             <Icon name="more" size={22} stroke={2.6} />
           </button>
         </div>
@@ -1421,15 +1425,13 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         {form && !offerGone && !formOpen && (
           <div className="form-offer" role="status">
             <div className="t">
-              <b>This looks like a form</b>
-              <small>{form.fields.length} fields found · fill, sign and export</small>
+              <b>{tr("This looks like a form")}</b>
+              <small>{form.fields.length}{tr(" fields found · fill, sign and export")}</small>
             </div>
-            <button className="pill sm" onClick={() => (setFormOpen(true), setOfferGone(true))}>
-              Fill it in
-            </button>
+            <button className="pill sm" onClick={() => (setFormOpen(true), setOfferGone(true))}>{tr("Fill it in")}</button>
             <button
               className="pill sm round ghost offer-x"
-              aria-label="Not now (this also closes by itself)"
+              aria-label={tr("Not now (this also closes by itself)")}
               onClick={() => {
                 setOfferGone(true);
                 db.put('kv', `formoffer:${id}`, true);
@@ -1461,7 +1463,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         )}
         {!listen && barOk && <Scrub ariaLabel="Position in the book" value={barValue} label={barLabel} onChange={barChange} />}
         <div className="r-dock-row compact">
-          <button className="timechip" onClick={() => setClockMode((m) => (m === 'time' ? 'left' : 'time'))} aria-label="Clock / time left">
+          <button className="timechip" onClick={() => setClockMode((m) => (m === 'time' ? 'left' : 'time'))} aria-label={tr("Clock / time left")}>
             <Icon name="clock" size={15} />
             <span>{clockMode === 'time' ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : `${minutesLeft}m left`}</span>
           </button>
@@ -1481,14 +1483,14 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
               <Icon name={paged ? 'book' : 'scrollv'} size={20} />
             </button>
           )}
-          <button className="pill round sm" onClick={cycleTheme} onContextMenu={(e) => (e.preventDefault(), setSheet('type'))} aria-label="Theme">
+          <button className="pill round sm" onClick={cycleTheme} onContextMenu={(e) => (e.preventDefault(), setSheet('type'))} aria-label={tr("Theme")}>
             <Icon name={dark ? 'moon' : 'sun'} size={20} />
           </button>
-          <button className="pill round sm" onClick={() => setSheet('type')} aria-label="Typography">
+          <button className="pill round sm" onClick={() => setSheet('type')} aria-label={tr("Typography")}>
             <TypeGlyph size={20} />
           </button>
         </div>
-        <button className="r-chev" onClick={() => setChrome(false)} aria-label="Hide controls">
+        <button className="r-chev" onClick={() => setChrome(false)} aria-label={tr("Hide controls")}>
           <Icon name="down" size={20} />
         </button>
       </div>
@@ -1595,7 +1597,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
           onClose();
         }}
       />
-      <Sheet open={sheet === 'info'} onClose={() => setSheet(null)} title="About this file">
+      <Sheet open={sheet === 'info'} onClose={() => setSheet(null)} title={tr("About this file")}>
         <div className="sheet-body">
           {[
             ['name', doc.fileName],
@@ -1627,7 +1629,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         aiOk={settings.aiOk}
         onConsent={() => updateSettings({ aiOk: true })}
       />
-      <Sheet open={sheet === 'ocr'} onClose={() => setSheet(null)} title="Recognised text">
+      <Sheet open={sheet === 'ocr'} onClose={() => setSheet(null)} title={tr("Recognised text")}>
         <div className="sheet-body">
           {ocrText?.busy ? (
             <div style={{ padding: '20px 0 30px', display: 'grid', gap: 14, justifyItems: 'center' }}>
@@ -1647,18 +1649,14 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
                       setSheet(null);
                       toast('Saved to your shelf');
                     }}
-                  >
-                    Save as document
-                  </button>
+                  >{tr("Save as document")}</button>
                   <button
                     className="pill ghost"
                     onClick={() => {
                       navigator.clipboard?.writeText(ocrText.text);
                       toast('Copied');
                     }}
-                  >
-                    Copy
-                  </button>
+                  >{tr("Copy")}</button>
                 </div>
               )}
             </>

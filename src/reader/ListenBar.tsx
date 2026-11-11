@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { bestVoice, detectLanguage, LANG_NAME, listVoices, openVoiceInstall, queueSpeak, speak, speechText, stopSpeaking, ttsAvailable, type Voice } from '../lib/tts';
 import { NEURAL_PREFIX, NEURAL_VOICES, NeuralPlayer, sharedEngine, isNeural, lighterThan, neuralId, neuralStored, neuralSupported } from '../lib/neural';
@@ -679,7 +680,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
   if (!ttsAvailable())
     return (
       <div className="listen">
-        <div className="listen-top">Text-to-speech is not available on this device.</div>
+        <div className="listen-top">{tr("Text-to-speech is not available on this device.")}</div>
       </div>
     );
 
@@ -724,7 +725,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
           <i />
         </span>
         <span className="grow">{status}</span>
-        <span className="mono">{leftMin} min left</span>
+        <span className="mono">{leftMin}{tr(" min left")}</span>
       </div>
       <Scrub
         className="listen-scrub2"
@@ -748,16 +749,16 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
         }}
       />
       <div className="listen-times mono" aria-hidden>
-        <span>{pct}%</span>
+        <span>{pct}{tr("%")}</span>
         <span>
-          {idx + 1} / {total || '–'}
+          {idx + 1}{tr(" / ")}{total || '–'}
         </span>
       </div>
       <div className="listen-ctrl">
-        <button className="sm" onClick={() => skip(-5)} aria-label="Back five sentences">
+        <button className="sm" onClick={() => skip(-5)} aria-label={tr("Back five sentences")}>
           <Icon name="rew" size={22} />
         </button>
-        <button className="sm" onClick={() => skip(-1)} aria-label="Previous sentence">
+        <button className="sm" onClick={() => skip(-1)} aria-label={tr("Previous sentence")}>
           <Icon name="prev" size={22} />
         </button>
         <button
@@ -771,17 +772,16 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
         >
           <Icon name={playing ? 'pause' : 'play'} size={26} stroke={2.6} />
         </button>
-        <button className="sm" onClick={() => skip(1)} aria-label="Next sentence">
+        <button className="sm" onClick={() => skip(1)} aria-label={tr("Next sentence")}>
           <Icon name="next" size={22} />
         </button>
-        <button className="sm" onClick={() => skip(5)} aria-label="Forward five sentences">
+        <button className="sm" onClick={() => skip(5)} aria-label={tr("Forward five sentences")}>
           <Icon name="fwd" size={22} />
         </button>
       </div>
       <div className="listen-chips">
         <button className={pop === 'speed' ? 'on' : ''} onClick={() => setPop(pop === 'speed' ? null : 'speed')}>
-          <Icon name="speed" size={15} /> {settings.ttsRate.toFixed(1)}×
-        </button>
+          <Icon name="speed" size={15} /> {settings.ttsRate.toFixed(1)}{tr("×")}</button>
         <button onClick={() => setVoiceSheet(true)}>
           <Icon name="voice" size={15} /> {nv ? nv.label : voice ? (/^[a-z]{2,3}[-_]/i.test(voice.name) ? `Phone · ${voice.lang.slice(0, 2).toUpperCase()}` : voice.name.replace(/^(Google|Microsoft)\s*/, '').slice(0, 12)) : 'Voice'}
         </button>
@@ -802,7 +802,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
           aria-label={`Reading language: ${LANG_NAME[docLang] ?? docLang}${langAuto ? ' (automatic)' : ''}`}
         >
           <Icon name="globe" size={15} /> {docLang.toUpperCase()}
-          {langAuto && <small>auto</small>}
+          {langAuto && <small>{tr("auto")}</small>}
         </button>
         <button
           className={sleep ? 'on' : ''}
@@ -812,25 +812,23 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
             sleepAt.current = next ? Date.now() + next * 60_000 : 0;
             toast(next ? `Sleep in ${next} min` : 'Sleep timer off');
           }}
-          aria-label="Sleep timer"
+          aria-label={tr("Sleep timer")}
         >
           <Icon name="timer" size={15} /> {sleep ? `${sleep}m` : 'Sleep'}
         </button>
-        <button className={settings.focusListen ? 'on' : ''} onClick={() => updateSettings({ focusListen: !settings.focusListen })} aria-label="Focus on the sentence being read">
+        <button className={settings.focusListen ? 'on' : ''} onClick={() => updateSettings({ focusListen: !settings.focusListen })} aria-label={tr("Focus on the sentence being read")}>
           <Icon name="ear" size={15} />
         </button>
       </div>
-      <Sheet open={batterySheet} onClose={() => setBatterySheet(false)} title="Keep listening smooth">
+      <Sheet open={batterySheet} onClose={() => setBatterySheet(false)} title={tr("Keep listening smooth")}>
         <div style={{ padding: '0 20px 20px', display: 'grid', gap: 12 }}>
-          <p style={{ margin: 0, font: '400 15.5px/1.45 var(--serif)', color: 'var(--ink-2)' }}>
-            Your phone puts apps to sleep when the screen is off to save battery, and that is when the voice stutters or stops. If Frogity is left out of battery saving:
-          </p>
+          <p style={{ margin: 0, font: '400 15.5px/1.45 var(--serif)', color: 'var(--ink-2)' }}>{tr("Your phone puts apps to sleep when the screen is off to save battery, and that is when the voice stutters or stops. If Frogity is left out of battery saving:")}</p>
           <ul style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 6, font: '400 14.5px/1.4 var(--serif)' }}>
-            <li>the next sentences are prepared and downloaded in the background, ahead of the voice</li>
-            <li>reading goes on without gaps with the screen off or another app open</li>
-            <li>the voice doesn’t drop out when the phone is idle in your pocket</li>
+            <li>{tr("the next sentences are prepared and downloaded in the background, ahead of the voice")}</li>
+            <li>{tr("reading goes on without gaps with the screen off or another app open")}</li>
+            <li>{tr("the voice doesn’t drop out when the phone is idle in your pocket")}</li>
           </ul>
-          <p className="mono" style={{ margin: 0, fontSize: 11.5, color: 'var(--muted)' }}>Frogity uses power only while it reads. You can change this later in Settings.</p>
+          <p className="mono" style={{ margin: 0, fontSize: 11.5, color: 'var(--muted)' }}>{tr("Frogity uses power only while it reads. You can change this later in Settings.")}</p>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               className="pill"
@@ -838,12 +836,8 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
                 setBatterySheet(false);
                 askWorkFree();
               }}
-            >
-              Allow background
-            </button>
-            <button className="pill ghost" onClick={() => setBatterySheet(false)}>
-              Not now
-            </button>
+            >{tr("Allow background")}</button>
+            <button className="pill ghost" onClick={() => setBatterySheet(false)}>{tr("Not now")}</button>
           </div>
         </div>
       </Sheet>

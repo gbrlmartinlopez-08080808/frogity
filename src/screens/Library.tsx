@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { prefetch } from '../lib/pdfCache';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore, removeDoc, patchDoc, streakInfo, dayKey, COUNT_MS } from '../lib/store';
@@ -9,7 +10,7 @@ import { JobMark } from './ScanBadge';
 import { Icon } from '../ui/Icon';
 import { Pixel, Screws, Sheet, toast } from '../ui/kit';
 import { ASCII } from '../lib/ascii';
-import { HomeTabs } from './Interesting';
+import { HomeTabs } from './HomeTabs';
 import { onBack, shareFile, tap } from '../lib/native';
 
 export function useCover(doc?: DocMeta) {
@@ -137,6 +138,20 @@ export function Library({
   const docs = useStore((s) => s.docs);
   const settings = useStore((s) => s.settings);
   const days = useStore((s) => s.days);
+  const [searchText, setSearchText] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let alive = true;
+    void import('../lib/db').then(async db => {
+      const index: Record<string, string> = {};
+      for (const [key, value] of await db.entries<string>('cache')) if (key.endsWith(':search') && typeof value === 'string') index[key.slice(0,-7)] = value;
+      for (const [key, mark] of await db.entries<{ docId?: string; text?: string; note?: string; label?: string }>('marks')) {
+        const id = mark.docId || key.split(':')[0];
+        index[id] = ((index[id] ?? '') + ' ' + (mark.text ?? '') + ' ' + (mark.note ?? '') + ' ' + (mark.label ?? '')).toLowerCase();
+      }
+      if (alive) setSearchText(index);
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [docs]);
   const [filter, setFilter] = useState('all');
   const [sort, setSort] = useState<'recent' | 'title' | 'type' | 'size'>('recent');
   const [query, setQuery] = useState<string | null>(null);
@@ -176,13 +191,13 @@ export function Library({
     if (filter === 'done') l = l.filter((d) => d.finished);
     if (query) {
       const q = query.toLowerCase();
-      l = l.filter((d) => d.name.toLowerCase().includes(q) || d.fileName.toLowerCase().includes(q) || (d.author ?? '').toLowerCase().includes(q));
+      l = l.filter((d) => d.name.toLowerCase().includes(q) || d.fileName.toLowerCase().includes(q) || (d.author ?? '').toLowerCase().includes(q) || (d.tags ?? []).some(tag => tag.toLowerCase().includes(q)) || (searchText[d.id] ?? '').includes(q));
     }
     if (sort === 'title') l = [...l].sort((a, b) => a.name.localeCompare(b.name));
     else if (sort === 'type') l = [...l].sort((a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name));
     else if (sort === 'size') l = [...l].sort((a, b) => b.size - a.size);
-    return l;
-  }, [docs, filter, query, sort]);
+    return [...l].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
+  }, [docs, filter, query, sort, searchText]);
 
   // New arrivals: bring the carousel back to the front.
   useEffect(() => {
@@ -249,12 +264,12 @@ export function Library({
             <HomeTabs active="library" onPick={(t) => t === 'interesting' && onInteresting()} />
           </h1>
           <div className="lib-meta">
-            <span>@{settings.name}</span>
+            <span>{tr("@")}{settings.name}</span>
             <span>
-              <span className="hash">#</span> {docs.length}
+              <span className="hash">{tr("#")}</span> {docs.length}
             </span>
             <span className="sep" />
-            <button className="ring-btn" onClick={onStats} aria-label="Reading goal and streak">
+            <button className="ring-btn" onClick={onStats} aria-label={tr("Reading goal and streak")}>
               <Ring value={todayMs / goal} size={22} stroke={2} />
             </button>
           </div>
@@ -263,15 +278,12 @@ export function Library({
         {empty ? (
           <div className="empty">
             <pre>{ASCII.shelf}</pre>
-            <h2>A place to read</h2>
-            <p>PDFs, books, documents, sheets, scans — opened beautifully, read comfortably, no paywalls.</p>
+            <h2>{tr("A place to read")}</h2>
+            <p>{tr("PDFs, books, documents, sheets, scans — opened beautifully, read comfortably, no paywalls.")}</p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
               <button className="pill" onClick={onAdd}>
-                <Icon name="plus" size={18} /> Add a file
-              </button>
-              <button className="pill ghost" onClick={onDiscover}>
-                Find free books
-              </button>
+                <Icon name="plus" size={18} />{tr(" Add a file")}</button>
+              <button className="pill ghost" onClick={onDiscover}>{tr("Find free books")}</button>
             </div>
           </div>
         ) : (
@@ -295,7 +307,7 @@ export function Library({
             {hero && (
               <div className="hero-text" key={hero.id} style={{ animation: 'fade .35s' }}>
                 <div className="q">
-                  <b>“{hero.name}”</b>
+                  <b>{tr("“")}{hero.name}{tr("”")}</b>
                   {hero.author ? ` — ${hero.author}` : ''}
                 </div>
                 <div className="hint">{hero.finished ? '(finished — read it again?)' : hero.progress > 0.01 ? `(${Math.round(hero.progress * 100)}% in, keep going!)` : '(tap 2 read!)'}</div>
@@ -314,10 +326,10 @@ export function Library({
         <button className="streak-strip" onClick={onStats}>
           <Pixel name="flame" size={22} />
           <div className="t">
-            <b>{streak.current} day{streak.current === 1 ? '' : 's'}</b>
+            <b>{streak.current}{tr(" day")}{streak.current === 1 ? '' : 's'}</b>
             <span>{todayMs >= goal ? 'today’s page is turned.' : `${Math.max(1, Math.ceil((goal - todayMs) / 60000))} min to today’s goal`}</span>
           </div>
-          <div className="blocks" aria-label="Last 14 days">
+          <div className="blocks" aria-label={tr("Last 14 days")}>
             {last14.slice(-10).map((on, i) => (
               <i key={i} style={{ opacity: on ? 1 : 0.12 }} />
             ))}
@@ -328,7 +340,7 @@ export function Library({
       {!empty && (
         <>
           <div className="shelf-head">
-            <span className="mono">shelf · {list.length}</span>
+            <span className="mono">{tr("shelf · ")}{list.length}</span>
             <span style={{ display: 'flex', gap: 2 }}>
               <button
                 className="txtbtn mono"
@@ -347,11 +359,11 @@ export function Library({
                   tap('select');
                   setPicked((p) => (p ? null : new Set()));
                 }}
-                aria-label="Choose several to remove"
+                aria-label={tr("Choose several to remove")}
               >
                 {picked ? 'done' : 'select'}
               </button>
-              <button className="chip" onClick={() => setQuery((q) => (q === null ? '' : null))} aria-label="Search">
+              <button className="chip" onClick={() => setQuery((q) => (q === null ? '' : null))} aria-label={tr("Search")}>
                 <Icon name="search" size={18} />
               </button>
             </span>
@@ -395,8 +407,8 @@ export function Library({
       {query !== null && (
         <div className="search-bar">
           <Icon name="search" size={18} />
-          <input autoFocus placeholder="search your shelf" value={query} onChange={(e) => setQuery(e.target.value)} />
-          <button className="pill sm round ghost" onClick={() => setQuery(null)} aria-label="Close search">
+          <input autoFocus placeholder={tr("search your shelf")} value={query} onChange={(e) => setQuery(e.target.value)} />
+          <button className="pill sm round ghost" onClick={() => setQuery(null)} aria-label={tr("Close search")}>
             <Icon name="close" size={16} />
           </button>
         </div>
@@ -404,13 +416,11 @@ export function Library({
 
       {picked && (
         <div className="dock sel-bar">
-          <button className="pill ghost" onClick={() => setPicked(new Set(list.map((d) => d.id)))}>
-            All
-          </button>
+          <button className="pill ghost" onClick={() => setPicked(new Set(list.map((d) => d.id)))}>{tr("All")}</button>
           <button className="pill danger" disabled={!picked.size} onClick={() => setConfirmDel(true)}>
-            <Icon name="trash" size={18} /> Remove {picked.size || ''}
+            <Icon name="trash" size={18} />{tr(" Remove ")}{picked.size || ''}
           </button>
-          <button className="pill round ghost" onClick={() => setPicked(null)} aria-label="Cancel">
+          <button className="pill round ghost" onClick={() => setPicked(null)} aria-label={tr("Cancel")}>
             <Icon name="close" size={18} />
           </button>
         </div>
@@ -432,20 +442,19 @@ export function Library({
           }
           setConfirmDel(false);
           setPicked(null);
-          toast(`Removed ${ids.length}`);
+          toast(`Removed ${ids.length} · Undo`, undefined, () => { void import('../lib/store').then(s => s.undoRemoval()); });
         }}
       />
       <div className="dock" style={picked ? { display: 'none' } : undefined}>
         <button className="pill" onClick={onAdd} style={{ paddingLeft: 16 }}>
-          <Icon name="plus" size={18} /> Add
-        </button>
-        <button className="pill round" onClick={onScan} aria-label="Scan a document">
+          <Icon name="plus" size={18} />{tr(" Add")}</button>
+        <button className="pill round" onClick={onScan} aria-label={tr("Scan a document")}>
           <Pixel name="scan" size={18} />
         </button>
-        <button className="pill round" onClick={onStats} aria-label="Streak and stats">
+        <button className="pill round" onClick={onStats} aria-label={tr("Streak and stats")}>
           <Pixel name="sprout" size={18} />
         </button>
-        <button className="pill round" onClick={onSettings} aria-label="Settings">
+        <button className="pill round" onClick={onSettings} aria-label={tr("Settings")}>
           <Pixel name="sun" size={18} />
         </button>
       </div>
@@ -486,7 +495,7 @@ function ShelfRow({ doc, onOpen, onMenu, picked }: { doc: DocMeta; onOpen: () =>
         <JobMark id={doc.id} className="on-row" />
         <div className="sub">
           {KIND_LABEL[doc.kind]}
-          {doc.finished ? ' · finished' : doc.progress > 0.01 ? ` · ${Math.round(doc.progress * 100)}%` : ''} · {ago(doc.openedAt)}
+          {doc.finished ? ' · finished' : doc.progress > 0.01 ? ` · ${Math.round(doc.progress * 100)}%` : ''}{tr(" · ")}{ago(doc.openedAt)}
         </div>
         {doc.progress > 0.01 && !doc.finished && (
           <div className="minibar">
@@ -497,7 +506,7 @@ function ShelfRow({ doc, onOpen, onMenu, picked }: { doc: DocMeta; onOpen: () =>
       <span
         className="dots"
         role="button"
-        aria-label="More"
+        aria-label={tr("More")}
         onClick={(e) => {
           e.stopPropagation();
           onMenu();
@@ -524,7 +533,7 @@ function DocMenu({ doc, onClose, onOpen, onConvert, onSelect }: { doc: DocMeta |
       {d && (
         <div className="sheet-body">
           <div className="mono muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 2, marginBottom: 12 }}>
-            {d.fileName} · {formatSize(d.size)}
+            {d.fileName}{tr(" · ")}{formatSize(d.size)}
           </div>
           {renaming ? (
             <form
@@ -537,29 +546,25 @@ function DocMenu({ doc, onClose, onOpen, onConvert, onSelect }: { doc: DocMeta |
               }}
             >
               <input autoFocus value={name} onChange={(e) => setName(e.target.value)} style={{ flex: 1, height: 46, borderRadius: 14, border: '1px solid var(--line-2)', padding: '0 14px', background: 'var(--surface-2)' }} />
-              <button className="pill">Save</button>
+              <button className="pill">{tr("Save")}</button>
             </form>
           ) : (
             <div className="actions">
+              <button className="action" onClick={async () => { await patchDoc(d.id, { pinned: !d.pinned }); onClose(); }}>{d.pinned ? 'Unpin book' : 'Pin to top'}</button>
+              <button className="action" onClick={async () => { const value = window.prompt('Collections / tags (comma separated)', (d.tags ?? []).join(', ')); if (value !== null) { await patchDoc(d.id, { tags: [...new Set(value.split(',').map(t => t.trim()).filter(Boolean))].slice(0, 20) }); onClose(); } }}>{tr("Edit collections / tags")}</button>
               <button className="action" onClick={() => (onClose(), onOpen(d.id))}>
                 <span className="ic">
                   <Icon name="book" />
-                </span>
-                Open
-              </button>
+                </span>{tr("Open")}</button>
               <button className="action" onClick={() => (onClose(), onConvert(d))}>
                 <span className="ic">
                   <Pixel name="convert" size={16} />
-                </span>
-                Convert…
-              </button>
+                </span>{tr("Convert…")}</button>
               {d.url && (
                 <button className="action" onClick={() => (onClose(), window.open(d.url, '_blank', 'noopener'))}>
                   <span className="ic">
                     <Icon name="globe" />
-                  </span>
-                  Open original page
-                </button>
+                  </span>{tr("Open original page")}</button>
               )}
               {['pdf', 'docx', 'slides'].includes(d.kind) && (
                 <button
@@ -573,16 +578,12 @@ function DocMenu({ doc, onClose, onOpen, onConvert, onSelect }: { doc: DocMeta |
                 >
                   <span className="ic">
                     <Icon name="image" />
-                  </span>
-                  Refresh cover
-                </button>
+                  </span>{tr("Refresh cover")}</button>
               )}
               <button className="action" onClick={() => setRenaming(true)}>
                 <span className="ic">
                   <Icon name="edit" />
-                </span>
-                Rename
-              </button>
+                </span>{tr("Rename")}</button>
               <button
                 className="action"
                 onClick={async () => {
@@ -592,9 +593,7 @@ function DocMenu({ doc, onClose, onOpen, onConvert, onSelect }: { doc: DocMeta |
               >
                 <span className="ic">
                   <Icon name="share" />
-                </span>
-                Share original
-              </button>
+                </span>{tr("Share original")}</button>
               <button
                 className="action"
                 onClick={async () => {
@@ -604,9 +603,7 @@ function DocMenu({ doc, onClose, onOpen, onConvert, onSelect }: { doc: DocMeta |
               >
                 <span className="ic">
                   <Pixel name="page" size={16} />
-                </span>
-                Share as a book card
-              </button>
+                </span>{tr("Share as a book card")}</button>
               <button
                 className="action"
                 onClick={async () => {
@@ -623,9 +620,7 @@ function DocMenu({ doc, onClose, onOpen, onConvert, onSelect }: { doc: DocMeta |
               <button className="action" onClick={() => (onClose(), onSelect(d))}>
                 <span className="ic">
                   <Icon name="check" />
-                </span>
-                Select several…
-              </button>
+                </span>{tr("Select several…")}</button>
               <button
                 className="action danger"
                 onClick={() => setConfirm(true)}
@@ -648,7 +643,7 @@ function DocMenu({ doc, onClose, onOpen, onConvert, onSelect }: { doc: DocMeta |
             onConfirm={async () => {
               if (d.uri) (await import('../lib/linked')).ignoreUri(d.uri);
               await removeDoc(d.id);
-              toast(d.uri ? 'Removed from shelf' : 'Deleted');
+              toast(d.uri ? 'Removed from shelf · Undo' : 'Deleted · Undo', undefined, () => { void import('../lib/store').then(s => s.undoRemoval()); });
               setConfirm(false);
               onClose();
             }}

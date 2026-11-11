@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { EMPTY_PROFILE, autoFill, exportFilled, forgetSignature, loadProfile, loadSignature, saveProfile, saveSignature, today, type FormField, type FormModel, type Profile } from '../lib/forms';
 import { onBack, saveFile, shareFile, tap } from '../lib/native';
@@ -81,25 +82,18 @@ function SignaturePad({ saved, onDone, onCancel }: { saved?: string; onDone: (pn
 
   return (
     <div className="sigpad">
-      <canvas ref={cv} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} aria-label="Draw your signature here" />
-      {empty && <span className="hint mono">sign here with your finger</span>}
+      <canvas ref={cv} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} aria-label={tr("Draw your signature here")} />
+      {empty && <span className="hint mono">{tr("sign here with your finger")}</span>}
       <div className="sigbar">
-        <button className="pill sm ghost" onClick={clear} disabled={empty}>
-          Clear
-        </button>
+        <button className="pill sm ghost" onClick={clear} disabled={empty}>{tr("Clear")}</button>
         {saved && (
-          <button className="pill sm ghost" onClick={() => onDone(saved, false)}>
-            Use my saved one
-          </button>
+          <button className="pill sm ghost" onClick={() => onDone(saved, false)}>{tr("Use my saved one")}</button>
         )}
         <span className="grow" />
         <label className="keep mono">
-          <Toggle on={keep} onChange={setKeep} label="Remember my signature" /> keep
-        </label>
-        <button className="pill sm" onClick={finish} disabled={empty}>
-          Done
-        </button>
-        <button className="pill sm round ghost" onClick={onCancel} aria-label="Cancel">
+          <Toggle on={keep} onChange={setKeep} label="Remember my signature" />{tr(" keep")}</label>
+        <button className="pill sm" onClick={finish} disabled={empty}>{tr("Done")}</button>
+        <button className="pill sm round ghost" onClick={onCancel} aria-label={tr("Cancel")}>
           <Icon name="close" size={16} />
         </button>
       </div>
@@ -193,16 +187,15 @@ export function FormSheet({
 
   if (!open) return null;
   return (
-    <div className="formfill" role="dialog" aria-label="Fill this form">
+    <div className="formfill" role="dialog" aria-label={tr("Fill this form")}>
       <div className="ff-top">
-        <button className="r-ibtn" onClick={onClose} aria-label="Back">
+        <button className="r-ibtn" onClick={onClose} aria-label={tr("Back")}>
           <Icon name="back" size={24} />
         </button>
         <div className="grow">
-          <h2>Fill this form</h2>
+          <h2>{tr("Fill this form")}</h2>
           <span className="mono">
-            {done} of {model.fields.length} filled
-          </span>
+            {done}{tr(" of ")}{model.fields.length}{tr(" filled")}</span>
         </div>
       </div>
       <div className="ff-bar" aria-hidden>
@@ -210,17 +203,14 @@ export function FormSheet({
       </div>
       <div className="ff-actions">
         <button className="pill sm ghost" onClick={() => (tap('medium'), setValues((v) => autoFill(model.fields, profile, v)), toast('Filled in what I know'))}>
-          <Pixel name="spark" size={14} /> Fill from my details
-        </button>
-        <button className="pill sm ghost" onClick={() => setDetails(true)}>
-          My details
-        </button>
+          <Pixel name="spark" size={14} />{tr(" Fill from my details")}</button>
+        <button className="pill sm ghost" onClick={() => setDetails(true)}>{tr("My details")}</button>
       </div>
 
       <div className="ff-list">
         {groups.map(([page, fs]) => (
           <section key={page}>
-            {groups.length > 1 && <h3 className="mono">page {page}</h3>}
+            {groups.length > 1 && <h3 className="mono">{tr("page ")}{page}</h3>}
             {fs.map((f) => (
               <div className={`ff-card${isDone(f) ? ' done' : ''}${signing === f.id ? ' signing' : ''}`} key={f.id}>
                 <label className="ff-label mono" htmlFor={f.id}>
@@ -231,9 +221,7 @@ export function FormSheet({
                 {f.kind === 'date' && (
                   <div className="ff-date">
                     <input id={f.id} type="date" value={values[f.id] ?? ''} onChange={(e) => set(f.id, e.target.value)} />
-                    <button className="pill sm ghost" onClick={() => set(f.id, today())}>
-                      Today
-                    </button>
+                    <button className="pill sm ghost" onClick={() => set(f.id, today())}>{tr("Today")}</button>
                   </div>
                 )}
                 {f.kind === 'check' && (
@@ -253,7 +241,7 @@ export function FormSheet({
                     </div>
                   ) : (
                     <select id={f.id} value={values[f.id] ?? ''} onChange={(e) => set(f.id, e.target.value)}>
-                      <option value="">Choose…</option>
+                      <option value="">{tr("Choose…")}</option>
                       {(f.options ?? []).map((o) => (
                         <option key={o}>{o}</option>
                       ))}
@@ -276,7 +264,7 @@ export function FormSheet({
                     />
                   ) : (
                     <button className={`ff-sign${sigs[f.id] ? ' has' : ''}`} onClick={() => setSigning(f.id)}>
-                      {sigs[f.id] ? <img src={sigs[f.id]} alt="Your signature" /> : <span className="mono">tap to sign</span>}
+                      {sigs[f.id] ? <img src={sigs[f.id]} alt={tr("Your signature")} /> : <span className="mono">{tr("tap to sign")}</span>}
                     </button>
                   ))}
               </div>
@@ -287,16 +275,13 @@ export function FormSheet({
       </div>
 
       <div className="ff-foot">
-        <button className="pill" onClick={() => setExporting(true)}>
-          Export PDF <Icon name="right" size={16} stroke={2.4} />
+        <button className="pill" onClick={() => setExporting(true)}>{tr("Export PDF ")}<Icon name="right" size={16} stroke={2.4} />
         </button>
       </div>
 
-      <Sheet open={details} onClose={() => setDetails(false)} title="My details">
+      <Sheet open={details} onClose={() => setDetails(false)} title={tr("My details")}>
         <div className="sheet-body">
-          <p className="muted" style={{ marginTop: 0, fontSize: 13.5 }}>
-            Kept only on this phone. Used to fill the obvious boxes (name, email, address…) — you can always change what it puts in.
-          </p>
+          <p className="muted" style={{ marginTop: 0, fontSize: 13.5 }}>{tr("Kept only on this phone. Used to fill the obvious boxes (name, email, address…) — you can always change what it puts in.")}</p>
           {(
             [
               ['name', 'Full name'],
@@ -320,9 +305,7 @@ export function FormSheet({
                 setDetails(false);
                 toast('Saved on this phone');
               }}
-            >
-              Save and fill
-            </button>
+            >{tr("Save and fill")}</button>
             {saved && (
               <button
                 className="pill ghost"
@@ -331,24 +314,22 @@ export function FormSheet({
                   setSaved(undefined);
                   toast('Saved signature removed');
                 }}
-              >
-                Forget my signature
-              </button>
+              >{tr("Forget my signature")}</button>
             )}
           </div>
         </div>
       </Sheet>
 
-      <Sheet open={exporting} onClose={() => (busy ? undefined : setExporting(false))} title="Export">
+      <Sheet open={exporting} onClose={() => (busy ? undefined : setExporting(false))} title={tr("Export")}>
         <div className="sheet-body">
           <p className="muted" style={{ marginTop: 0, fontSize: 13.5 }}>
-            {done} of {model.fields.length} fields filled{done < model.fields.length ? ' — you can still go back and finish.' : '.'}
+            {done}{tr(" of ")}{model.fields.length}{tr(" fields filled")}{done < model.fields.length ? ' — you can still go back and finish.' : '.'}
           </p>
           {model.kind === 'acro' && (
             <div className="row" style={{ padding: '4px 0' }}>
               <div className="grow">
-                <div className="row-label">Lock the answers in</div>
-                <div className="row-sub">Looks the same in every PDF app and can’t be edited by accident.</div>
+                <div className="row-label">{tr("Lock the answers in")}</div>
+                <div className="row-sub">{tr("Looks the same in every PDF app and can’t be edited by accident.")}</div>
               </div>
               <Toggle on={flatten} onChange={setFlatten} label="Lock the answers in" />
             </div>
@@ -357,23 +338,17 @@ export function FormSheet({
             <button className="action" disabled={!!busy} onClick={() => run('save')}>
               <span className="ic">
                 <Pixel name="down" size={16} />
-              </span>
-              Save PDF to Documents/Frogity
-              {busy === 'save' && <PixelLoader size={3} gap={1.5} />}
+              </span>{tr("Save PDF to Documents/Frogity")}{busy === 'save' && <PixelLoader size={3} gap={1.5} />}
             </button>
             <button className="action" disabled={!!busy} onClick={() => run('share')}>
               <span className="ic">
                 <Icon name="share" />
-              </span>
-              Share or email…
-              {busy === 'share' && <PixelLoader size={3} gap={1.5} />}
+              </span>{tr("Share or email…")}{busy === 'share' && <PixelLoader size={3} gap={1.5} />}
             </button>
             <button className="action" disabled={!!busy} onClick={() => run('library')}>
               <span className="ic">
                 <Pixel name="book" size={16} />
-              </span>
-              Add to my library
-              {busy === 'library' && <PixelLoader size={3} gap={1.5} />}
+              </span>{tr("Add to my library")}{busy === 'library' && <PixelLoader size={3} gap={1.5} />}
             </button>
           </div>
         </div>
