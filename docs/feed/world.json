@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-10T10:21:21.768Z",
+ "built": "2026-11-11T19:46:24.391Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -2564,22 +2564,6 @@
   },
   {
    "k": "election",
-   "t": "Maltese general election",
-   "w": "Malta",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "mt"
-   ],
-   "icon": {
-    "cc": "mt"
-   },
-   "level": "national",
-   "wiki": "2027 Maltese general election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Angolan parliamentary election",
    "w": "Angola",
    "a": "2027-01-01",
@@ -2656,6 +2640,22 @@
    },
    "level": "national",
    "wiki": "2027 Nicaraguan presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Maltese general election",
+   "w": "Malta",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "mt"
+   ],
+   "icon": {
+    "cc": "mt"
+   },
+   "level": "national",
+   "wiki": "2027 Maltese general election",
    "auto": true
   },
   {
@@ -2846,6 +2846,21 @@
    },
    "level": "national",
    "wiki": "2027 German presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Cameroonian parliamentary election",
+   "w": "Cameroon",
+   "a": "2027-02-07",
+   "cc": [
+    "cm"
+   ],
+   "icon": {
+    "cc": "cm"
+   },
+   "level": "national",
+   "wiki": "2026 Cameroonian parliamentary election",
    "auto": true
   },
   {
