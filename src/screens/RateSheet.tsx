@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import { Sheet, toast } from '../ui/kit';
 import { APP_VERSION, PLAY_URL, SUPPORT_EMAIL } from '../lib/config';
@@ -32,8 +33,8 @@ export function RateSheet({ open, onClose, streak }: { open: boolean; onClose: (
     <Sheet open={open} onClose={() => onClose(false)} title={`${streak} days in a row`}>
       <div className="sheet-body rate">
         <Art name={stars === 0 ? 'froggy:happy' : stars >= 4 ? 'froggy:bigSmile' : 'froggy:worried'} />
-        <p className="rate-lead">Enjoying Frogity so far?</p>
-        <div className="rate-stars" role="radiogroup" aria-label="Your rating">
+        <p className="rate-lead">{tr("Enjoying Frogity so far?")}</p>
+        <div className="rate-stars" role="radiogroup" aria-label={tr("Your rating")}>
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
@@ -45,28 +46,20 @@ export function RateSheet({ open, onClose, streak }: { open: boolean; onClose: (
                 setStars(n);
                 tap('select');
               }}
-            >
-              ★
-            </button>
+            >{tr("★")}</button>
           ))}
         </div>
         {stars > 0 && (
           <>
             <p className="rate-sub">{stars >= 4 ? 'Lovely. What do you like most?' : 'Sorry about that. What would make it better?'}</p>
-            <textarea className="field rate-note" rows={3} placeholder="A line is plenty (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
-            <button className="action rate-send" onClick={send}>
-              Send feedback — win a freeze day
-            </button>
+            <textarea className="field rate-note" rows={3} placeholder={tr("A line is plenty (optional)")} value={note} onChange={(e) => setNote(e.target.value)} />
+            <button className="action rate-send" onClick={send}>{tr("Send feedback — win a freeze day")}</button>
             {stars >= 4 && (
-              <button className="rate-play" onClick={() => (openExternal(PLAY_URL), onClose(true))}>
-                Rate on Google Play
-              </button>
+              <button className="rate-play" onClick={() => (openExternal(PLAY_URL), onClose(true))}>{tr("Rate on Google Play")}</button>
             )}
           </>
         )}
-        <button className="rate-later" onClick={() => onClose(false)}>
-          Not now
-        </button>
+        <button className="rate-later" onClick={() => onClose(false)}>{tr("Not now")}</button>
       </div>
     </Sheet>
   );

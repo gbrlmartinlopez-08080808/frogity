@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { NEURAL_PREFIX, NEURAL_VOICES, TIER_INFO, VOICE_LANGS, neuralDownload, neuralRemove, sampleUrl, type NeuralVoice, type Tier } from '../lib/neural';
 import { openVoiceInstall, type Voice } from '../lib/tts';
@@ -93,13 +94,13 @@ export function VoiceSheet({
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: 'block' }}>
               {v.label}
-              {v.rec && <b className="vtag">for you</b>}
+              {v.rec && <b className="vtag">{tr("for you")}</b>}
             </span>
             <small className="muted mono" style={{ fontSize: 10.5 }}>
               {busy ? `downloading ${Math.round((dl?.p ?? 0) * 100)}%` : `${v.note}${have ? ' · installed' : ` · ${v.mb} MB`}`}
             </small>
           </span>
-          {on ? <Icon name="check" /> : !have && !busy ? <span className="mono" style={{ fontSize: 11 }}>get</span> : null}
+          {on ? <Icon name="check" /> : !have && !busy ? <span className="mono" style={{ fontSize: 11 }}>{tr("get")}</span> : null}
         </button>
         {have && !on && (
           <button
@@ -122,22 +123,20 @@ export function VoiceSheet({
     return voices.find((v) => v.id === id)?.name ?? (id ? 'Phone voice' : 'Automatic');
   };
   return (
-    <Sheet open={open} onClose={onClose} title="Voice">
+    <Sheet open={open} onClose={onClose} title={tr("Voice")}>
       <div className="sheet-body">
         <div className="vnow">
-          <small className="mono muted">reading with</small>
+          <small className="mono muted">{tr("reading with")}</small>
           <b>{nameOf(s.ttsVoice)}</b>
         </div>
         <div className="row" style={{ padding: '4px 0 10px' }}>
           <div className="grow">
-            <div className="row-label" style={{ fontSize: 14.5 }}>Match each book’s language</div>
-            <div className="row-sub">A Spanish book is read in Spanish, an English one in English — with voices you have installed.</div>
+            <div className="row-label" style={{ fontSize: 14.5 }}>{tr("Match each book’s language")}</div>
+            <div className="row-sub">{tr("A Spanish book is read in Spanish, an English one in English — with voices you have installed.")}</div>
           </div>
           <Toggle on={s.autoVoice !== false} onChange={(v) => updateSettings({ autoVoice: v })} label="Match each book's language" />
         </div>
-        <p className="muted" style={{ fontSize: 12.5, margin: '0 0 6px' }}>
-          Tap ▶ to hear a voice before you download it. <b>Light</b> voices start and flow on any phone; <b>HD</b> voices sound richer but need a recent one.
-        </p>
+        <p className="muted" style={{ fontSize: 12.5, margin: '0 0 6px' }}>{tr("Tap ▶ to hear a voice before you download it. ")}<b>{tr("Light")}</b>{tr(" voices start and flow on any phone; ")}<b>{tr("HD")}</b>{tr(" voices sound richer but need a recent one.")}</p>
         {order.map((code) => {
           const list = NEURAL_VOICES.filter((v) => v.lang.slice(0, 2) === code);
           const label = VOICE_LANGS.find((l) => l.code === code)!.label;
@@ -147,7 +146,7 @@ export function VoiceSheet({
             <div key={code} className="vlang">
               <button className="vlang-h" onClick={() => setOpenLang(here ? null : code)} aria-expanded={here}>
                 <b>{label}</b>
-                {code === docLang ? <span className="vtag">this book</span> : code === mine && <span className="vtag">your language</span>}
+                {code === docLang ? <span className="vtag">{tr("this book")}</span> : code === mine && <span className="vtag">{tr("your language")}</span>}
                 <small className="mono muted">{installed ? `${installed} installed` : `${list.length} voices`}</small>
                 <Icon name={here ? 'up' : 'down'} size={16} />
               </button>
@@ -169,18 +168,16 @@ export function VoiceSheet({
         })}
         <div className="vlang">
           <button className="vlang-h" onClick={() => setSys((x) => !x)} aria-expanded={sys}>
-            <b>This phone’s own voices</b>
-            <small className="mono muted">instant · many accents</small>
+            <b>{tr("This phone’s own voices")}</b>
+            <small className="mono muted">{tr("instant · many accents")}</small>
             <Icon name={sys ? 'up' : 'down'} size={16} />
           </button>
           {sys && (
             <div style={{ paddingTop: 6 }}>
               {isNative && (
-                <button className="pill ghost sm" style={{ margin: '0 0 10px' }} onClick={() => openVoiceInstall()}>
-                  Get more voices from Android
-                </button>
+                <button className="pill ghost sm" style={{ margin: '0 0 10px' }} onClick={() => openVoiceInstall()}>{tr("Get more voices from Android")}</button>
               )}
-              {!voices.length && <p className="muted mono" style={{ fontSize: 12 }}>No voices reported by the system. Install voices in Android Settings → Text-to-speech.</p>}
+              {!voices.length && <p className="muted mono" style={{ fontSize: 12 }}>{tr("No voices reported by the system. Install voices in Android Settings → Text-to-speech.")}</p>}
               <div className="actions">
                 {[...voices]
                   .sort((a, b) => Number(b.lang.startsWith(docLang)) - Number(a.lang.startsWith(docLang)) || b.score - a.score)
@@ -199,7 +196,7 @@ export function VoiceSheet({
                         {v.lang.slice(0, 2)}
                       </span>
                       <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
-                      {v.natural && <span className="mono" style={{ fontSize: 10, opacity: 0.6 }}>natural</span>}
+                      {v.natural && <span className="mono" style={{ fontSize: 10, opacity: 0.6 }}>{tr("natural")}</span>}
                       {(s.ttsVoice === v.id || (!s.ttsVoice && bestId === v.id)) && <Icon name="check" />}
                     </button>
                   ))}

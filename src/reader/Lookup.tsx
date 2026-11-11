@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { define, origin, wiki, normalizeWord, sameSubject, type Definition, type Origin, type WikiCard, type WikiImage } from '../lib/lookup';
@@ -72,8 +73,8 @@ export function LookupCard({ word, lang = 'en', onClose }: { word: string | null
           <h2>{title}</h2>
           {tab === 'define' && def?.phonetic && <span className="lk-sub mono">{def.phonetic}</span>}
           {tab === 'wiki' && wk?.description && <span className="lk-sub">{wk.description}</span>}
-          {tab === 'define' && !def?.phonetic && def?.source && <span className="lk-sub">via {def.source}</span>}
-          {tab === 'origin' && <span className="lk-sub">word origin & roots</span>}
+          {tab === 'define' && !def?.phonetic && def?.source && <span className="lk-sub">{tr("via ")}{def.source}</span>}
+          {tab === 'origin' && <span className="lk-sub">{tr("word origin & roots")}</span>}
         </div>
         <div className="lk-tabs">
           {(['define', 'origin', 'wiki'] as Tab[]).map((t) => (
@@ -91,14 +92,11 @@ export function LookupCard({ word, lang = 'en', onClose }: { word: string | null
         </div>
         <div className="lk-body">
           {failed[tab] ? (
-            <p className="lk-muted">
-              Couldn’t reach {tab === 'wiki' ? 'Wikipedia' : tab === 'origin' ? 'Wiktionary' : 'the dictionary'} right now.{' '}
-              <button style={{ color: '#6fa8ff', fontWeight: 600 }} onClick={() => setAttempt((a) => a + 1)}>
-                Try again
-              </button>
+            <p className="lk-muted">{tr("Couldn’t reach ")}{tab === 'wiki' ? 'Wikipedia' : tab === 'origin' ? 'Wiktionary' : 'the dictionary'}{tr(" right now.")}{' '}
+              <button style={{ color: '#6fa8ff', fontWeight: 600 }} onClick={() => setAttempt((a) => a + 1)}>{tr("Try again")}</button>
             </p>
           ) : offline && loading ? (
-            <p className="lk-muted">You're offline. Lookups need a connection — everything else works offline.</p>
+            <p className="lk-muted">{tr("You're offline. Lookups need a connection — everything else works offline.")}</p>
           ) : loading ? (
             <div style={{ padding: '18px 0' }}>
               <PixelLoader size={5} label="looking up" />
@@ -117,12 +115,12 @@ export function LookupCard({ word, lang = 'en', onClose }: { word: string | null
                         </li>
                       ))}
                     </ol>
-                    {m.synonyms.length > 0 && <div className="lk-syn mono">≈ {m.synonyms.slice(0, 5).join(', ')}</div>}
+                    {m.synonyms.length > 0 && <div className="lk-syn mono">{tr("≈ ")}{m.synonyms.slice(0, 5).join(', ')}</div>}
                   </div>
                 ))}
               </>
             ) : (
-              <p className="lk-muted">No dictionary entry for “{w}”.</p>
+              <p className="lk-muted">{tr("No dictionary entry for “")}{w}{tr("”.")}</p>
             )
           ) : tab === 'origin' ? (
             ety ? (
@@ -143,22 +141,21 @@ export function LookupCard({ word, lang = 'en', onClose }: { word: string | null
                 ))}
               </>
             ) : (
-              <p className="lk-muted">No etymology found for “{w}”.</p>
+              <p className="lk-muted">{tr("No etymology found for “")}{w}{tr("”.")}</p>
             )
           ) : wk ? (
             wk.html ? (
               <div className="lk-rich" dangerouslySetInnerHTML={{ __html: wk.html }} />
             ) : (
-              <p className="lk-muted">No article for “{w}”, but here are pictures from Wikimedia Commons.</p>
+              <p className="lk-muted">{tr("No article for “")}{w}{tr("”, but here are pictures from Wikimedia Commons.")}</p>
             )
           ) : (
-            <p className="lk-muted">Nothing on Wikipedia for “{w}”.</p>
+            <p className="lk-muted">{tr("Nothing on Wikipedia for “")}{w}{tr("”.")}</p>
           )}
         </div>
         <div className="lk-foot">
           <span className="lk-credit">{tab === 'define' || tab === 'origin' ? 'Wiktionary · CC BY-SA 4.0' : 'Wikipedia · CC BY-SA 4.0 · pictures: Wikimedia'}</span>
-          <button onClick={() => openExternal(moreUrl)}>
-            More <Icon name="right" size={14} />
+          <button onClick={() => openExternal(moreUrl)}>{tr("More ")}<Icon name="right" size={14} />
           </button>
         </div>
       </div>
@@ -196,11 +193,11 @@ function Gallery({ images, onOpen, onBroken }: { images: WikiImage[]; onOpen: (i
           </button>
         ))}
       </div>
-      {images.length > 1 && <span className="lk-count mono">{Math.min(idx, images.length - 1) + 1}/{images.length}</span>}
+      {images.length > 1 && <span className="lk-count mono">{Math.min(idx, images.length - 1) + 1}{tr("/")}{images.length}</span>}
       {cur && (
         <div className="lk-cap">
           {cur.title.length > 52 ? cur.title.slice(0, 52) + '…' : cur.title}
-          {cur.credit ? <span> · {cur.credit}</span> : null}
+          {cur.credit ? <span>{tr(" · ")}{cur.credit}</span> : null}
         </div>
       )}
     </div>
@@ -238,12 +235,12 @@ export function SelectionMenu({
   if (!rect) return null;
   return createPortal(
     <div ref={ref} className="selmenu" style={{ top, left: centre }} onMouseDown={(e) => e.preventDefault()} onTouchStart={(e) => e.stopPropagation()}>
-      <button onClick={onDefine}>Define</button>
-      {onHighlight && <button onClick={onHighlight}>Highlight</button>}
-      {onListen && <button onClick={onListen}>Listen</button>}
-      {onAsk && <button onClick={onAsk}>Ask</button>}
-      <button onClick={onCopy}>Copy</button>
-      <button onClick={onShare} aria-label="Share">
+      <button onClick={onDefine}>{tr("Define")}</button>
+      {onHighlight && <button onClick={onHighlight}>{tr("Highlight")}</button>}
+      {onListen && <button onClick={onListen}>{tr("Listen")}</button>}
+      {onAsk && <button onClick={onAsk}>{tr("Ask")}</button>}
+      <button onClick={onCopy}>{tr("Copy")}</button>
+      <button onClick={onShare} aria-label={tr("Share")}>
         <Icon name="share" size={16} />
       </button>
     </div>,
@@ -289,10 +286,10 @@ export function ZoomViewer({ src, mask, ratio, onClose }: { src: string | null; 
       <div style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${t.s})` }} className="zoomer-inner">
         {mask ? <span className="mask" style={{ ['--m' as string]: `url(${src})`, aspectRatio: String(ratio ?? 1) }} /> : <img src={src} alt="" draggable={false} />}
       </div>
-      <button className="pill round zoomer-close" onClick={onClose} onPointerDown={(e) => e.stopPropagation()} aria-label="Close">
+      <button className="pill round zoomer-close" onClick={onClose} onPointerDown={(e) => e.stopPropagation()} aria-label={tr("Close")}>
         <Icon name="close" size={18} />
       </button>
-      <div className="zoomer-hint mono">pinch to zoom · double-tap</div>
+      <div className="zoomer-hint mono">{tr("pinch to zoom · double-tap")}</div>
     </div>,
     document.body,
   );

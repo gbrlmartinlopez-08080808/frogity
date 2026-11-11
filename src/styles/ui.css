@@ -1343,7 +1343,7 @@
   color: #ffd23f;
   text-shadow: 0 0 8px rgba(255, 210, 63, 0.7);
 }
-.toast.award {
+.frogity-toast.award {
   background: linear-gradient(110deg, #1b3cff, #6a4cff 55%, #e8cf9a);
   color: #fff;
   box-shadow: 0 10px 34px rgba(60, 70, 255, 0.35);
@@ -1811,7 +1811,7 @@
   color: var(--ink);
 }
 
-.toast.tappable {
+.frogity-toast.tappable {
   cursor: pointer;
   pointer-events: auto;
   padding: 12px 18px;
@@ -1856,7 +1856,7 @@
 .ob-chat .a.t {
   width: auto;
 }
-.toast.tappable {
+.frogity-toast.tappable {
   white-space: normal;
   max-width: 86vw;
   text-align: center;
@@ -2298,7 +2298,7 @@
   min-width: 0;
 }
 /* a message you can tap: at most two calm lines, not a pill stretched into a blob */
-.toast.tappable {
+.frogity-toast.tappable {
   border-radius: 18px;
   max-width: min(380px, calc(100vw - 32px));
   width: max-content;

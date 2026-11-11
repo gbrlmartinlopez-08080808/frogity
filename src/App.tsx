@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLang } from './lib/i18n';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { init, useStore, updateSettings, getState, dayKey, applyFreeze, streakInfo } from './lib/store';
 import * as db from './lib/db';
 import { importFile, importText, upgradeCovers } from './lib/library';
@@ -10,24 +11,24 @@ import { Library } from './screens/Library';
 import { Reader } from './reader/Reader';
 import { StatsBubble } from './screens/Stats';
 import { AddSheet } from './screens/AddSheet';
-import { Discover } from './screens/Discover';
-import { Interesting } from './screens/Interesting';
+const Discover = lazy(() => import('./screens/Discover').then(m => ({ default: m.Discover })));
+const Interesting = lazy(() => import('./screens/Interesting').then(m => ({ default: m.Interesting })));
 import { JobsHost } from './screens/ScanBadge';
 import { resumeScans } from './lib/scan';
-import { prefetch as prefetchCatalog } from './lib/catalog';
+
 import { isGuide } from './lib/harvest';
 import { refreshReminder } from './lib/reminders';
 import { importUrl, looksLikeUrl } from './lib/links';
-import { Settings } from './screens/Settings';
-import { About } from './screens/About';
+const Settings = lazy(() => import('./screens/Settings').then(m => ({ default: m.Settings })));
+const About = lazy(() => import('./screens/About').then(m => ({ default: m.About })));
 import { RateSheet } from './screens/RateSheet';
-import { addSamples } from './lib/samples';
+
 import { Tour } from './screens/Tour';
 import { initWorkNotice } from './lib/workNotice';
 import { ensureNaturalVoice, resumeVoice } from './lib/voices';
 import { Onboarding, type Finish } from './screens/Onboarding';
-import { ConvertSheet } from './screens/Convert';
-import { ScanSheet } from './screens/Scan';
+const ConvertSheet = lazy(() => import('./screens/Convert').then(m => ({ default: m.ConvertSheet })));
+const ScanSheet = lazy(() => import('./screens/Scan').then(m => ({ default: m.ScanSheet })));
 import { PixelLoader, Toasts, toast } from './ui/kit';
 import welcome from './samples/welcome.md?raw';
 
@@ -48,6 +49,9 @@ async function thumbB64(b: Blob, side: number): Promise<string | undefined> {
 }
 
 export default function App() {
+  useLang();
+  const [startupError, setStartupError] = useState('');
+  const boot = () => { setStartupError(''); void init().catch(e => setStartupError(e.message || 'Storage unavailable')); };
   const ready = useStore((s) => s.ready);
   const docs = useStore((s) => s.docs);
   const appTheme = useStore((s) => s.settings.appTheme);
@@ -70,13 +74,14 @@ export default function App() {
   const [addOpen, setAddOpen] = useState(false);
   const [discover, setDiscover] = useState<false | { q?: string }>(false);
   const [interesting, setInteresting] = useState(false);
+  const linkAbort = useRef<AbortController | null>(null);
   const [linkBusy, setLinkBusy] = useState<string | null>(null);
   const [linkErr, setLinkErr] = useState<string | null>(null);
   const fileIn = useRef<HTMLInputElement>(null);
   const camIn = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    init();
+    boot();
     initWorkNotice();
     initBackButton();
     manageSelectionMenu();
@@ -128,9 +133,11 @@ export default function App() {
     setLinkErr(null);
     if (!looksLikeUrl(url)) return setLinkErr('That doesn’t look like a web address. Try something like example.com/article');
     if (!navigator.onLine) return setLinkErr('You’re offline. Saving a page needs a connection.');
+    linkAbort.current?.abort();
+    linkAbort.current = new AbortController();
     setLinkBusy('fetching');
     try {
-      const m = await importUrl(url, (l) => setLinkBusy(l));
+      const m = await importUrl(url, (l) => setLinkBusy(l), linkAbort.current.signal);
       setAddOpen(false);
       tap();
       toast('Saved to your shelf');
@@ -199,13 +206,6 @@ export default function App() {
       document.removeEventListener('visibilitychange', go);
       window.removeEventListener('quire:goal', go);
     };
-  }, [ready]);
-
-  // warm the free-books catalogue quietly, so opening it is instant
-  useEffect(() => {
-    if (!ready) return;
-    const t = setTimeout(prefetchCatalog, 6000);
-    return () => clearTimeout(t);
   }, [ready]);
 
   // today's goal reached → say so; at the end of a day that reached it, the light is awarded
@@ -367,13 +367,6 @@ export default function App() {
     return () => clearTimeout(t);
   }, [ready]);
 
-  // people who already finished the introduction get the current set of samples once, too
-  useEffect(() => {
-    if (!ready || !onboarded) return;
-    const t = setTimeout(() => addSamples(Date.now() - 5000), 3000);
-    return () => clearTimeout(t);
-  }, [ready, onboarded]);
-
   // the tour belongs to the library: if a book (or anything else) opens over it, it steps aside and comes back later
   useEffect(() => {
     if (tour && !idle) setTour(false);
@@ -400,8 +393,9 @@ export default function App() {
     db.put('kv', 'tour', 'pending'); // the home-screen tour runs once the library is on screen
     let guide = docs.find(isGuide);
     if (!guide) guide = await importFile(new Blob([welcome], { type: 'text/markdown' }), 'Welcome to Frogity.md', { title: 'Welcome to Frogity' });
-    addSamples(guide.openedAt); // a famous novel and an economics paper, in the background
-    void ensureNaturalVoice(); // the natural voice for the reader's language, downloaded in the background and made the default
+    // Samples are optional; the welcome guide is available immediately. // a famous novel and an economics paper, in the background
+    // Voices are downloaded only when chosen in Settings.
+    // void ensureNaturalVoice(); // the natural voice for the reader's language, downloaded in the background and made the default
     if (f === 'guide') setOpenId(guide.id);
     else if (f === 'add') setAddOpen(true);
   };
@@ -422,6 +416,7 @@ export default function App() {
     };
   }, [addFiles]);
 
+  if (startupError) return <main className="recovery" role="alert"><h1>Couldn’t open your library</h1><p>{startupError}</p><p>Check available storage and allow this app to store files, then retry.</p><button className="pill" onClick={boot}>Retry</button></main>;
   if (!ready)
     return (
       <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
@@ -448,21 +443,21 @@ export default function App() {
       />
       <StatsBubble open={stats} onClose={() => (setStats(false), setReward(null))} reward={reward} onRewardDone={() => {}} />
       {openDoc && <Reader key={openDoc.id} doc={openDoc} onClose={() => setOpenId(null)} onConvert={(doc, root) => setConvert({ doc, root })} onOpenDoc={setOpenId} />}
-      <Settings open={settings} onClose={() => setSettings(false)} />
-      <About open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      {settings && <Settings open={settings} onClose={() => setSettings(false)} />}
+      {aboutOpen && <About open={aboutOpen} onClose={() => setAboutOpen(false)} />}
       {tour && <Tour onDone={() => (setTour(false), db.put('kv', 'tour', 'done'))} />}
       <RateSheet open={rate} onClose={closeRate} streak={streakInfo(getState().days).current} />
-      <ConvertSheet doc={convert?.doc ?? null} root={convert?.root} onClose={() => setConvert(null)} onOpenDoc={setOpenId} />
-      <ScanSheet
+      {convert && <ConvertSheet doc={convert.doc} root={convert.root} onClose={() => setConvert(null)} onOpenDoc={setOpenId} />}
+      {scanFiles && <ScanSheet
         files={scanFiles}
         onClose={() => setScanFiles(null)}
         onDone={(id) => {
           setScanFiles(null);
           setOpenId(id);
         }}
-      />
+      />}
       {importing && (
-        <div className="toast" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div className="frogity-toast" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <PixelLoader size={4} gap={2} /> adding {importing.length > 26 ? importing.slice(0, 26) + '…' : importing}
         </div>
       )}
@@ -474,6 +469,7 @@ export default function App() {
         onScan={() => camIn.current?.click()}
         onDiscover={() => setDiscover({})}
         onLink={saveLink}
+        onCancel={() => { linkAbort.current?.abort(); setLinkBusy(null); setLinkErr(null); }}
         onPaste={async (text, title) => {
           const m = await importText(text, title);
           setAddOpen(false);

@@ -20,8 +20,9 @@ public class MainActivity extends BridgeActivity {
         WebSettings s = getBridge().getWebView().getSettings();
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
-        s.setSupportZoom(false);
-        s.setBuiltInZoomControls(false);
+        s.setSupportZoom(true);
+        s.setBuiltInZoomControls(true);
+        s.setDisplayZoomControls(false);
         s.setMediaPlaybackRequiresUserGesture(false);
     }
 

@@ -40,6 +40,9 @@ export interface DocMeta {
   coverV?: number; // cover algorithm version (older covers are rebuilt in the background)
   enriched?: boolean; // real cover / title read from the file
   finished?: boolean;
+  tags?: string[];
+  fingerprint?: string;
+  pinned?: boolean;
   /** For scans: ids of page images. */
   scanPages?: string[];
 }

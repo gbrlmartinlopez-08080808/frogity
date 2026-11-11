@@ -82,5 +82,6 @@ export async function ensureNaturalVoice(lang = getState().settings.lang || dete
 /** On start: finish a download that was interrupted. (The voice itself is loaded only when you listen, so the app starts light.) */
 export async function resumeVoice() {
   const st = await db.get<string>('kv', 'voice:auto');
-  if (st === 'pending' || st === 'failed') await ensureNaturalVoice();
+  // Interrupted downloads wait for an explicit retry in Settings.
+  void st;
 }

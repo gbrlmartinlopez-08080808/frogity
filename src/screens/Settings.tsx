@@ -1,3 +1,5 @@
+import { tr } from '../lib/i18n';
+import { StorageTools } from './StorageTools';
 import { useEffect, useRef, useState } from 'react';
 import { updateSettings, useStore } from '../lib/store';
 import * as db from '../lib/db';
@@ -45,26 +47,24 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <Sheet open={open} onClose={onClose} title="App Settings" onBackBtn={onClose}>
-      <div className="sheet-body">
+    <Sheet open={open} onClose={onClose} title={tr("App Settings")} onBackBtn={onClose}>
+      <div className="sheet-body"><StorageTools /><button className="pill ghost" onClick={() => void import("../lib/samples").then(m => m.addSamples(Date.now())).then(() => toast("Sample books added"))}>{tr("Add optional sample books")}</button><button className="pill ghost" onClick={() => { if (window.confirm("Download a studio reading voice? This may use tens of megabytes. Use Wi-Fi if data is limited.")) void ensureNaturalVoice(s.lang, { force: true }); }}>{tr("Download reading voice")}</button>
         <Segmented
           light
           value={s.appTheme}
           onChange={(v) => updateSettings({ appTheme: v })}
           options={[
             { value: 'light', label: <Icon name="sun" size={18} />, aria: 'Light' },
-            { value: 'system', label: <><HalfCircle /> System</>, aria: 'System' },
+            { value: 'system', label: <><HalfCircle />{tr(" System")}</>, aria: 'System' },
             { value: 'dark', label: <Icon name="moon" size={18} />, aria: 'Dark' },
           ]}
           className="w100 big-seg"
         />
         <hr className="hairline" style={{ margin: '22px 0 4px' }} />
 
-        <div className="section-label">you</div>
+        <div className="section-label">{tr("you")}</div>
         <div className="row">
-          <span className="row-label" style={{ flex: 'none' }}>
-            @
-          </span>
+          <span className="row-label" style={{ flex: 'none' }}>{tr("@")}</span>
           <input
             value={name}
             onChange={(e) => {
@@ -72,20 +72,20 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
               setName(v);
               updateSettings({ name: v.trim() || 'reader' });
             }}
-            placeholder="your name"
+            placeholder={tr("your name")}
             maxLength={24}
             style={{ flex: 1, border: 0, outline: 0, background: 'transparent', fontSize: 16, fontWeight: 600, height: 44 }}
-            aria-label="Your name"
+            aria-label={tr("Your name")}
           />
         </div>
 
-        <div className="section-label">reading</div>
+        <div className="section-label">{tr("reading")}</div>
         <div className="lang-row">
           <div className="row-top">
             <Icon name="ear" />
             <div className="grow">
-              <div className="row-label">Reading language</div>
-              <div className="row-sub">Decides your natural reading voice</div>
+              <div className="row-label">{tr("Reading language")}</div>
+              <div className="row-sub">{tr("Decides your natural reading voice")}</div>
             </div>
           </div>
           <LangChips
@@ -101,7 +101,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
         <button className="row" style={{ width: '100%', textAlign: 'left' }} onClick={() => setFonts(true)}>
           <Icon name="text" />
           <div className="grow">
-            <div className="row-label">Reading fonts</div>
+            <div className="row-label">{tr("Reading fonts")}</div>
             <div className="row-sub">
               {s.fontFaves.map((f) => fontById(f).name).join(' · ')}
             </div>
@@ -109,7 +109,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
           <Icon name="right" size={18} />
         </button>
         <div className="row" style={{ marginTop: 8, flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-          <div className="row-label">Language</div>
+          <div className="row-label">{tr("Language")}</div>
           <Segmented
             light
             value={langPref}
@@ -124,7 +124,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
         </div>
         <div className="row">
           <div className="grow">
-            <div className="row-label">Open PDFs and Word files in</div>
+            <div className="row-label">{tr("Open PDFs and Word files in")}</div>
           </div>
           <Segmented
             light
@@ -139,24 +139,24 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
         <div className="row">
           <Icon name="ear" />
           <div className="grow">
-            <div className="row-label">Focus while listening</div>
-            <div className="row-sub">Dim everything except the sentence being read</div>
+            <div className="row-label">{tr("Focus while listening")}</div>
+            <div className="row-sub">{tr("Dim everything except the sentence being read")}</div>
           </div>
           <Toggle on={s.focusListen} onChange={(v) => updateSettings({ focusListen: v })} label="Focus while listening" />
         </div>
         <div className="row">
           <Icon name="voice" />
           <div className="grow">
-            <div className="row-label">Haptic Feedback</div>
+            <div className="row-label">{tr("Haptic Feedback")}</div>
           </div>
           <Toggle on={s.haptics} onChange={(v) => updateSettings({ haptics: v })} label="Haptic feedback" />
         </div>
 
-        <div className="section-label">reminders</div>
+        <div className="section-label">{tr("reminders")}</div>
         <div className="row">
           <Icon name="timer" />
           <div className="grow">
-            <div className="row-label">Evening reminder</div>
+            <div className="row-label">{tr("Evening reminder")}</div>
             <div className="row-sub">{isNative ? 'A quiet nudge to keep your streak. Skipped on days you’ve already reached your goal.' : 'Available in the Android app.'}</div>
           </div>
           <Toggle
@@ -172,7 +172,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
         {s.reminders && (
           <div className="row">
             <div className="grow">
-              <div className="row-label">Remind me at</div>
+              <div className="row-label">{tr("Remind me at")}</div>
             </div>
             <input
               type="time"
@@ -182,22 +182,22 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
                 updateSettings({ reminderTime: e.target.value || '20:30' });
                 setTimeout(refreshReminder, 450);
               }}
-              aria-label="Reminder time"
+              aria-label={tr("Reminder time")}
             />
           </div>
         )}
 
-        <div className="section-label">froggy (free ai)</div>
+        <div className="section-label">{tr("froggy (free ai)")}</div>
         <div className="row">
           <Icon name="frog" />
           <div className="grow">
-            <div className="row-label">Froggy, your reading companion</div>
-            <div className="row-sub">Froggy answers questions about what you read. It sends your question and a few short excerpts to a free open AI service. Off until you turn it on.</div>
+            <div className="row-label">{tr("Froggy, your reading companion")}</div>
+            <div className="row-sub">{tr("Froggy answers questions about what you read. It sends your question and a few short excerpts to a free open AI service. Off until you turn it on.")}</div>
           </div>
           <Toggle on={s.aiOk} onChange={(v) => updateSettings({ aiOk: v })} label="Froggy" />
         </div>
 
-        <div className="section-label">files</div>
+        <div className="section-label">{tr("files")}</div>
         {isNative && (
           <>
             {folders.map((f) => (
@@ -207,7 +207,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
                   <div className="row-label" style={{ fontSize: 15 }}>
                     {f.name}
                   </div>
-                  <div className="row-sub">linked · {docs.filter((d) => d.folder === f.uri).length} documents</div>
+                  <div className="row-sub">{tr("linked · ")}{docs.filter((d) => d.folder === f.uri).length}{tr(" documents")}</div>
                 </div>
                 <button
                   className="pill sm ghost"
@@ -216,16 +216,14 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
                     setFolders(await getFolders());
                     toast('Folder unlinked (your files are untouched)');
                   }}
-                >
-                  Unlink
-                </button>
+                >{tr("Unlink")}</button>
               </div>
             ))}
             <div className="row">
               <Icon name="plus" />
               <div className="grow">
-                <div className="row-label">Link a folder</div>
-                <div className="row-sub">Documents inside appear in your library without being copied. Android won’t allow linking the Downloads folder itself — use Add → Files for those.</div>
+                <div className="row-label">{tr("Link a folder")}</div>
+                <div className="row-sub">{tr("Documents inside appear in your library without being copied. Android won’t allow linking the Downloads folder itself — use Add → Files for those.")}</div>
               </div>
               <button
                 className="pill sm"
@@ -234,15 +232,13 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
                   setFolders(await getFolders());
                   if (r.folder) toast(`${r.added} documents added`);
                 }}
-              >
-                Choose
-              </button>
+              >{tr("Choose")}</button>
             </div>
             {folders.length > 0 && (
               <div className="row">
                 <Icon name="convert" />
                 <div className="grow">
-                  <div className="row-label">Rescan folders</div>
+                  <div className="row-label">{tr("Rescan folders")}</div>
                 </div>
                 <button
                   className="pill sm ghost"
@@ -263,7 +259,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
         <div className="row">
           <Icon name="book" />
           <div className="grow">
-            <div className="row-label">Make Frogity your default reader</div>
+            <div className="row-label">{tr("Make Frogity your default reader")}</div>
             <div className="row-sub">
               {isNative
                 ? 'Open any PDF/EPUB/DOCX in your file manager → “Open with” → Frogity → “Always”. Frogity also appears in the Share menu.'
@@ -275,7 +271,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
           <div className="row">
             <Icon name="clock" />
             <div className="grow">
-              <div className="row-label">Keep reading in the background</div>
+              <div className="row-label">{tr("Keep reading in the background")}</div>
               <div className="row-sub">
                 {free
                   ? 'On: scans and Liquid views carry on with the app closed or the screen off, and stop by themselves when done.'
@@ -283,19 +279,16 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
               </div>
             </div>
             {!free && (
-              <button className="pill sm" onClick={() => askWorkFree()}>
-                Allow
-              </button>
+              <button className="pill sm" onClick={() => askWorkFree()}>{tr("Allow")}</button>
             )}
           </div>
         )}
         <div className="row">
           <Icon name="grid" />
           <div className="grow">
-            <div className="row-label">Storage</div>
+            <div className="row-label">{tr("Storage")}</div>
             <div className="row-sub">
-              {docs.length} documents{usage ? ` · ${usage} used` : ''} · all on this device
-            </div>
+              {docs.length}{tr(" documents")}{usage ? ` · ${usage} used` : ''}{tr(" · all on this device")}</div>
           </div>
           <button
             className="pill sm ghost"
@@ -304,50 +297,42 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
               for (const [k] of keys) await db.del('cache', k);
               toast('Cleared liquid-mode cache');
             }}
-          >
-            Clear cache
-          </button>
+          >{tr("Clear cache")}</button>
         </div>
         <button className="row" style={{ width: '100%', textAlign: 'left' }} onClick={() => { onClose(); updateSettings({ onboarded: false }); }}>
           <Icon name="ask" />
           <div className="grow">
-            <div className="row-label">Replay the introduction</div>
-            <div className="row-sub">The short tour of everything Frogity does</div>
+            <div className="row-label">{tr("Replay the introduction")}</div>
+            <div className="row-sub">{tr("The short tour of everything Frogity does")}</div>
           </div>
           <Icon name="right" size={18} />
         </button>
-        <div className="section-label">advanced</div>
+        <div className="section-label">{tr("advanced")}</div>
         <button className="row" style={{ width: '100%', textAlign: 'left' }} onClick={() => setAdv((v) => !v)} aria-expanded={adv}>
           <Icon name="gear" />
           <div className="grow">
-            <div className="row-label">Daily goal</div>
-            <div className="row-sub">{s.dailyGoal} min a day · changing it re-scales every streak mark</div>
+            <div className="row-label">{tr("Daily goal")}</div>
+            <div className="row-sub">{s.dailyGoal}{tr(" min a day · changing it re-scales every streak mark")}</div>
           </div>
           <Icon name={adv ? 'up' : 'right'} size={18} />
         </button>
         {adv && (
           <>
-            <p className="muted" style={{ margin: '4px 4px 6px', fontSize: 13 }}>
-              A day counts toward your streak after one minute of reading. The goal fills the ring and decides what each mark in the calendar means.
-            </p>
+            <p className="muted" style={{ margin: '4px 4px 6px', fontSize: 13 }}>{tr("A day counts toward your streak after one minute of reading. The goal fills the ring and decides what each mark in the calendar means.")}</p>
             <Ruler value={s.dailyGoal} min={5} max={120} step={5} onChange={(v) => updateSettings({ dailyGoal: v })} format={(v) => `${v}m`} label="Daily goal" />
           </>
         )}
         <button className="row" style={{ width: '100%', textAlign: 'left' }} onClick={() => setAbout(true)}>
           <Icon name="info" />
           <div className="grow">
-            <div className="row-label">About, privacy & licences</div>
-            <div className="row-sub">What leaves the phone, sources and open-source credits</div>
+            <div className="row-label">{tr("About, privacy & licences")}</div>
+            <div className="row-sub">{tr("What leaves the phone, sources and open-source credits")}</div>
           </div>
           <Icon name="right" size={18} />
         </button>
         <div style={{ textAlign: 'center', padding: '26px 0 10px' }} className="mono muted">
-          <div style={{ fontSize: 11 }}>frogity {APP_VERSION} · free · no ads · no accounts · no tracking</div>
-          <div style={{ fontSize: 10.5, marginTop: 6, lineHeight: 1.5 }}>
-            Your library stays on this phone.
-            <br />
-            Only word lookups, saved links and Ask use the internet.
-          </div>
+          <div style={{ fontSize: 11 }}>{tr("frogity ")}{APP_VERSION}{tr(" · free · no ads · no accounts · no tracking")}</div>
+          <div style={{ fontSize: 10.5, marginTop: 6, lineHeight: 1.5 }}>{tr("Your library stays on this phone.")}<br />{tr("Only word lookups, saved links and Ask use the internet.")}</div>
         </div>
       </div>
       <FontsSheet open={fonts} onClose={() => setFonts(false)} />

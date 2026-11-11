@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { US_SHAPES, US_VIEWBOX } from '../data/usShapes';
 import { STATES, TILES, byCode, houseSeats, racePages, type Party, type State } from '../data/us';
@@ -56,8 +57,8 @@ export function UsHub({ d, wiki, openStory }: { d?: Daily; wiki: (t: string) => 
       <header className="wd-head">
         <Flag cc="us" size={52} />
         <div>
-          <h3>2026 US midterm elections</h3>
-          <span className="mono">United States · 3 Nov 2026</span>
+          <h3>{tr("2026 US midterm elections")}</h3>
+          <span className="mono">{tr("United States · 3 Nov 2026")}</span>
         </div>
       </header>
       <div className="wsec" role="tablist">
@@ -83,42 +84,40 @@ function Overview({ go }: { go: (t: Tab) => void }) {
   return (
     <>
       <Clock e={{ k: 'election', t: 'US midterm elections', w: 'United States', a: EVENT_DATE }} />
-      <p className="wd-note">The whole House, a third of the Senate and most governors are on the ballot. The party of the president usually loses seats in a midterm.</p>
+      <p className="wd-note">{tr("The whole House, a third of the Senate and most governors are on the ballot. The party of the president usually loses seats in a midterm.")}</p>
       <div className="stat-row">
         <button onClick={() => go('house')}>
-          <b className="mono">435</b>
-          <small className="mono">House seats</small>
+          <b className="mono">{tr("435")}</b>
+          <small className="mono">{tr("House seats")}</small>
         </button>
         <button onClick={() => go('senate')}>
-          <b className="mono">35</b>
-          <small className="mono">Senate seats · {open} open</small>
+          <b className="mono">{tr("35")}</b>
+          <small className="mono">{tr("Senate seats · ")}{open}{tr(" open")}</small>
         </button>
         <button onClick={() => go('governors')}>
-          <b className="mono">36</b>
-          <small className="mono">governors · {govOpen} open</small>
+          <b className="mono">{tr("36")}</b>
+          <small className="mono">{tr("governors · ")}{govOpen}{tr(" open")}</small>
         </button>
       </div>
       <section className="wd-sec">
-        <h5 className="mono">The parties</h5>
+        <h5 className="mono">{tr("The parties")}</h5>
         <ul className="wd-sides">
           <li>
-            <button aria-label="Democratic Party">
+            <button aria-label={tr("Democratic Party")}>
               <Emblem wiki="Democratic Party (United States)" size={40} glyph="D" />
-              <span>Democratic Party</span>
+              <span>{tr("Democratic Party")}</span>
             </button>
           </li>
           <li>
-            <button aria-label="Republican Party">
+            <button aria-label={tr("Republican Party")}>
               <Emblem wiki="Republican Party (United States)" size={40} glyph="R" />
-              <span>Republican Party</span>
+              <span>{tr("Republican Party")}</span>
             </button>
           </li>
         </ul>
       </section>
       <Seats chart={CHART} />
-      <button className="pill ghost" style={{ justifySelf: 'start' }} onClick={() => go('map')}>
-        Open the map
-      </button>
+      <button className="pill ghost" style={{ justifySelf: 'start' }} onClick={() => go('map')}>{tr("Open the map")}</button>
     </>
   );
 }
@@ -151,15 +150,11 @@ function MapTab({ mode, setMode, pick }: { mode: Mode; setMode: (m: Mode) => voi
         ))}
       </div>
       <div className="maptoggle mono" role="tablist">
-        <button role="tab" aria-selected={!shapes} className={!shapes ? 'on' : ''} onClick={() => setShapes(false)}>
-          tiles
-        </button>
-        <button role="tab" aria-selected={shapes} className={shapes ? 'on' : ''} onClick={() => setShapes(true)}>
-          real shapes
-        </button>
+        <button role="tab" aria-selected={!shapes} className={!shapes ? 'on' : ''} onClick={() => setShapes(false)}>{tr("tiles")}</button>
+        <button role="tab" aria-selected={shapes} className={shapes ? 'on' : ''} onClick={() => setShapes(true)}>{tr("real shapes")}</button>
       </div>
       {shapes ? (
-        <svg className="shapemap" viewBox={US_VIEWBOX} role="group" aria-label="Map of the states">
+        <svg className="shapemap" viewBox={US_VIEWBOX} role="group" aria-label={tr("Map of the states")}>
           {cells.map((s) => (
             <path
               key={s.code}
@@ -173,7 +168,7 @@ function MapTab({ mode, setMode, pick }: { mode: Mode; setMode: (m: Mode) => voi
           ))}
         </svg>
       ) : (
-      <div className="tilemap" role="group" aria-label="Map of the states">
+      <div className="tilemap" role="group" aria-label={tr("Map of the states")}>
         {cells.map((s) => {
           const [r, c] = TILES[s.code];
           const col = colorFor(s, mode);
@@ -186,7 +181,7 @@ function MapTab({ mode, setMode, pick }: { mode: Mode; setMode: (m: Mode) => voi
               aria-label={s.name}
             >
               <b className="mono">{s.code}</b>
-              {col.star && <i>★</i>}
+              {col.star && <i>{tr("★")}</i>}
             </button>
           );
         })}
@@ -197,32 +192,28 @@ function MapTab({ mode, setMode, pick }: { mode: Mode; setMode: (m: Mode) => voi
           <button onClick={() => pick(ps.code)}>
             <b>{ps.name}</b>
             <span className="mono">
-              {ps.ev} electoral votes · 2024 {fmtM(ps.m24)} · 2020 {fmtM(ps.m20)}
+              {ps.ev}{tr(" electoral votes · 2024 ")}{fmtM(ps.m24)}{tr(" · 2020 ")}{fmtM(ps.m20)}
               {ps.sen ? ` · Senate: ${ps.sen.inc} (${ps.sen.p})${ps.sen.open ? ', open' : ''}` : ''}
               {ps.gov ? ` · Governor: ${ps.gov.inc} (${ps.gov.p})${ps.gov.open ? ', open' : ''}` : ''}
             </span>
-            <small className="mono">tap again, or here, for the full page →</small>
+            <small className="mono">{tr("tap again, or here, for the full page →")}</small>
           </button>
         ) : (
-          <p className="wd-src mono">tap a state to see it; tap it again to open it</p>
+          <p className="wd-src mono">{tr("tap a state to see it; tap it again to open it")}</p>
         )}
       </div>
       <div className="wd-legend">
         {mode === 'sen' || mode === 'gov' ? (
           <>
             <span>
-              <i style={{ background: COL.D }} /> Democratic-held
-            </span>
+              <i style={{ background: COL.D }} />{tr(" Democratic-held")}</span>
             <span>
-              <i style={{ background: COL.R }} /> Republican-held
-            </span>
+              <i style={{ background: COL.R }} />{tr(" Republican-held")}</span>
             <span>
-              <i className="dashed" /> open seat
-            </span>
-            <span>★ special election</span>
+              <i className="dashed" />{tr(" open seat")}</span>
+            <span>{tr("★ special election")}</span>
             <span>
-              <i style={{ background: 'var(--line)' }} /> no race
-            </span>
+              <i style={{ background: 'var(--line)' }} />{tr(" no race")}</span>
           </>
         ) : (
           <>
@@ -246,8 +237,7 @@ function RaceList({ kind, pick }: { kind: 'sen' | 'gov'; pick: (c: string) => vo
   return (
     <section className="wd-sec">
       <p className="wd-note">
-        {kind === 'sen' ? 'Thirty-three regular seats and two special elections' : 'Thirty-six governorships'} are up. Incumbents as compiled in early 2026; the candidates are on each state’s page.
-      </p>
+        {kind === 'sen' ? 'Thirty-three regular seats and two special elections' : 'Thirty-six governorships'}{tr(" are up. Incumbents as compiled in early 2026; the candidates are on each state’s page.")}</p>
       <div className="topics" role="tablist">
         {(['all', 'open', 'D', 'R'] as const).map((k) => (
           <button key={k} role="tab" aria-selected={f === k} className={f === k ? 'on' : ''} onClick={() => (tap('select'), setF(k))}>
@@ -268,7 +258,7 @@ function RaceList({ kind, pick }: { kind: 'sen' | 'gov'; pick: (c: string) => vo
                   <b>{s.name}</b>
                   <small className="mono">
                     {r.open ? 'open seat · held by ' : ''}
-                    {r.inc} ({r.p}){r.special ? ' · special election' : ''}
+                    {r.inc}{tr(" (")}{r.p}{tr(")")}{r.special ? ' · special election' : ''}
                   </small>
                 </span>
                 <span className="rl-m mono">{fmtM(s.m24)}</span>
@@ -278,7 +268,7 @@ function RaceList({ kind, pick }: { kind: 'sen' | 'gov'; pick: (c: string) => vo
           );
         })}
       </ul>
-      <p className="wd-src mono">the last column is the state’s 2024 presidential margin</p>
+      <p className="wd-src mono">{tr("the last column is the state’s 2024 presidential margin")}</p>
     </section>
   );
 }
@@ -288,7 +278,7 @@ function HouseTab({ pick }: { pick: (c: string) => void }) {
   const max = houseSeats(rows[0]);
   return (
     <section className="wd-sec">
-      <p className="wd-note">All 435 seats are up, two years after the last vote. The bars show each state’s seats; the colour is how the state voted for president in 2024.</p>
+      <p className="wd-note">{tr("All 435 seats are up, two years after the last vote. The bars show each state’s seats; the colour is how the state voted for president in 2024.")}</p>
       <ul className="race-list">
         {rows.map((s) => (
           <li key={s.code}>
@@ -315,8 +305,8 @@ function HouseTab({ pick }: { pick: (c: string) => void }) {
 /** how the outlets cover the election: how many stories, how they split left to right, and the same news in each side's own headline */
 function Media({ d, openStory }: { d?: Daily; openStory: (s: Story) => void }) {
   const hits = useMemo(() => (d ? d.news.filter((s) => KEYS.some((k) => `${s.title} ${s.summary}`.toLowerCase().includes(k)) && /midterm|congress|senate|election|governor|republican|democrat/i.test(`${s.title} ${s.summary}`)) : []), [d]);
-  if (!d) return <p className="wd-empty mono">the news needs a connection</p>;
-  if (!hits.length) return <p className="wd-note">No story about the election in today’s news yet. Check again later.</p>;
+  if (!d) return <p className="wd-empty mono">{tr("the news needs a connection")}</p>;
+  if (!hits.length) return <p className="wd-note">{tr("No story about the election in today’s news yet. Check again later.")}</p>;
   const tot = hits.reduce((a, s) => {
     const c = coverage(d, s);
     return { left: a.left + c.left, right: a.right + c.right, centre: a.centre + c.centre, total: a.total + c.total };
@@ -333,21 +323,20 @@ function Media({ d, openStory }: { d?: Daily; openStory: (s: Story) => void }) {
     <>
       <section className="wd-sec">
         <h5 className="mono">
-          {hits.length} stor{hits.length === 1 ? 'y' : 'ies'} today · {tot.total} reports
-        </h5>
-        <div className="lean-bar" aria-label="Where the reporting outlets sit">
+          {hits.length}{tr(" stor")}{hits.length === 1 ? 'y' : 'ies'}{tr(" today · ")}{tot.total}{tr(" reports")}</h5>
+        <div className="lean-bar" aria-label={tr("Where the reporting outlets sit")}>
           <span style={{ width: pct(tot.left), background: '#4b7fbf' }} />
           <span style={{ width: pct(tot.centre), background: 'var(--line-2)' }} />
           <span style={{ width: pct(tot.right), background: '#d95a4f' }} />
         </div>
         <div className="lean-l mono">
-          <span>left {tot.left}</span>
-          <span>centre {tot.centre}</span>
-          <span>right {tot.right}</span>
+          <span>{tr("left ")}{tot.left}</span>
+          <span>{tr("centre ")}{tot.centre}</span>
+          <span>{tr("right ")}{tot.right}</span>
         </div>
       </section>
       <section className="wd-sec">
-        <h5 className="mono">One story, three framings</h5>
+        <h5 className="mono">{tr("One story, three framings")}</h5>
         <b className="media-lead">{lead.title}</b>
         {(['left', 'centre', 'right'] as const).map((k) => (
           <div key={k} className="frame">
@@ -355,27 +344,23 @@ function Media({ d, openStory }: { d?: Daily; openStory: (s: Story) => void }) {
             {cols[k].length ? (
               cols[k].slice(0, 3).map((x) => (
                 <p key={x.o.id}>
-                  <span className="fn">{x.o.logo ? <img src={x.o.logo} alt="" /> : null}{x.o.name}</span>
-                  “{x.t}”
-                </p>
+                  <span className="fn">{x.o.logo ? <img src={x.o.logo} alt="" /> : null}{x.o.name}</span>{tr("“")}{x.t}{tr("”")}</p>
               ))
             ) : (
-              <p className="wd-src mono">no outlet on this side reported it</p>
+              <p className="wd-src mono">{tr("no outlet on this side reported it")}</p>
             )}
           </div>
         ))}
-        <button className="pill ghost" style={{ justifySelf: 'start' }} onClick={() => openStory(lead)}>
-          Open the story
-        </button>
+        <button className="pill ghost" style={{ justifySelf: 'start' }} onClick={() => openStory(lead)}>{tr("Open the story")}</button>
       </section>
       <section className="wd-sec">
-        <h5 className="mono">All the stories</h5>
+        <h5 className="mono">{tr("All the stories")}</h5>
         <ul className="wd-news">
           {hits.slice(0, 8).map((s) => (
             <li key={s.id}>
               <button onClick={() => openStory(s)}>
                 <b>{s.title}</b>
-                <small className="mono">{new Set(s.sources.map((x) => x.id ?? x.name)).size} outlets</small>
+                <small className="mono">{new Set(s.sources.map((x) => x.id ?? x.name)).size}{tr(" outlets")}</small>
               </button>
             </li>
           ))}
@@ -411,7 +396,7 @@ function RaceBlock({ title, label, r, wikiTitle, wiki }: { title: string; label:
         <div className="rb-b">
           {sum === undefined && <PixelLoader size={4} gap={2} label="loading" />}
           {sum?.extract && <p className="wd-note">{sum.extract}</p>}
-          {sum === null && <p className="wd-src mono">the race page needs a connection</p>}
+          {sum === null && <p className="wd-src mono">{tr("the race page needs a connection")}</p>}
           {cands === null && sum !== undefined && sum !== null && <PixelLoader size={4} gap={2} label="candidates" />}
           {cands?.map((g) => (
             <div key={g.group} className="cand">
@@ -428,10 +413,8 @@ function RaceBlock({ title, label, r, wikiTitle, wiki }: { title: string; label:
               </ul>
             </div>
           ))}
-          {cands && !cands.length && sum && <p className="wd-src mono">no candidate list on the page yet</p>}
-          <button className="wd-more" onClick={() => wiki(wikiTitle)}>
-            Read the whole page
-          </button>
+          {cands && !cands.length && sum && <p className="wd-src mono">{tr("no candidate list on the page yet")}</p>}
+          <button className="wd-more" onClick={() => wiki(wikiTitle)}>{tr("Read the whole page")}</button>
         </div>
       )}
     </div>
@@ -454,9 +437,7 @@ function StateView({ s, d, back, wiki, openStory }: { s: State; d?: Daily; back:
   const sh = s.m24 - s.m20;
   return (
     <div className="wd ush">
-      <button className="wd-back mono" onClick={back}>
-        ← all states
-      </button>
+      <button className="wd-back mono" onClick={back}>{tr("← all states")}</button>
       <header className="wd-head">
         <span className="bigtile" style={{ background: tint(s.m24) }}>
           <StateShape code={s.code} size={46} fill="var(--ink-2)" />
@@ -464,12 +445,12 @@ function StateView({ s, d, back, wiki, openStory }: { s: State; d?: Daily; back:
         <div>
           <h3>{s.name}</h3>
           <span className="mono">
-            {s.ev} electoral votes · {houseSeats(s)} House seat{houseSeats(s) === 1 ? '' : 's'}
+            {s.ev}{tr(" electoral votes · ")}{houseSeats(s)}{tr(" House seat")}{houseSeats(s) === 1 ? '' : 's'}
           </span>
         </div>
       </header>
       <section className="wd-sec">
-        <h5 className="mono">How it voted for president</h5>
+        <h5 className="mono">{tr("How it voted for president")}</h5>
         {bar(s.m20, '2020')}
         {bar(s.m24, '2024')}
         <p className="wd-src mono">
@@ -477,21 +458,21 @@ function StateView({ s, d, back, wiki, openStory }: { s: State; d?: Daily; back:
         </p>
       </section>
       <section className="wd-sec">
-        <h5 className="mono">On the ballot on 3 November</h5>
-        {s.sen && <RaceBlock title="U.S. Senate" label="Senate" r={s.sen} wikiTitle={pages.senate} wiki={wiki} />}
-        {s.gov && <RaceBlock title="Governor" label="Governor" r={s.gov} wikiTitle={pages.gov} wiki={wiki} />}
+        <h5 className="mono">{tr("On the ballot on 3 November")}</h5>
+        {s.sen && <RaceBlock title={tr("U.S. Senate")} label="Senate" r={s.sen} wikiTitle={pages.senate} wiki={wiki} />}
+        {s.gov && <RaceBlock title={tr("Governor")} label="Governor" r={s.gov} wikiTitle={pages.gov} wiki={wiki} />}
         {s.code !== 'DC' && <RaceBlock title={`U.S. House · ${houseSeats(s)} seat${houseSeats(s) === 1 ? '' : 's'}`} label="House" wikiTitle={pages.house} wiki={wiki} />}
-        {!s.sen && !s.gov && <p className="wd-src mono">no Senate or governor race here this year</p>}
+        {!s.sen && !s.gov && <p className="wd-src mono">{tr("no Senate or governor race here this year")}</p>}
       </section>
       {!!news.length && (
         <section className="wd-sec">
-          <h5 className="mono">In the news · {news.length}</h5>
+          <h5 className="mono">{tr("In the news · ")}{news.length}</h5>
           <ul className="wd-news">
             {news.slice(0, 5).map((x) => (
               <li key={x.id}>
                 <button onClick={() => openStory(x)}>
                   <b>{x.title}</b>
-                  <small className="mono">{new Set(x.sources.map((y) => y.id ?? y.name)).size} outlets</small>
+                  <small className="mono">{new Set(x.sources.map((y) => y.id ?? y.name)).size}{tr(" outlets")}</small>
                 </button>
               </li>
             ))}

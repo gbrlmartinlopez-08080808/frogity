@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { Art } from '../ui/Art';
 import { useEffect, useState } from 'react';
 import { useLiquid, useRunningJobs, type ScanJob } from '../lib/scan';
@@ -38,44 +39,32 @@ export function JobsHost() {
   }, []);
   return (
     <>
-    <Sheet open={bg} onClose={() => setBg(false)} title="Keep reading with Frogity closed?">
+    <Sheet open={bg} onClose={() => setBg(false)} title={tr("Keep reading with Frogity closed?")}>
       <div className="sheet-body" style={{ paddingBottom: 18 }}>
         <Art name="froggy:sleepy" className="slim" />
-        <p style={{ marginTop: 0 }}>
-          Reading a scanned book takes a while. To save battery, your phone pauses apps you are not using — so the reading would only move on while
-          Frogity is open.
-        </p>
-        <p className="muted" style={{ fontSize: 13.5 }}>
-          Allow Frogity to keep working in the background and it carries on with the screen off or the app closed. It only works while there is
-          something to read, shows a notification while it does, and stops by itself when it is done.
-        </p>
+        <p style={{ marginTop: 0 }}>{tr("Reading a scanned book takes a while. To save battery, your phone pauses apps you are not using — so the reading would only move on while Frogity is open.")}</p>
+        <p className="muted" style={{ fontSize: 13.5 }}>{tr("Allow Frogity to keep working in the background and it carries on with the screen off or the app closed. It only works while there is something to read, shows a notification while it does, and stops by itself when it is done.")}</p>
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          <button className="pill" style={{ flex: 1 }} onClick={() => (setBg(false), askWorkFree())}>
-            Allow
-          </button>
-          <button className="pill ghost" style={{ flex: 1 }} onClick={() => setBg(false)}>
-            Not now
-          </button>
+          <button className="pill" style={{ flex: 1 }} onClick={() => (setBg(false), askWorkFree())}>{tr("Allow")}</button>
+          <button className="pill ghost" style={{ flex: 1 }} onClick={() => setBg(false)}>{tr("Not now")}</button>
         </div>
-        <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>You can change this later in Settings.</p>
+        <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>{tr("You can change this later in Settings.")}</p>
       </div>
     </Sheet>
-    <Sheet open={list} onClose={() => setList(false)} title="Working in the background">
+    <Sheet open={list} onClose={() => setList(false)} title={tr("Working in the background")}>
       <div className="sheet-body" style={{ paddingBottom: 18 }}>
-        {all.length === 0 && <p className="muted">All done. Nothing is waiting.</p>}
+        {all.length === 0 && <p className="muted">{tr("All done. Nothing is waiting.")}</p>}
         {all.map((j) => (
           <div key={j.kind + j.id} className="job-row">
             <div className="mono job-kind">{kindLabel(j.kind)}</div>
             <div className="job-name">{j.title}</div>
             <PixelBar value={j.progress} cells={14} />
             <div className="mono job-sub">
-              {j.total ? `${j.done} of ${j.total}` : 'starting'} · {left(j)}
+              {j.total ? `${j.done} of ${j.total}` : 'starting'}{tr(" · ")}{left(j)}
             </div>
           </div>
         ))}
-        <p className="muted" style={{ fontSize: 12.5, marginBottom: 0 }}>
-          Reading goes on in the background — also with the screen off or when you leave the book. A notification shows how far it has got, and where it stopped is remembered.
-        </p>
+        <p className="muted" style={{ fontSize: 12.5, marginBottom: 0 }}>{tr("Reading goes on in the background — also with the screen off or when you leave the book. A notification shows how far it has got, and where it stopped is remembered.")}</p>
       </div>
     </Sheet>
     </>
@@ -106,7 +95,7 @@ export function JobMark({ id, className = '' }: { id: string; className?: string
         <circle cx="11" cy="11" r={R} fill="none" stroke="currentColor" strokeOpacity=".2" strokeWidth="2.4" />
         <circle cx="11" cy="11" r={R} fill="none" stroke="currentColor" strokeWidth="2.4" strokeDasharray={C} strokeDashoffset={C * (1 - progress)} transform="rotate(-90 11 11)" />
       </svg>
-      <b className="mono">{Math.round(progress * 100)}%</b>
+      <b className="mono">{Math.round(progress * 100)}{tr("%")}</b>
     </span>
   );
 }

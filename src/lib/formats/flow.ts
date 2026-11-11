@@ -145,7 +145,7 @@ const join = (base: string, rel: string) => {
 const parseXml = (s: string) => new DOMParser().parseFromString(s, 'application/xml');
 
 export async function epubMeta(buf: ArrayBuffer): Promise<{ title?: string; author?: string; cover?: Blob }> {
-  const zip = await JSZip.loadAsync(buf);
+  const zip = await openArchive(buf);
   const { opf, opfPath } = await readOpf(zip);
   const title = opf.querySelector('metadata > title, metadata title')?.textContent?.trim();
   const author = opf.querySelector('metadata > creator, metadata creator')?.textContent?.trim();
@@ -180,7 +180,7 @@ async function readOpf(zip: JSZip) {
 }
 
 export async function epubToLiquid(buf: ArrayBuffer): Promise<LiquidDoc> {
-  const zip = await JSZip.loadAsync(buf);
+  const zip = await openArchive(buf);
   const { opf, opfPath } = await readOpf(zip);
   const manifest = new Map<string, { href: string; type: string; props: string }>();
   opf.querySelectorAll('manifest > item').forEach((i) =>
@@ -283,7 +283,7 @@ export async function epubToLiquid(buf: ArrayBuffer): Promise<LiquidDoc> {
 // ------------------------------------------------------------------ odt
 
 export async function odtToLiquid(buf: ArrayBuffer): Promise<LiquidDoc> {
-  const zip = await JSZip.loadAsync(buf);
+  const zip = await openArchive(buf);
   const xml = await zip.file('content.xml')?.async('string');
   if (!xml) throw new Error('Not a valid OpenDocument file.');
   const doc = parseXml(xml);
@@ -344,7 +344,7 @@ export async function odtToLiquid(buf: ArrayBuffer): Promise<LiquidDoc> {
 // ------------------------------------------------------------------ slides (pptx / odp)
 
 export async function slidesToLiquid(buf: ArrayBuffer, name: string): Promise<LiquidDoc> {
-  const zip = await JSZip.loadAsync(buf);
+  const zip = await openArchive(buf);
   const urls: string[] = [];
   let html = '';
   if (/\.odp$/i.test(name)) {
@@ -464,16 +464,15 @@ export interface SheetData {
 }
 
 export async function readSheets(buf: ArrayBuffer, name: string): Promise<SheetData[]> {
-  const XLSX = await import('xlsx');
-  let wb;
-  if (/\.(csv|tsv)$/i.test(name)) {
-    const text = decoder(buf);
-    wb = XLSX.read(text, { type: 'string', FS: /\.tsv$/i.test(name) ? '\t' : undefined, raw: false });
-  } else wb = XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true });
-  return wb.SheetNames.map((n) => ({
-    name: n,
-    rows: (XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, defval: '', blankrows: false }) as unknown[][]).map((r) => r.map((v) => String(v ?? ''))),
-  }));
+  if (buf.byteLength > 25_000_000) throw new Error('This spreadsheet is larger than the 25 MB parsing limit.');
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../sheet.worker.ts', import.meta.url), { type: 'module' });
+    const timer = setTimeout(() => { worker.terminate(); reject(new Error('This spreadsheet took too long to read. Try a smaller copy.')); }, 20000);
+    const finish = () => { clearTimeout(timer); worker.terminate(); };
+    worker.onmessage = (event: MessageEvent<{ sheets?: SheetData[]; error?: string }>) => { finish(); if (event.data.error) reject(new Error(event.data.error)); else resolve(event.data.sheets ?? []); };
+    worker.onerror = () => { finish(); reject(new Error('Could not read this spreadsheet.')); };
+    worker.postMessage({ buffer: buf, name }, [buf]);
+  });
 }
 
 export function sheetsToHtml(sheets: SheetData[]): string {
@@ -486,4 +485,14 @@ export function sheetsToHtml(sheets: SheetData[]): string {
           .join('')}</table>`,
     )
     .join('');
+}
+
+async function openArchive(buf: ArrayBuffer) {
+  if (buf.byteLength > 100_000_000) throw new Error('This compressed document is too large to open safely.');
+  const zip = await JSZip.loadAsync(buf); let expanded = 0;
+  const files = Object.values(zip.files);
+  if (files.length > 20000) throw new Error('This document contains too many files.');
+  for (const file of files) { expanded += (file as unknown as { _data?: { uncompressedSize: number } })._data?.uncompressedSize ?? 0; }
+  if (expanded > 250_000_000) throw new Error('This document expands beyond the safe size limit.');
+  return zip;
 }

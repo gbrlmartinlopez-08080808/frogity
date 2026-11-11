@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { Art } from '../ui/Art';
 import { useEffect, useRef, useState } from 'react';
 import * as db from '../lib/db';
@@ -77,7 +78,7 @@ export function ScanSheet({ files, onClose, onDone }: { files: File[] | null; on
   };
 
   return (
-    <Sheet open={!!files} onClose={busy ? () => {} : onClose} title="Scan">
+    <Sheet open={!!files} onClose={busy ? () => {} : onClose} title={tr("Scan")}>
       <div className="sheet-body" style={{ paddingBottom: 16 }}>
         {!busy && <Art name="scan" />}
         {busy ? (
@@ -91,7 +92,7 @@ export function ScanSheet({ files, onClose, onDone }: { files: File[] | null; on
               {pages.map((p, i) => (
                 <div key={p.url}>
                   <img src={p.url} alt={`Page ${i + 1}`} />
-                  <button onClick={() => setPages((l) => l.filter((x) => x !== p))} aria-label="Remove page">
+                  <button onClick={() => setPages((l) => l.filter((x) => x !== p))} aria-label={tr("Remove page")}>
                     <Icon name="close" size={14} />
                   </button>
                 </div>
@@ -99,9 +100,7 @@ export function ScanSheet({ files, onClose, onDone }: { files: File[] | null; on
               <div className="add" role="button" onClick={() => more.current?.click()}>
                 <span style={{ display: 'grid', justifyItems: 'center', gap: 6 }}>
                   <Icon name="camera" size={26} />
-                  <span className="mono" style={{ fontSize: 11 }}>
-                    add page
-                  </span>
+                  <span className="mono" style={{ fontSize: 11 }}>{tr("add page")}</span>
                 </span>
               </div>
             </div>
@@ -121,18 +120,17 @@ export function ScanSheet({ files, onClose, onDone }: { files: File[] | null; on
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title"
+              placeholder={tr("Title")}
               style={{ width: '100%', height: 48, borderRadius: 14, border: '1px solid var(--line-2)', padding: '0 14px', background: 'var(--surface-2)', fontSize: 16, marginTop: 4 }}
             />
             <div className="row">
               <div className="grow">
-                <div className="row-label">Recognise text</div>
-                <div className="row-sub">On-device OCR — search, listen, define, convert</div>
+                <div className="row-label">{tr("Recognise text")}</div>
+                <div className="row-sub">{tr("On-device OCR — search, listen, define, convert")}</div>
               </div>
               <Toggle on={ocr} onChange={setOcr} label="Recognise text" />
             </div>
-            <button className="pill" style={{ width: '100%', marginTop: 10 }} onClick={create} disabled={!pages.length}>
-              Create document · {pages.length} page{pages.length === 1 ? '' : 's'}
+            <button className="pill" style={{ width: '100%', marginTop: 10 }} onClick={create} disabled={!pages.length}>{tr("Create document · ")}{pages.length}{tr(" page")}{pages.length === 1 ? '' : 's'}
             </button>
           </>
         )}

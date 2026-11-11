@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { COUNTRIES, INDICATORS, economy, fx, type Country, type Fx, type Series } from '../lib/worldx';
 import { PixelLoader } from '../ui/kit';
@@ -38,7 +39,7 @@ export function Spark({ pts, fmt, height = 84, sub }: { pts: { label: string; v:
         onPointerLeave={() => setI(null)}
         onPointerUp={() => setI(null)}
         role="img"
-        aria-label="Chart: run a finger along it to read values"
+        aria-label={tr("Chart: run a finger along it to read values")}
       >
         <path d={`${d} L${xy[xy.length - 1][0]},${height - 4} L${xy[0][0]},${height - 4} Z`} className="fill" />
         <path d={d} className="line" vectorEffect="non-scaling-stroke" />
@@ -94,17 +95,16 @@ export function EconomyCard({ c }: { c: Country }) {
         })}
       </div>
       {!data && !err && <PixelLoader size={4} gap={2} label="figures" />}
-      {err && <p className="cg-note mono">the figures need a connection</p>}
+      {err && <p className="cg-note mono">{tr("the figures need a connection")}</p>}
       {s && s.length > 1 && <Spark pts={s.map((p) => ({ label: String(p.year), v: p.v }))} fmt={meta.fmt} sub={meta.label} />}
       {rate && rate.series.length > 1 && (
         <div className="eco-fx">
           <small className="mono">
-            {rate.base} in {rate.quote} · last 90 days
-          </small>
+            {rate.base}{tr(" in ")}{rate.quote}{tr(" · last 90 days")}</small>
           <Spark pts={rate.series.map((p) => ({ label: p.date, v: p.v }))} fmt={(v) => `1 ${rate.base} = ${v.toFixed(v > 20 ? 1 : 3)} ${rate.quote}`} height={64} />
         </div>
       )}
-      <p className="wd-src mono">World Bank (latest year reported) · exchange rates: European Central Bank via Frankfurter</p>
+      <p className="wd-src mono">{tr("World Bank (latest year reported) · exchange rates: European Central Bank via Frankfurter")}</p>
     </div>
   );
 }

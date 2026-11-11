@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { LANGS } from '../lib/voices';
 import { tap } from '../lib/native';
 
@@ -7,7 +8,7 @@ import { tap } from '../lib/native';
  */
 export function LangChips({ value, onChange }: { value: string; onChange: (code: string) => void }) {
   return (
-    <div className="lang-chips" role="radiogroup" aria-label="Reading language">
+    <div className="lang-chips" role="radiogroup" aria-label={tr("Reading language")}>
       {LANGS.map((l) => (
         <button
           key={l.code}

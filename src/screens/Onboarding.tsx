@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useStore, updateSettings } from '../lib/store';
 import { detectLang } from '../lib/voices';
@@ -100,7 +101,7 @@ function AnythingStage() {
         </div>
       ))}
       <pre aria-hidden>{`\n   \\   \\   |   /   /\n    \\   \\  |  /   /\n     '-._\\ | /_.-'\n         \\|/\n     .----'----.\n     | frogity |\n     '---------'`}</pre>
-      <p className="ob-cap mono">opens in place · nothing is copied</p>
+      <p className="ob-cap mono">{tr("opens in place · nothing is copied")}</p>
     </Card>
   );
 }
@@ -136,8 +137,7 @@ function LiquidStage() {
         {col(wrap('Each step carries a hidden state forward — nothing in the formula is lost on the way.', w).join('\n'))}
       </pre>
       <p className="ob-cap mono">
-        {w >= 40 ? 'the page, as printed' : w >= 30 ? 'reflowing…' : 'liquid: one calm column'} · {w} cols
-      </p>
+        {w >= 40 ? 'the page, as printed' : w >= 30 ? 'reflowing…' : 'liquid: one calm column'}{tr(" · ")}{w}{tr(" cols")}</p>
     </Card>
   );
 }
@@ -165,15 +165,13 @@ function ListenStage() {
 function LookupStage() {
   return (
     <Card tall>
-      <p className="ob-sentence">
-        A chance meeting, pure <span className="ob-word">serendipity</span>, changed everything.
-        <i className="ob-press" aria-hidden />
+      <p className="ob-sentence">{tr("A chance meeting, pure ")}<span className="ob-word">{tr("serendipity")}</span>{tr(", changed everything.")}<i className="ob-press" aria-hidden />
       </p>
       <div className="ob-lookup mono" aria-hidden>
-        <b>serendipity</b> <em>noun</em>
-        <p>luck that finds you while you were looking for something else.</p>
-        <p className="muted">origin: Serendip (Sri Lanka) · Horace Walpole, 1754</p>
-        <p className="muted">+ wikipedia · pictures · maths</p>
+        <b>{tr("serendipity")}</b> <em>{tr("noun")}</em>
+        <p>{tr("luck that finds you while you were looking for something else.")}</p>
+        <p className="muted">{tr("origin: Serendip (Sri Lanka) · Horace Walpole, 1754")}</p>
+        <p className="muted">{tr("+ wikipedia · pictures · maths")}</p>
       </div>
     </Card>
   );
@@ -216,21 +214,15 @@ function AskStage() {
         <span>
           <b>
             <Pixel name="spark" size={20} />
-          </b>
-          ask
-        </span>
+          </b>{tr("ask")}</span>
         <span>
           <b>
             <Pixel name="scan" size={20} />
-          </b>
-          scan
-        </span>
+          </b>{tr("scan")}</span>
         <span>
           <b>
             <Pixel name="convert" size={20} />
-          </b>
-          convert
-        </span>
+          </b>{tr("convert")}</span>
       </div>
     </Card>
   );
@@ -253,9 +245,9 @@ function StreakStage({ name }: { name: string }) {
   const streak = Math.min(12, Math.floor(upto / 7) + 1);
   return (
     <Card>
-      <p className="ob-cap mono top">{displayName(name) || 'you'} · day {Math.min(streak, 12)} <Pixel name="flame" size={12} style={{ verticalAlign: -1 }} /></p>
+      <p className="ob-cap mono top">{displayName(name) || 'you'}{tr(" · day ")}{Math.min(streak, 12)} <Pixel name="flame" size={12} style={{ verticalAlign: -1 }} /></p>
       <pre aria-hidden dangerouslySetInnerHTML={{ __html: rows.join('\n') }} />
-      <p className="ob-cap mono">{legendFor(15).map((g) => `${g.ch}${g.from}`).join('  ')} min</p>
+      <p className="ob-cap mono">{legendFor(15).map((g) => `${g.ch}${g.from}`).join('  ')}{tr(" min")}</p>
     </Card>
   );
 }
@@ -370,7 +362,8 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
   return (
     <div className="ob" role="dialog" aria-label={`Welcome, step ${i + 1} of ${STEPS.length}`} style={{ ['--g1' as string]: GLOW[i][0], ['--g2' as string]: GLOW[i][1] }}>
       <div className="ob-top">
-        <button className="ob-back" onClick={() => go(-1)} aria-label="Back" style={{ visibility: i === 0 ? 'hidden' : 'visible' }}>
+        <button className="pill sm" style={{ position:'absolute', top:16, right:16, zIndex:3 }} onClick={() => onDone('add')}>{tr('Open my first document')}</button>
+      <button className="ob-back" onClick={() => go(-1)} aria-label={tr("Back")} style={{ visibility: i === 0 ? 'hidden' : 'visible' }}>
           <Icon name="back" size={22} />
         </button>
         <div className="ob-steps" aria-hidden>
@@ -379,7 +372,7 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
           ))}
         </div>
         <span className="ob-count mono">
-          {String(i + 1).padStart(2, '0')}/{STEPS.length}
+          {String(i + 1).padStart(2, '0')}{tr("/")}{STEPS.length}
         </span>
       </div>
 
@@ -398,12 +391,12 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
                 go(1);
               }}
             >
-              <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value.slice(0, 24))} placeholder="your first name" maxLength={24} aria-label="Your name" enterKeyHint="next" />
+              <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value.slice(0, 24))} placeholder={tr("your first name")} maxLength={24} aria-label={tr("Your name")} enterKeyHint="next" />
             </form>
           )}
           {step.id === 'name' && (
             <div className="ob-lang">
-              <span className="mono">reading language</span>
+              <span className="mono">{tr("reading language")}</span>
               <LangChips
                 value={lang}
                 onChange={(v) => {
@@ -411,7 +404,7 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
                   updateSettings({ lang: v });
                 }}
               />
-              <small className="mono">picked from your phone · your natural reading voice downloads in this language</small>
+              <small className="mono">{tr("picked from your phone · your natural reading voice downloads in this language")}</small>
             </div>
           )}
           {step.id === 'goal' && (
@@ -420,11 +413,11 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
               {isNative && (
                 <div className="ob-remind">
                   <div className="grow">
-                    <b>Remind me each evening</b>
+                    <b>{tr("Remind me each evening")}</b>
                     <small className="mono">{settings.reminders ? 'a quiet nudge, never when you’ve done your day' : 'optional — you can change this any time'}</small>
                   </div>
                   {settings.reminders && (
-                    <input type="time" className="time-field" value={settings.reminderTime} onChange={(e) => (updateSettings({ reminderTime: e.target.value || '20:30' }), setTimeout(refreshReminder, 450))} aria-label="Reminder time" />
+                    <input type="time" className="time-field" value={settings.reminderTime} onChange={(e) => (updateSettings({ reminderTime: e.target.value || '20:30' }), setTimeout(refreshReminder, 450))} aria-label={tr("Reminder time")} />
                   )}
                   <Toggle
                     on={settings.reminders}
@@ -446,14 +439,9 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
         {step.id === 'ready' ? (
           <>
             <button className="ob-cta" onClick={() => onDone('add')}>
-              <Pixel name="plus" size={16} /> Add my first file
-            </button>
-            <button className="ob-ghost" onClick={() => onDone('guide')}>
-              Open the short guide
-            </button>
-            <button className="ob-link mono" onClick={() => onDone('none')}>
-              explore on my own
-            </button>
+              <Pixel name="plus" size={16} />{tr(" Add my first file")}</button>
+            <button className="ob-ghost" onClick={() => onDone('guide')}>{tr("Open the short guide")}</button>
+            <button className="ob-link mono" onClick={() => onDone('none')}>{tr("explore on my own")}</button>
           </>
         ) : (
           <>
@@ -461,13 +449,9 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
               {step.cta} <Icon name="right" size={18} stroke={2.4} />
             </button>
             {step.id === 'name' ? (
-              <button className="ob-link mono" onClick={() => { setDraft(''); go(1); }}>
-                skip — just “reader”
-              </button>
+              <button className="ob-link mono" onClick={() => { setDraft(''); go(1); }}>{tr("skip — just “reader”")}</button>
             ) : (
-              <button className="ob-link mono" onClick={() => onDone('guide')} style={{ visibility: i < 2 ? 'visible' : 'hidden' }}>
-                skip intro
-              </button>
+              <button className="ob-link mono" onClick={() => onDone('guide')} style={{ visibility: i < 2 ? 'visible' : 'hidden' }}>{tr("skip intro")}</button>
             )}
           </>
         )}

@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { Sheet } from './kit';
 import { Icon } from './Icon';
 import { PixelLoader } from './kit';
@@ -63,7 +64,7 @@ export function ConfirmSheet({
     <Sheet open={open} onClose={busy ? () => {} : onClose} className="over">
       <div className="sheet-body confirm">
         <Art name={art} className="confirm-art">
-          {art === 'bin' && <span className="drop mono">[#]</span>}
+          {art === 'bin' && <span className="drop mono">{tr("[#]")}</span>}
         </Art>
         <h3>{title}</h3>
         <p>{body}</p>
@@ -72,7 +73,7 @@ export function ConfirmSheet({
             {shown.map((n) => (
               <li key={n}>{n.length > 34 ? n.slice(0, 33) + '…' : n}</li>
             ))}
-            {more > 0 && <li className="more">+ {more} more</li>}
+            {more > 0 && <li className="more">{tr("+ ")}{more}{tr(" more")}</li>}
           </ul>
         )}
         <div className="confirm-row">

@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore, streakInfo, dayKey, updateSettings, freezeStatus, COUNT_MS } from '../lib/store';
 import { fmtMs, glyphFor, legendFor } from '../lib/glyphs';
@@ -70,7 +71,7 @@ function Globe({ lights, view, onToggle, enter }: { lights: ReturnType<typeof li
         }
       }}
       role="img"
-      aria-label="A rotating globe. Each day you have read lights one place on it."
+      aria-label={tr("A rotating globe. Each day you have read lights one place on it.")}
     >
       {view === 'globe' ? <pre ref={pre} /> : <pre className="plant">{plantStage(lights.length)}</pre>}
       <span className="sig mono">{view === 'globe' ? 'drag to spin · tap for seedling' : 'tap for the globe'}</span>
@@ -107,7 +108,7 @@ function DayChart({ date, ms, hours, ice }: { date: Date; ms: number; hours?: nu
               </text>
             ))}
           </svg>
-          <p className="mono daychart-note">mostly around {hr(peak)} · {Math.round(hours[peak] / 60000)} min</p>
+          <p className="mono daychart-note">{tr("mostly around ")}{hr(peak)}{tr(" · ")}{Math.round(hours[peak] / 60000)}{tr(" min")}</p>
         </>
       ) : (
         <p className="mono daychart-note">{ms >= 1000 ? 'no hour-by-hour detail was kept for this day.' : ice ? 'a freeze day kept your streak going.' : 'nothing read — the shelf waited.'}</p>
@@ -233,7 +234,7 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
   return (
     <>
       <div className={`scrim${closing ? ' out' : ''}`} style={{ background: full ? 'rgba(0,0,0,.28)' : 'rgba(0,0,0,.12)' }} onClick={onClose} />
-      <div ref={box} className={`bubble${full ? ' full' : ''}${closing ? ' out' : ''}${met ? ' met' : ''}`} role="dialog" aria-label="Reading streak">
+      <div ref={box} className={`bubble${full ? ' full' : ''}${closing ? ' out' : ''}${met ? ' met' : ''}`} role="dialog" aria-label={tr("Reading streak")}>
         <div className="bubble-drag" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
           <div className="sheet-grip" />
           <div className="bubble-head">
@@ -242,15 +243,15 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
               <button onClick={() => setGoalOpen(true)} aria-label={`Daily goal: ${Math.round(info.today / 60000)} of ${settings.dailyGoal} minutes`}>
                 <Ring value={info.today / goal} size={20} stroke={2.4} />
               </button>
-              <span aria-label="Current streak">
+              <span aria-label={tr("Current streak")}>
                 <Pixel name="sprout" size={14} />
                 {info.current}
               </span>
-              <span aria-label="Longest streak">
+              <span aria-label={tr("Longest streak")}>
                 <Pixel name="crown" size={14} />
                 {info.longest}
               </span>
-              <button onClick={onClose} aria-label="Close">
+              <button onClick={onClose} aria-label={tr("Close")}>
                 <Icon name="close" size={16} stroke={2.2} />
               </button>
             </div>
@@ -269,8 +270,8 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
                   if (nameDraft.trim()) updateSettings({ name: nameDraft.trim() });
                 }}
               >
-                <input value={nameDraft} onChange={(e) => setNameDraft(e.target.value.slice(0, 24))} placeholder="what should I call you?" maxLength={24} aria-label="Your name" />
-                {nameDraft.trim() && <button>Save</button>}
+                <input value={nameDraft} onChange={(e) => setNameDraft(e.target.value.slice(0, 24))} placeholder={tr("what should I call you?")} maxLength={24} aria-label={tr("Your name")} />
+                {nameDraft.trim() && <button>{tr("Save")}</button>}
               </form>
             )}
           </div>
@@ -292,26 +293,21 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
           )}
           <div className="bubble-cap">
             <b className="mono">
-              {lights.length} light{lights.length === 1 ? '' : 's'} on your map
-            </b>
+              {lights.length}{tr(" light")}{lights.length === 1 ? '' : 's'}{tr(" on your map")}</b>
             <span>{lights.length ? 'One for every day you reached your goal.' : 'Reach your daily goal to light the first place.'}</span>
             <span className="muted">{info.today >= goal ? 'Today’s light is blinking — it joins the map at midnight.' : `${Math.max(1, Math.ceil((goal - info.today) / 60000))} min to today’s light.`}</span>
           </div>
           <div className="bubble-line mono">
             <span>
-              <b>{info.current}</b> day streak
-            </span>
+              <b>{info.current}</b>{tr(" day streak")}</span>
             <span>
-              <b>{Math.round(info.today / 60000)}</b>/{settings.dailyGoal} min today
-            </span>
+              <b>{Math.round(info.today / 60000)}</b>{tr("/")}{settings.dailyGoal}{tr(" min today")}</span>
             <span>
-              <b>{info.total >= 3_600_000 ? (info.total / 3_600_000).toFixed(1) + 'h' : Math.round(info.total / 60000) + 'm'}</b> total
-            </span>
+              <b>{info.total >= 3_600_000 ? (info.total / 3_600_000).toFixed(1) + 'h' : Math.round(info.total / 60000) + 'm'}</b>{tr(" total")}</span>
           </div>
           {!full && (
             <button className="bubble-more" onClick={() => setFull(true)}>
-              <Icon name="up" size={16} /> more
-            </button>
+              <Icon name="up" size={16} />{tr(" more")}</button>
           )}
 
           {full && (
@@ -320,13 +316,10 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
               <div className="cal">
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                   <span className="mono" style={{ fontSize: 12 }}>
-                    {info.activeDays} reading days
-                  </span>
-                  <span className="mono muted" style={{ fontSize: 11 }}>
-                    18 weeks
-                  </span>
+                    {info.activeDays}{tr(" reading days")}</span>
+                  <span className="mono muted" style={{ fontSize: 11 }}>{tr("18 weeks")}</span>
                 </div>
-                <div className="cal-grid" role="grid" aria-label="Reading days">
+                <div className="cal-grid" role="grid" aria-label={tr("Reading days")}>
                   {grid.map((c) => {
                     const ice = c.ms < COUNT_MS && frozen.used.includes(c.key);
                     const g = ice ? { ch: '~', level: 0, met: false } : glyphFor(c.ms, goal);
@@ -350,41 +343,41 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
                   })}
                 </div>
                 <div className="cal-legend mono" aria-hidden>
-                  <span>·&nbsp;0</span>
+                  <span>{tr("·&nbsp;0")}</span>
                   {legendFor(settings.dailyGoal).map((g) => (
                     <span key={g.ch} data-met={g.ch === '@' || undefined}>
-                      {g.ch}&nbsp;{g.from}
+                      {g.ch}{tr("&nbsp;")}{g.from}
                     </span>
                   ))}
-                  <span>min</span>
-                  <span data-ice>~&nbsp;freeze</span>
+                  <span>{tr("min")}</span>
+                  <span data-ice>{tr("~&nbsp;freeze")}</span>
                 </div>
                 <DayChart date={sel.date} ms={sel.ms} hours={hours[sel.key]} ice={sel.ms < COUNT_MS && frozen.used.includes(sel.key)} />
               </div>
               <div className="tiles">
                 <div className="tile">
-                  <div className="k">longest streak</div>
+                  <div className="k">{tr("longest streak")}</div>
                   <div className="v">
                     {info.longest}
-                    <small>days</small>
+                    <small>{tr("days")}</small>
                   </div>
                 </div>
                 <div className="tile">
-                  <div className="k">finished</div>
+                  <div className="k">{tr("finished")}</div>
                   <div className="v">
                     {finished}
-                    <small>of {docs.length}</small>
+                    <small>{tr("of ")}{docs.length}</small>
                   </div>
                 </div>
                 <div className="tile freeze" data-ready={fz.available > 0 || undefined}>
-                  <div className="k">freeze day</div>
+                  <div className="k">{tr("freeze day")}</div>
                   <div className="v mono">
                     {fz.available > 0 ? 'ready' : 'used'}
                     <small>{fz.bonus > 0 ? `+${fz.bonus} won` : fz.weekly ? 'back every 15 days' : `back in ${fz.back} day${fz.back === 1 ? '' : 's'}`}</small>
                   </div>
                   <div className="tile-blocks">
                     <Blocks n={Math.min(4, fz.blocks)} />
-                    <small className="mono">{fz.blocks}/5 · win the climb for more</small>
+                    <small className="mono">{fz.blocks}{tr("/5 · win the climb for more")}</small>
                   </div>
                 </div>
               </div>
@@ -400,13 +393,11 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
           )}
         </div>
       </div>
-      <Sheet open={goalOpen} onClose={() => setGoalOpen(false)} title="Daily goal" className="over">
+      <Sheet open={goalOpen} onClose={() => setGoalOpen(false)} title={tr("Daily goal")} className="over">
         <div className="sheet-body" style={{ paddingBottom: 16 }}>
-          <p className="muted" style={{ marginTop: 0, fontSize: 14 }}>
-            A day counts toward your streak after one minute of reading or listening. The goal fills the ring.
-          </p>
-          <div className="mono" style={{ fontSize: 28, fontWeight: 700, textAlign: 'center', margin: '14px 0 6px' }}>{settings.dailyGoal} min</div>
-          <p className="muted" style={{ textAlign: 'center', fontSize: 13, margin: 0 }}>You can change it in Settings → advanced.</p>
+          <p className="muted" style={{ marginTop: 0, fontSize: 14 }}>{tr("A day counts toward your streak after one minute of reading or listening. The goal fills the ring.")}</p>
+          <div className="mono" style={{ fontSize: 28, fontWeight: 700, textAlign: 'center', margin: '14px 0 6px' }}>{settings.dailyGoal}{tr(" min")}</div>
+          <p className="muted" style={{ textAlign: 'center', fontSize: 13, margin: 0 }}>{tr("You can change it in Settings → advanced.")}</p>
         </div>
       </Sheet>
     </>
@@ -450,7 +441,7 @@ function IconCards({ longest }: { longest: number }) {
   };
   return (
     <div className="icon-cards">
-      <div className="section-label">app icon</div>
+      <div className="section-label">{tr("app icon")}</div>
       <div className="icard-stack">{[card('classic'), card('gradient')]}</div>
       <p className="muted">
         {unlocked

@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { Fragment, useCallback, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { readArticle, type Article } from '../lib/article';
 import { wikiArticle, type WikiDoc } from '../lib/wikiarticle';
@@ -36,21 +37,8 @@ type Tab = 'today' | 'news' | 'you' | 'play';
 type Chip = { label: string; q: string };
 
 /** Library · Interesting: the two halves of the home screen, switched with the title. */
-export function HomeTabs({ active, onPick }: { active: 'library' | 'interesting'; onPick: (t: 'library' | 'interesting') => void }) {
-  return (
-    <div className="home-tabs" role="tablist">
-      <button role="tab" aria-selected={active === 'library'} className={active === 'library' ? 'on' : ''} onClick={() => active !== 'library' && (tap('select'), onPick('library'))}>
-        library
-      </button>
-      <button role="tab" aria-selected={active === 'interesting'} className={active === 'interesting' ? 'on' : ''} onClick={() => active !== 'interesting' && (tap('select'), onPick('interesting'))}>
-        <span className="frogmark mono" aria-hidden>
-          (@)
-        </span>
-        interesting
-      </button>
-    </div>
-  );
-}
+export { HomeTabs } from './HomeTabs';
+import { HomeTabs } from './HomeTabs';
 
 /**
  * A photograph shown whole: never cropped to a corner. It keeps its own shape (within reason) and, where the frame is
@@ -239,9 +227,7 @@ export function Interesting({ docs, onSwitch, onFindBooks }: { docs: DocMeta[]; 
         <div className="int-wait">
           <Froggy mood="worried" size="md" />
           <p>{err}</p>
-          <button className="pill" onClick={() => load(true)}>
-            Try again
-          </button>
+          <button className="pill" onClick={() => load(true)}>{tr("Try again")}</button>
         </div>
       )}
 
@@ -282,7 +268,7 @@ function Today({ d, offline, mood, setDetail, wiki, onRefresh }: { d: Daily; off
           <b>{date}</b>
           <span className="mono">{ageLine(d.generated, offline)}</span>
         </div>
-        <button className="int-refresh" aria-label="Refresh" onClick={onRefresh}>
+        <button className="int-refresh" aria-label={tr("Refresh")} onClick={onRefresh}>
           <Icon name="undo" size={17} />
         </button>
       </div>
@@ -292,28 +278,26 @@ function Today({ d, offline, mood, setDetail, wiki, onRefresh }: { d: Daily; off
           <div className="bio-top">
             <Photo src={d.figure.image} w={d.figure.iw} h={d.figure.ih} className="bio-photo" />
             <div className="bio-head">
-              <span className="tag mono">figure of the day · {d.figure.year}</span>
+              <span className="tag mono">{tr("figure of the day · ")}{d.figure.year}</span>
               <h3>{d.figure.title}</h3>
               <p className="sub">{d.figure.description}</p>
             </div>
           </div>
           <p className="ext long">{d.figure.extract}</p>
-          <span className="more mono">read the full biography →</span>
+          <span className="more mono">{tr("read the full biography →")}</span>
         </button>
       )}
 
       <div className="tcard fact">
         <Froggy mood="bigSmile" size="sm" />
-        <span className="tag mono">fact of the day</span>
+        <span className="tag mono">{tr("fact of the day")}</span>
         <p>{fact.text}</p>
-        <button className="srcline mono" onClick={() => wiki(fact.wiki)}>
-          read more · {fact.wiki} →
-        </button>
+        <button className="srcline mono" onClick={() => wiki(fact.wiki)}>{tr("read more · ")}{fact.wiki}{tr(" →")}</button>
       </div>
 
       {!!d.history?.length && (
         <div className="tcard history">
-          <span className="tag mono">on this day in history · tap one to explore it</span>
+          <span className="tag mono">{tr("on this day in history · tap one to explore it")}</span>
           <ul>
             {d.history.map((h, i) => (
               <li key={i}>
@@ -332,7 +316,7 @@ function Today({ d, offline, mood, setDetail, wiki, onRefresh }: { d: Daily; off
         <button className="tcard picture" onClick={() => setDetail({ kind: 'picture', card: { ...d.picture!, extract: d.picture!.description } })}>
           <Photo src={d.picture.image} />
           <div className="pcap">
-            <span className="tag mono">picture of the day</span>
+            <span className="tag mono">{tr("picture of the day")}</span>
             <p>{(d.picture.description || d.picture.title).slice(0, 160)}</p>
           </div>
         </button>
@@ -342,18 +326,18 @@ function Today({ d, offline, mood, setDetail, wiki, onRefresh }: { d: Daily; off
         <button className="tcard featured" onClick={() => wiki(d.featured!.title)}>
           <Photo src={d.featured.image} w={d.featured.iw} h={d.featured.ih} />
           <div className="tcard-body">
-            <span className="tag mono">wikipedia’s article of the day</span>
+            <span className="tag mono">{tr("wikipedia’s article of the day")}</span>
             <h3>{d.featured.title}</h3>
             <p className="sub">{d.featured.description}</p>
             <p className="ext long">{d.featured.extract}</p>
-            <span className="more mono">read the full article →</span>
+            <span className="more mono">{tr("read the full article →")}</span>
           </div>
         </button>
       )}
 
       {!!worth.length && (
         <div className="tcard readlist">
-          <span className="tag mono">worth your time</span>
+          <span className="tag mono">{tr("worth your time")}</span>
           <ul>
             {worth.map((r) => (
               <li key={r.id}>
@@ -366,7 +350,7 @@ function Today({ d, offline, mood, setDetail, wiki, onRefresh }: { d: Daily; off
 
       {!!d.mostread?.length && (
         <div className="tcard more">
-          <span className="tag mono">what the world is reading on wikipedia today</span>
+          <span className="tag mono">{tr("what the world is reading on wikipedia today")}</span>
           <ul>
             {d.mostread.slice(0, 5).map((m) => (
               <li key={m.title}>
@@ -381,7 +365,7 @@ function Today({ d, offline, mood, setDetail, wiki, onRefresh }: { d: Daily; off
           </ul>
         </div>
       )}
-      <p className="int-foot mono">· · ·{'\n'}everything here is free, public and the same for everyone</p>
+      <p className="int-foot mono">{tr("· · ·")}{'\n'}{tr("everything here is free, public and the same for everyone")}</p>
     </div>
   );
 }
@@ -394,7 +378,7 @@ function ReadRow({ r, d, onOpen }: { r: Read; d: Daily; onOpen: () => void }) {
       <span className="rtext">
         <span className="rmeta mono">
           {o && <Logo o={o} size={16} />}
-          {o?.name ?? ''} · {r.kind === 'long' ? 'long read' : r.kind === 'curious' ? 'curious' : 'article'}
+          {o?.name ?? ''}{tr(" · ")}{r.kind === 'long' ? 'long read' : r.kind === 'curious' ? 'curious' : 'article'}
         </span>
         <b>{r.title}</b>
         <small>{tidy(r.summary)}</small>
@@ -427,21 +411,20 @@ function NewsMode({ view, set }: { view: 'news' | 'world'; set: (v: 'news' | 'wo
     set(v);
   };
   return (
-    <div className="nmode" role="tablist" aria-label="News or World info">
+    <div className="nmode" role="tablist" aria-label={tr("News or World info")}>
       <button role="tab" aria-selected={view === 'news'} className={view === 'news' ? 'on' : ''} onClick={() => go('news')}>
         <Icon name="book" size={18} />
         <span>
-          <b>Stories</b>
-          <small className="mono">today’s reporting</small>
+          <b>{tr("Stories")}</b>
+          <small className="mono">{tr("today’s reporting")}</small>
         </span>
       </button>
       <button role="tab" aria-selected={view === 'world'} className={view === 'world' ? 'on' : ''} onClick={() => go('world')}>
         <Icon name="globe" size={18} />
         <span>
-          <b>
-            World info {!seen && <i className="new mono">new</i>}
+          <b>{tr("World info ")}{!seen && <i className="new mono">{tr("new")}</i>}
           </b>
-          <small className="mono">votes · sport · money</small>
+          <small className="mono">{tr("votes · sport · money")}</small>
         </span>
       </button>
     </div>
@@ -502,9 +485,9 @@ function Reels({ d, stories, setDetail }: { d: Daily; stories: Story[]; setDetai
               <div className="reel-img">
                 <Photo src={s.image} w={s.iw} h={s.ih} fill />
                 <span className="reel-count mono">
-                  {i + 1} / {stories.length}
+                  {i + 1}{tr(" / ")}{stories.length}
                 </span>
-                <span className="reel-credit mono">photo · {s.imageFrom}</span>
+                <span className="reel-credit mono">{tr("photo · ")}{s.imageFrom}</span>
               </div>
               <div className="reel-body">
                 <div className="reel-meta mono">
@@ -515,33 +498,25 @@ function Reels({ d, stories, setDetail }: { d: Daily; stories: Story[]; setDetai
                   </span>
                   {s.topic && <b>{TOPIC_LABEL[s.topic]}</b>}
                   <span>
-                    {agoShort(s.time)} · {outs.length > 1 ? `${outs.length} outlets` : outs[0].name}
+                    {agoShort(s.time)}{tr(" · ")}{outs.length > 1 ? `${outs.length} outlets` : outs[0].name}
                   </span>
                 </div>
                 <h2>{s.title}</h2>
                 <p>{tidy(s.summary)}</p>
                 <div className="reel-act">
-                  <button className="pill" onClick={() => setDetail({ kind: 'story', story: s })}>
-                    Read more
-                  </button>
-                  <button className="pill ghost" onClick={() => setDetail({ kind: 'story', story: s, open: 0 })}>
-                    Full story
-                  </button>
+                  <button className="pill" onClick={() => setDetail({ kind: 'story', story: s })}>{tr("Read more")}</button>
+                  <button className="pill ghost" onClick={() => setDetail({ kind: 'story', story: s, open: 0 })}>{tr("Full story")}</button>
                 </div>
-                {i === 0 && <p className="reel-hint mono">swipe up for the next ↑</p>}
+                {i === 0 && <p className="reel-hint mono">{tr("swipe up for the next ↑")}</p>}
               </div>
             </article>
           );
         })}
         <div className="reel-end">
           <Froggy mood="sleepy" size="md" />
-          <p>That is the news for now. Froggy will have more later.</p>
-          <button className="pill ghost" onClick={() => go(0)}>
-            Back to the first
-          </button>
-          <button className="srcline mono" onClick={() => setDetail({ kind: 'method' })}>
-            how stories are chosen
-          </button>
+          <p>{tr("That is the news for now. Froggy will have more later.")}</p>
+          <button className="pill ghost" onClick={() => go(0)}>{tr("Back to the first")}</button>
+          <button className="srcline mono" onClick={() => setDetail({ kind: 'method' })}>{tr("how stories are chosen")}</button>
         </div>
       </div>
       {stories.length <= 24 && (
@@ -551,7 +526,7 @@ function Reels({ d, stories, setDetail }: { d: Daily; stories: Story[]; setDetai
           ))}
         </div>
       )}
-      <button className="reel-info" onClick={() => setDetail({ kind: 'method' })} aria-label="How stories are chosen">
+      <button className="reel-info" onClick={() => setDetail({ kind: 'method' })} aria-label={tr("How stories are chosen")}>
         <Icon name="info" size={18} />
       </button>
     </div>
@@ -613,7 +588,7 @@ function ForYou({ book, d, setDetail, wiki }: { book?: DocMeta; d?: Daily; setDe
                     <h3>{d.featured.title}</h3>
                     <p className="sub">{d.featured.description}</p>
                     <p className="ext long">{d.featured.extract}</p>
-                    <span className="more mono">read the full article →</span>
+                    <span className="more mono">{tr("read the full article →")}</span>
                   </div>
                 </button>
               )}
@@ -621,19 +596,19 @@ function ForYou({ book, d, setDetail, wiki }: { book?: DocMeta; d?: Daily; setDe
           )}
           {pick && (
             <>
-              <p className="int-because mono">article of the week · because you are reading “{pick.because.length > 34 ? pick.because.slice(0, 34) + '…' : pick.because}”</p>
+              <p className="int-because mono">{tr("article of the week · because you are reading “")}{pick.because.length > 34 ? pick.because.slice(0, 34) + '…' : pick.because}{tr("”")}</p>
               <button className="tcard figure big" onClick={() => wiki(pick.article.title, `Because you are reading “${pick.because}”`)}>
                 <Photo src={pick.article.image} w={pick.article.iw} h={pick.article.ih} />
                 <div className="tcard-body">
                   <h3>{pick.article.title}</h3>
                   <p className="sub">{pick.article.description}</p>
                   <p className="ext long">{pick.article.extract}</p>
-                  <span className="more mono">read the full article →</span>
+                  <span className="more mono">{tr("read the full article →")}</span>
                 </div>
               </button>
               {!!pick.more.length && (
                 <div className="tcard more">
-                  <span className="tag mono">more along these lines</span>
+                  <span className="tag mono">{tr("more along these lines")}</span>
                   <ul>
                     {pick.more.map((m) => (
                       <li key={m.title}>
@@ -657,7 +632,7 @@ function ForYou({ book, d, setDetail, wiki }: { book?: DocMeta; d?: Daily; setDe
         <>
           {sub === 'curious' && !!d.mostread?.length && (
             <div className="tcard more">
-              <span className="tag mono">what the world is reading on wikipedia today</span>
+              <span className="tag mono">{tr("what the world is reading on wikipedia today")}</span>
               <ul>
                 {d.mostread.map((m) => (
                   <li key={m.title}>
@@ -680,12 +655,12 @@ function ForYou({ book, d, setDetail, wiki }: { book?: DocMeta; d?: Daily; setDe
           {!reads(sub === 'articles' ? 'article' : sub).length && sub !== 'curious' && (
             <div className="int-wait inline">
               <Froggy mood="sleepy" size="md" />
-              <p>Nothing new here yet. Froggy checks again a few times a day.</p>
+              <p>{tr("Nothing new here yet. Froggy checks again a few times a day.")}</p>
             </div>
           )}
         </>
       )}
-      <p className="int-foot mono">· · ·{'\n'}articles, curiosities and long reads from around the web, always credited</p>
+      <p className="int-foot mono">{tr("· · ·")}{'\n'}{tr("articles, curiosities and long reads from around the web, always credited")}</p>
     </div>
   );
 }
@@ -701,18 +676,14 @@ function DetailBody({ det, d, setDetail, onAsk, onFindBooks }: { det: Detail; d?
     return (
       <div className="sheet-body int-detail">
         <Photo src={c.image} className="dimg" />
-        <span className="tag mono">picture of the day</span>
+        <span className="tag mono">{tr("picture of the day")}</span>
         <h3>{c.title}</h3>
         <p>{c.extract}</p>
-        {c.credit && <p className="credit mono">credit · {c.credit}</p>}
+        {c.credit && <p className="credit mono">{tr("credit · ")}{c.credit}</p>}
         <div className="det-act">
-          <button className="pill ghost" onClick={() => onAsk({ id: 'pic:' + c.title, title: c.title, text: `${c.title}. ${c.extract ?? ''}`, chips: READ_CHIPS })}>
-            Ask Froggy
-          </button>
+          <button className="pill ghost" onClick={() => onAsk({ id: 'pic:' + c.title, title: c.title, text: `${c.title}. ${c.extract ?? ''}`, chips: READ_CHIPS })}>{tr("Ask Froggy")}</button>
           {c.url && (
-            <button className="pill ghost" onClick={() => openExternal(c.url!)}>
-              Source: Wikimedia Commons ↗
-            </button>
+            <button className="pill ghost" onClick={() => openExternal(c.url!)}>{tr("Source: Wikimedia Commons ↗")}</button>
           )}
         </div>
       </div>
@@ -721,11 +692,11 @@ function DetailBody({ det, d, setDetail, onAsk, onFindBooks }: { det: Detail; d?
   return (
     <div className="sheet-body int-detail">
       <Froggy mood="smug" size="md" className="inline" />
-      <h3>How the news is chosen</h3>
-      <p>Froggy has no editors and does not pick sides. A few times a day, one shared list is built from the public feeds of more than twenty outlets on every continent: public broadcasters, independent papers, and commercial outlets from the left, the centre and the right, plus science, technology and good-news sources.</p>
-      <p>The same story in several outlets becomes one card that names each of them. Stories that more outlets reported, in more parts of the world and across the political spectrum, come first. A mix of topics is kept on purpose, so the day is not only bad news: no more than about a third of the cards are heavy.</p>
-      <p>Each outlet has a rough position (left, centre, right) taken from public media-bias ratings. They are approximations, often disputed — a prompt to compare how different outlets tell a story, never a verdict.</p>
-      <p>Only a headline, a short summary and a credited picture are shown. The full story is fetched from the outlet when you ask for it, and every card links back to its source.</p>
+      <h3>{tr("How the news is chosen")}</h3>
+      <p>{tr("Froggy has no editors and does not pick sides. A few times a day, one shared list is built from the public feeds of more than twenty outlets on every continent: public broadcasters, independent papers, and commercial outlets from the left, the centre and the right, plus science, technology and good-news sources.")}</p>
+      <p>{tr("The same story in several outlets becomes one card that names each of them. Stories that more outlets reported, in more parts of the world and across the political spectrum, come first. A mix of topics is kept on purpose, so the day is not only bad news: no more than about a third of the cards are heavy.")}</p>
+      <p>{tr("Each outlet has a rough position (left, centre, right) taken from public media-bias ratings. They are approximations, often disputed — a prompt to compare how different outlets tell a story, never a verdict.")}</p>
+      <p>{tr("Only a headline, a short summary and a credited picture are shown. The full story is fetched from the outlet when you ask for it, and every card links back to its source.")}</p>
     </div>
   );
 }
@@ -756,8 +727,7 @@ function WikiReader({ det, setDetail, onAsk, onFindBooks }: { det: Extract<Detai
     <div className="sheet-body int-detail story wk" ref={top}>
       <div className="story-bar">
         {det.stack.length > 1 ? (
-          <button className="mono" onClick={back}>
-            ← {det.stack[det.stack.length - 2]}
+          <button className="mono" onClick={back}>{tr("← ")}{det.stack[det.stack.length - 2]}
           </button>
         ) : (
           <span className="mono muted">{det.note ?? 'wikipedia · free encyclopedia'}</span>
@@ -775,17 +745,13 @@ function WikiReader({ det, setDetail, onAsk, onFindBooks }: { det: Extract<Detai
         <div className="int-wait inline">
           <Froggy mood="worried" size="md" />
           <p>{err}</p>
-          <button className="pill ghost" onClick={() => openExternal(wikiUrl(title))}>
-            Open in the browser
-          </button>
+          <button className="pill ghost" onClick={() => openExternal(wikiUrl(title))}>{tr("Open in the browser")}</button>
         </div>
       )}
       {doc && (
         <>
           {doc.image && <Photo src={doc.image} w={doc.iw} h={doc.ih} className="wk-lead" />}
-          <p className="byline mono">
-            Wikipedia · {Math.max(1, Math.round(doc.words / 220))} min read
-          </p>
+          <p className="byline mono">{tr("Wikipedia · ")}{Math.max(1, Math.round(doc.words / 220))}{tr(" min read")}</p>
           <div
             className="article wk-body"
             onClick={(e) => {
@@ -798,9 +764,7 @@ function WikiReader({ det, setDetail, onAsk, onFindBooks }: { det: Extract<Detai
           />
           {!!doc.next.length && (
             <>
-              <div className="tag mono" style={{ marginTop: 18 }}>
-                keep exploring
-              </div>
+              <div className="tag mono" style={{ marginTop: 18 }}>{tr("keep exploring")}</div>
               <div className="chips-row">
                 {doc.next.map((n) => (
                   <button key={n} className="chip-link" onClick={() => go(n)}>
@@ -811,19 +775,13 @@ function WikiReader({ det, setDetail, onAsk, onFindBooks }: { det: Extract<Detai
             </>
           )}
           <div className="det-act">
-            <button className="pill" onClick={() => onAsk({ id: 'wiki:' + doc.title, title: doc.title, text: `${doc.title}. ${doc.description}\n\n${plain().slice(0, 9000)}`, chips: READ_CHIPS })}>
-              Ask Froggy
-            </button>
+            <button className="pill" onClick={() => onAsk({ id: 'wiki:' + doc.title, title: doc.title, text: `${doc.title}. ${doc.description}\n\n${plain().slice(0, 9000)}`, chips: READ_CHIPS })}>{tr("Ask Froggy")}</button>
             {det.stack.length === 1 && (
-              <button className="pill ghost" onClick={() => onFindBooks(doc.title)}>
-                Find free books
-              </button>
+              <button className="pill ghost" onClick={() => onFindBooks(doc.title)}>{tr("Find free books")}</button>
             )}
           </div>
-          <span className="srcline mono static">source · Wikipedia — text free to share under CC BY-SA</span>
-          <button className="srcline mono" onClick={() => openExternal(doc.url)}>
-            open the original page ↗
-          </button>
+          <span className="srcline mono static">{tr("source · Wikipedia — text free to share under CC BY-SA")}</span>
+          <button className="srcline mono" onClick={() => openExternal(doc.url)}>{tr("open the original page ↗")}</button>
         </>
       )}
     </div>
@@ -835,9 +793,7 @@ function EventDetail({ ev, setDetail, onAsk }: { ev: HistoryEvent; setDetail: (x
   const ago = new Date().getFullYear() - ev.year;
   return (
     <div className="sheet-body int-detail">
-      <span className="tag mono">
-        on this day · {ev.year} · {ago} years ago
-      </span>
+      <span className="tag mono">{tr("on this day · ")}{ev.year}{tr(" · ")}{ago}{tr(" years ago")}</span>
       <p className="ev-text">{ev.text}</p>
       {ev.pages?.map((p) => (
         <button key={p.title} className="evpage" onClick={() => setDetail({ kind: 'wiki', stack: [p.title], note: `On this day, ${ev.year}` })}>
@@ -846,14 +802,12 @@ function EventDetail({ ev, setDetail, onAsk }: { ev: HistoryEvent; setDetail: (x
             <b>{p.title}</b>
             <small>{p.description}</small>
             <em>{p.extract}</em>
-            <span className="more mono">read the full article →</span>
+            <span className="more mono">{tr("read the full article →")}</span>
           </span>
         </button>
       ))}
-      <button className="pill ghost wide" onClick={() => onAsk({ id: 'day:' + ev.year + ev.text.slice(0, 20), title: `${ev.year}: ${ev.text.slice(0, 60)}`, text: `${ev.year}. ${ev.text}\n\n${(ev.pages ?? []).map((p) => `${p.title}: ${p.extract}`).join('\n\n')}`, chips: [{ label: 'What led to it', q: 'What led up to this event?' }, { label: 'What changed', q: 'What changed afterwards because of it?' }, { label: 'Explain simply', q: 'Explain this simply.' }, { label: 'Who was involved', q: 'Who were the main people involved, and what did they do?' }] })}>
-        Ask Froggy about this
-      </button>
-      <span className="srcline mono static">source · Wikipedia — On this day</span>
+      <button className="pill ghost wide" onClick={() => onAsk({ id: 'day:' + ev.year + ev.text.slice(0, 20), title: `${ev.year}: ${ev.text.slice(0, 60)}`, text: `${ev.year}. ${ev.text}\n\n${(ev.pages ?? []).map((p) => `${p.title}: ${p.extract}`).join('\n\n')}`, chips: [{ label: 'What led to it', q: 'What led up to this event?' }, { label: 'What changed', q: 'What changed afterwards because of it?' }, { label: 'Explain simply', q: 'Explain this simply.' }, { label: 'Who was involved', q: 'Who were the main people involved, and what did they do?' }] })}>{tr("Ask Froggy about this")}</button>
+      <span className="srcline mono static">{tr("source · Wikipedia — On this day")}</span>
     </div>
   );
 }
@@ -883,15 +837,13 @@ function ReadDetail({ r, d, setDetail, onAsk }: { r: Read; d: Daily; setDetail: 
       <div className="rmeta mono big">
         {o && <Logo o={o} size={22} />}
         <span>
-          {o?.name} · {r.kind === 'long' ? 'long read' : r.kind === 'curious' ? 'something curious' : 'article'}
+          {o?.name}{tr(" · ")}{r.kind === 'long' ? 'long read' : r.kind === 'curious' ? 'something curious' : 'article'}
         </span>
       </div>
       <h3>{r.title}</h3>
       {!art && state !== 'loading' && <p>{tidy(r.summary)}</p>}
       {!art && state === 'idle' && (
-        <button className="pill wide" onClick={open}>
-          Read it here
-        </button>
+        <button className="pill wide" onClick={open}>{tr("Read it here")}</button>
       )}
       {state === 'loading' && (
         <div className="int-wait inline">
@@ -903,31 +855,22 @@ function ReadDetail({ r, d, setDetail, onAsk }: { r: Read; d: Daily; setDetail: 
         <div className="int-wait inline">
           <Froggy mood="worried" size="md" />
           <p>{err}</p>
-          <button className="pill" onClick={() => openExternal(r.url)}>
-            Open in the browser
-          </button>
+          <button className="pill" onClick={() => openExternal(r.url)}>{tr("Open in the browser")}</button>
         </div>
       )}
       {art && (
         <>
           <p className="byline mono">
-            {art.site} · {Math.max(1, Math.round(art.words / 220))} min read
-          </p>
+            {art.site}{tr(" · ")}{Math.max(1, Math.round(art.words / 220))}{tr(" min read")}</p>
           <div className="article" dangerouslySetInnerHTML={{ __html: art.html }} />
-          <span className="srcline mono static">source · {art.site} — all rights belong to the publisher</span>
+          <span className="srcline mono static">{tr("source · ")}{art.site}{tr(" — all rights belong to the publisher")}</span>
         </>
       )}
       <div className="det-act">
-        <button className="pill ghost" onClick={() => onAsk({ id: 'read:' + r.id, title: r.title, text: `${r.title}\n\n${art ? new DOMParser().parseFromString(art.html, 'text/html').body.textContent?.slice(0, 9000) : r.summary}`, chips: READ_CHIPS })}>
-          Ask Froggy
-        </button>
-        <button className="pill ghost" onClick={() => openExternal(r.url)}>
-          Open at {o?.name ?? 'the source'} ↗
-        </button>
+        <button className="pill ghost" onClick={() => onAsk({ id: 'read:' + r.id, title: r.title, text: `${r.title}\n\n${art ? new DOMParser().parseFromString(art.html, 'text/html').body.textContent?.slice(0, 9000) : r.summary}`, chips: READ_CHIPS })}>{tr("Ask Froggy")}</button>
+        <button className="pill ghost" onClick={() => openExternal(r.url)}>{tr("Open at ")}{o?.name ?? 'the source'}{tr(" ↗")}</button>
       </div>
-      <button className="srcline mono" onClick={() => setDetail(null)}>
-        close
-      </button>
+      <button className="srcline mono" onClick={() => setDetail(null)}>{tr("close")}</button>
     </div>
   );
 }
@@ -951,7 +894,7 @@ function Spectrum({ d, s }: { d: Daily; s: Story }) {
   if (!placed.length) return null;
   return (
     <div className="spectrum">
-      <div className="tag mono">who covers this</div>
+      <div className="tag mono">{tr("who covers this")}</div>
       <div className="sp-bar" style={{ height: 34 + Math.max(0, rows.length - 1) * 26 }}>
         <i className="sp-line" />
         {pos.map(({ o, x, r }) => (
@@ -961,13 +904,12 @@ function Spectrum({ d, s }: { d: Daily; s: Story }) {
         ))}
       </div>
       <div className="sp-axis mono">
-        <span>left</span>
-        <span>centre</span>
-        <span>right</span>
+        <span>{tr("left")}</span>
+        <span>{tr("centre")}</span>
+        <span>{tr("right")}</span>
       </div>
       <p className="sp-note">
-        {c.total} outlet{c.total === 1 ? '' : 's'}: {c.left} on the left, {c.centre} in the centre, {c.right} on the right.
-        {missing.length ? ` None from ${missing.join(' or ')} among the outlets Froggy follows reported it yet.` : ' It crosses the spectrum.'}
+        {c.total}{tr(" outlet")}{c.total === 1 ? '' : 's'}{tr(": ")}{c.left}{tr(" on the left, ")}{c.centre}{tr(" in the centre, ")}{c.right}{tr(" on the right.")}{missing.length ? ` None from ${missing.join(' or ')} among the outlets Froggy follows reported it yet.` : ' It crosses the spectrum.'}
       </p>
       {f && (
         <div className="sp-info">
@@ -975,13 +917,13 @@ function Spectrum({ d, s }: { d: Daily; s: Story }) {
           <span>
             <b>{f.name}</b>
             <small className="mono">
-              {f.region} · {KIND_WORD[f.kind] ?? f.kind} · {leanWord(f.lean)}
+              {f.region}{tr(" · ")}{KIND_WORD[f.kind] ?? f.kind}{tr(" · ")}{leanWord(f.lean)}
             </small>
             <em>{f.about}</em>
           </span>
         </div>
       )}
-      <p className="sp-fine mono">rough positions from public media-bias ratings — approximate and disputed</p>
+      <p className="sp-fine mono">{tr("rough positions from public media-bias ratings — approximate and disputed")}</p>
     </div>
   );
 }
@@ -1039,11 +981,9 @@ function StoryDetail({ s, start, d, setDetail, onAsk }: { s: Story; start?: numb
           <p>
             <Linked text={tidy(s.summary)} terms={s.terms} onWiki={wiki} />
           </p>
-          <button className="pill wide" onClick={() => read(0)}>
-            Read the full story
-          </button>
+          <button className="pill wide" onClick={() => read(0)}>{tr("Read the full story")}</button>
           <Spectrum d={d} s={s} />
-          {s.sources.length > 1 && <div className="tag mono">how each outlet tells it — tap to read that version</div>}
+          {s.sources.length > 1 && <div className="tag mono">{tr("how each outlet tells it — tap to read that version")}</div>}
           <ul className="src-list">
             {s.sources.map((x, i) => (
               <li key={x.url}>
@@ -1061,7 +1001,7 @@ function StoryDetail({ s, start, d, setDetail, onAsk }: { s: Story; start?: numb
           </ul>
           {!!s.terms?.length && (
             <>
-              <div className="tag mono">explore the names in this story</div>
+              <div className="tag mono">{tr("explore the names in this story")}</div>
               <div className="chips-row">
                 {s.terms.map((t) => (
                   <button key={t.w} className="chip-link" onClick={() => wiki(t.w)}>
@@ -1071,12 +1011,10 @@ function StoryDetail({ s, start, d, setDetail, onAsk }: { s: Story; start?: numb
               </div>
             </>
           )}
-          <button className="pill ghost wide" onClick={() => onAsk({ id: 'news:' + s.id, title: s.title, text: `${s.title}\n\n${s.summary}\n\nReported by: ${outs.map((x) => `${x.name} (${leanWord(x.lean)})`).join(', ')}`, chips: NEWS_CHIPS })}>
-            Ask Froggy about this
-          </button>
+          <button className="pill ghost wide" onClick={() => onAsk({ id: 'news:' + s.id, title: s.title, text: `${s.title}\n\n${s.summary}\n\nReported by: ${outs.map((x) => `${x.name} (${leanWord(x.lean)})`).join(', ')}`, chips: NEWS_CHIPS })}>{tr("Ask Froggy about this")}</button>
           {!!more.length && (
             <>
-              <div className="tag mono">more in {s.topic ? TOPIC_LABEL[s.topic].toLowerCase() : 'the news'}</div>
+              <div className="tag mono">{tr("more in ")}{s.topic ? TOPIC_LABEL[s.topic].toLowerCase() : 'the news'}</div>
               <ul className="src-list plain">
                 {more.map((m) => (
                   <li key={m.id}>
@@ -1094,9 +1032,7 @@ function StoryDetail({ s, start, d, setDetail, onAsk }: { s: Story; start?: numb
       {src && o && (
         <>
           <div className="story-bar">
-            <button className="mono" onClick={() => (setOpen(null), setArt(null), setState('idle'))}>
-              ← overview
-            </button>
+            <button className="mono" onClick={() => (setOpen(null), setArt(null), setState('idle'))}>{tr("← overview")}</button>
             {s.sources.length > 1 && (
               <div className="story-src">
                 {s.sources.map((x, i) => (
@@ -1119,13 +1055,10 @@ function StoryDetail({ s, start, d, setDetail, onAsk }: { s: Story; start?: numb
               <Froggy mood="worried" size="md" />
               <p>{err}</p>
               <div className="det-act">
-                <button className="pill" onClick={() => openExternal(src.url)}>
-                  Open at {o.name}
+                <button className="pill" onClick={() => openExternal(src.url)}>{tr("Open at ")}{o.name}
                 </button>
                 {s.sources.length > 1 && (
-                  <button className="pill ghost" onClick={() => read(((open ?? 0) + 1) % s.sources.length)}>
-                    Try another outlet
-                  </button>
+                  <button className="pill ghost" onClick={() => read(((open ?? 0) + 1) % s.sources.length)}>{tr("Try another outlet")}</button>
                 )}
               </div>
             </div>
@@ -1134,8 +1067,7 @@ function StoryDetail({ s, start, d, setDetail, onAsk }: { s: Story; start?: numb
             <>
               <p className="byline mono">
                 {leanWord(o.lean) !== 'not a political outlet' ? `${o.name} · ${leanWord(o.lean)} · ` : `${o.name} · `}
-                {Math.max(1, Math.round(art.words / 220))} min read
-              </p>
+                {Math.max(1, Math.round(art.words / 220))}{tr(" min read")}</p>
               <div
                 className="article"
                 onClick={(e) => {
@@ -1147,23 +1079,17 @@ function StoryDetail({ s, start, d, setDetail, onAsk }: { s: Story; start?: numb
                 dangerouslySetInnerHTML={{ __html: html }}
               />
               <div className="det-act">
-                <button className="pill ghost" onClick={() => onAsk({ id: 'news:' + s.id, title: s.title, text: `${s.title}\n\n${new DOMParser().parseFromString(art.html, 'text/html').body.textContent?.slice(0, 9000)}`, chips: NEWS_CHIPS })}>
-                  Ask Froggy
-                </button>
-                <button className="pill ghost" onClick={() => openExternal(art.url)}>
-                  Open at {o.name} ↗
-                </button>
+                <button className="pill ghost" onClick={() => onAsk({ id: 'news:' + s.id, title: s.title, text: `${s.title}\n\n${new DOMParser().parseFromString(art.html, 'text/html').body.textContent?.slice(0, 9000)}`, chips: NEWS_CHIPS })}>{tr("Ask Froggy")}</button>
+                <button className="pill ghost" onClick={() => openExternal(art.url)}>{tr("Open at ")}{o.name}{tr(" ↗")}</button>
                 <button
                   className="pill ghost"
                   onClick={() => {
                     navigator.clipboard?.writeText(art.url);
                     toast('Link copied');
                   }}
-                >
-                  Copy link
-                </button>
+                >{tr("Copy link")}</button>
               </div>
-              <span className="srcline mono static">source · {art.site} — all rights belong to the publisher</span>
+              <span className="srcline mono static">{tr("source · ")}{art.site}{tr(" — all rights belong to the publisher")}</span>
             </>
           )}
         </>

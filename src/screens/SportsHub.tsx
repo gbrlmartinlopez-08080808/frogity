@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { leagueInfo, loadLive, type Live, type LeagueInfo } from '../lib/sports';
 import type { WorldEvent } from '../lib/world';
@@ -111,7 +112,7 @@ function LeagueCard({ l, startOpen, onOpen }: { l: League; startOpen: boolean; o
           )}
           {d && !!feat.length && (
             <>
-              <h6 className="mono">Games to watch</h6>
+              <h6 className="mono">{tr("Games to watch")}</h6>
               <ul className="mlist">
                 {feat.map((m) => (
                   <MatchRow key={m.id} m={m} />
@@ -119,10 +120,10 @@ function LeagueCard({ l, startOpen, onOpen }: { l: League; startOpen: boolean; o
               </ul>
             </>
           )}
-          {d && !feat.length && !d.table.length && <p className="wd-src mono">nothing scheduled or no connection</p>}
+          {d && !feat.length && !d.table.length && <p className="wd-src mono">{tr("nothing scheduled or no connection")}</p>}
           {d && !!d.last.length && (
             <>
-              <h6 className="mono">Latest</h6>
+              <h6 className="mono">{tr("Latest")}</h6>
               <ul className="mlist">
                 {d.last.slice(0, 2).map((m) => (
                   <MatchRow key={m.id} m={m} />
@@ -130,9 +131,7 @@ function LeagueCard({ l, startOpen, onOpen }: { l: League; startOpen: boolean; o
               </ul>
             </>
           )}
-          <button className="wd-more" onClick={() => onOpen(l)}>
-            Everything: table, results, fixtures
-          </button>
+          <button className="wd-more" onClick={() => onOpen(l)}>{tr("Everything: table, results, fixtures")}</button>
         </div>
       )}
     </section>
@@ -160,11 +159,9 @@ export function SportsHub({ home }: { home: string; d?: Daily; wiki: (t: string)
         <LeagueCard key={sport + l.id} l={l} startOpen={i === 0} onOpen={setSel} />
       ))}
       {ordered.length > shown.length && (
-        <button className="wd-more" onClick={() => setMore(true)}>
-          More leagues
-        </button>
+        <button className="wd-more" onClick={() => setMore(true)}>{tr("More leagues")}</button>
       )}
-      <p className="wd-src mono" style={{ padding: '0 6px' }}>logos and numbers: TheSportsDB · fixtures, results and tables are read live</p>
+      <p className="wd-src mono" style={{ padding: '0 6px' }}>{tr("logos and numbers: TheSportsDB · fixtures, results and tables are read live")}</p>
       <Sheet open={!!sel} onClose={() => setSel(null)} className="int-sheet">
         {sel && (
           <div className="wd sheet-body wide">

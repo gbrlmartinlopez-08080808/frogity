@@ -35,3 +35,11 @@ npx cap sync android && cd android && ./gradlew assembleRelease   # APK
 Release signing reads `android/keystore.properties` (git-ignored). Without it, release builds fall back to the debug key. Every push also builds an APK in GitHub Actions (artifact `Frogity-apk`).
 
 Stack: Vite + React + TypeScript, Capacitor 8, pdf.js, mammoth, JSZip, marked + KaTeX, SheetJS, jsPDF, tesseract.js.
+
+## Reliability tools
+
+App Settings includes password-protected backup/restore, storage protection, cache cleanup, optional sample books and explicit voice downloads. Documents can be pinned and tagged from their menu. Shelf search includes cached text for opened text/Markdown/HTML/notes. Removed documents offer a ten-second in-memory undo window.
+
+The web build includes an offline shell; visit once online and let setup finish before disconnecting. Saved PDF/OCR resources are cached as used. Native Android bundles its own app shell. Games include a gentler practice mode (no reward), pause/resume, local results, and Sling keyboard controls.
+
+Run `npm run build` and `npm test`. Browser tests require `npx playwright install chromium` (or set CHROMIUM_PATH to a system Chromium executable). Android publishable builds require a configured release key; CI produces a clearly named debug test APK otherwise.

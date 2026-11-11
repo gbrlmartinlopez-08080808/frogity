@@ -403,7 +403,7 @@ textarea {
 }
 
 /* toast */
-.toast {
+.frogity-toast {
   position: fixed;
   left: 50%;
   top: max(14px, calc(var(--safe-t, 0px) + 10px)); /* at the top: sheets and the dock live at the bottom */
@@ -501,3 +501,29 @@ textarea {
   padding-left: 0;
   padding-right: 0;
 }
+
+.recovery { max-width: 560px; padding: 40px 24px; margin: auto; }
+:focus-visible { outline: 3px solid #347865; outline-offset: 3px; }
+.frogity-toast { inset: auto !important; top: max(14px, env(safe-area-inset-top)) !important; left: 50% !important; height: auto !important; min-height: 0 !important; display: block !important; z-index: 9999; overflow-wrap: anywhere; }
+.game-controls { display:flex; flex-wrap:wrap; gap:12px; padding:10px 16px; align-items:center; justify-content:space-between; }
+.game-controls label { display:flex; align-items:center; gap:8px; }
+.game-pause { position:absolute; inset:110px 0 0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; background:var(--bg, #efeeec); }
+.game[data-paused="true"] .timer { animation-play-state:paused !important; }
+.game[data-paused="true"] .stagebox { pointer-events:none; }
+@media (prefers-reduced-motion: reduce) { .frogity-toast, .pixload i { animation:none; } }
+
+.game-playfield { display: contents; }
+.backup-actions { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0; }
+.storage-tools { padding:12px 0 20px; border-bottom:1px solid var(--line); }
+.storage-tools p { font-size:14px; line-height:1.55; }
+.answer-sources blockquote { margin:12px 0; padding:12px; border-left:2px solid var(--line); font-size:13px; }
+
+.pond-pairs { overflow:auto; padding:20px; max-width:680px; width:100%; margin:auto; text-align:center; }
+.pairs-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:20px 0; }
+.pair-card { min-height:76px; border-radius:18px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:16px; font-family:var(--mono); }
+.pair-card.revealed { background:#dce9dc; color:#183524; }
+.pond-start { margin:8px 16px; align-self:center; }
+
+.game-controls .mono { font-size:12px; }
+.game-controls .pill { min-height:40px; }
+@media (max-width:360px) { .pairs-grid { gap:6px; } .pair-card { font-size:13px; min-height:60px; } }

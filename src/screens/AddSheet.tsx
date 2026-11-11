@@ -1,7 +1,9 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import { Pixel, PixelLoader, Sheet } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { Art } from '../ui/Art';
+import { isNative } from '../lib/native';
 import { looksLikeUrl } from '../lib/links';
 
 type Mode = 'menu' | 'link' | 'paste';
@@ -16,6 +18,7 @@ export function AddSheet({
   onLink,
   onPaste,
   onNote,
+  onCancel,
   busy,
   error,
 }: {
@@ -28,6 +31,7 @@ export function AddSheet({
   onLink: (url: string) => void;
   onPaste: (text: string, title: string) => void;
   onNote: () => void;
+  onCancel?: () => void;
   busy: string | null;
   error: string | null;
 }) {
@@ -61,52 +65,40 @@ export function AddSheet({
               <span className="ic">
                 <Pixel name="page" size={16} />
               </span>
-              Files from your phone
-              <span className="r">opened in place</span>
+              {isNative ? 'Files from your phone' : 'Choose files'}
+              <span className="r">{isNative ? 'opened in place' : 'saved in this browser'}</span>
             </button>
             {onFolder && (
               <button className="action" onClick={() => (onClose(), onFolder())}>
                 <span className="ic">
                   <Pixel name="stack" size={16} />
-                </span>
-                Link a folder
-                <span className="r">stays up to date</span>
+                </span>{tr("Link a folder")}<span className="r">{tr("stays up to date")}</span>
               </button>
             )}
             <button className="action" onClick={() => (onClose(), onDiscover())}>
               <span className="ic">
                 <Pixel name="book" size={16} />
-              </span>
-              Find free books
-              <span className="r">classics · papers · pdfs</span>
+              </span>{tr("Find free books")}<span className="r">{tr("classics · papers · pdfs")}</span>
             </button>
             <button className="action" onClick={() => setMode('link')}>
               <span className="ic">
                 <Icon name="globe" size={20} />
-              </span>
-              Web page or link
-              <span className="r">{url ? 'link copied' : ''}</span>
+              </span>{tr("Web page or link")}<span className="r">{url ? 'link copied' : ''}</span>
             </button>
             <button className="action" onClick={() => (onClose(), onScan())}>
               <span className="ic">
                 <Pixel name="scan" size={16} />
-              </span>
-              Scan paper
-              <span className="r">camera · ocr</span>
+              </span>{tr("Scan paper")}<span className="r">{tr("camera · ocr")}</span>
             </button>
             <button className="action" onClick={() => (onClose(), onNote())}>
               <span className="ic">
                 <Pixel name="note" size={16} />
-              </span>
-              New note
-              <span className="r">write · edit anywhere</span>
+              </span>{tr("New note")}<span className="r">{tr("write · edit anywhere")}</span>
             </button>
             <button className="action" onClick={() => setMode('paste')}>
               <span className="ic">
                 <Pixel name="type" size={16} />
-              </span>
-              Paste text or notes
-            </button>
+              </span>{tr("Paste text or notes")}</button>
           </div>
         )}
         {mode === 'link' && (
@@ -116,10 +108,9 @@ export function AddSheet({
               if (url.trim() && !busy) onLink(url.trim());
             }}
           >
-            <p className="muted" style={{ marginTop: 0, fontSize: 13.5 }}>
-              Articles are saved as clean, readable pages with their images. Links to PDFs, books or images are saved as the file itself.
-            </p>
-            <input className="field" autoFocus placeholder="https://…" inputMode="url" autoCapitalize="none" autoCorrect="off" value={url} onChange={(e) => setUrl(e.target.value)} />
+            {busy && <button type="button" className="pill ghost" onClick={onCancel}>{tr("Cancel download")}</button>}
+            <p className="muted" style={{ marginTop: 0, fontSize: 13.5 }}>{tr("Articles are saved as clean, readable pages with their images. Links to PDFs, books or images are saved as the file itself.")}</p>
+            <input className="field" autoFocus placeholder={tr("https://…")} inputMode="url" autoCapitalize="none" autoCorrect="off" value={url} onChange={(e) => setUrl(e.target.value)} />
             {error && <p className="field-err">{error}</p>}
             <button className="pill" style={{ width: '100%', marginTop: 10 }} disabled={!url.trim() || !!busy}>
               {busy ? <PixelLoader size={4} gap={2} label={busy} /> : 'Save to library'}
@@ -133,11 +124,9 @@ export function AddSheet({
               if (text.trim()) onPaste(text, title);
             }}
           >
-            <input className="field" placeholder="Title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} />
-            <textarea className="field" style={{ marginTop: 8, height: 180, padding: 12, resize: 'none' }} placeholder="Paste anything — Markdown and $maths$ work" value={text} onChange={(e) => setText(e.target.value)} />
-            <button className="pill" style={{ width: '100%', marginTop: 10 }} disabled={!text.trim()}>
-              Save to library
-            </button>
+            <input className="field" placeholder={tr("Title (optional)")} value={title} onChange={(e) => setTitle(e.target.value)} />
+            <textarea className="field" style={{ marginTop: 8, height: 180, padding: 12, resize: 'none' }} placeholder={tr("Paste anything — Markdown and $maths$ work")} value={text} onChange={(e) => setText(e.target.value)} />
+            <button className="pill" style={{ width: '100%', marginTop: 10 }} disabled={!text.trim()}>{tr("Save to library")}</button>
           </form>
         )}
       </div>

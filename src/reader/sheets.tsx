@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import { updateSettings, useStore } from '../lib/store';
 import type { Bookmark, Highlight, ReaderTheme, TocEntry } from '../lib/types';
@@ -19,59 +20,57 @@ export function TypeSheet({ open, onClose, isPdf, mode, onMode, prep, pages, onR
   const s = useStore((x) => x.settings);
   const [fonts, setFonts] = useState(false);
   return (
-    <Sheet open={open} onClose={onClose} title="Reading">
+    <Sheet open={open} onClose={onClose} title={tr("Reading")}>
       <FontsSheet open={fonts} onClose={() => setFonts(false)} />
       <div className="sheet-body" style={{ paddingBottom: 12 }}>
         {isPdf && (
           <>
-            <div className="section-label" style={{ marginTop: 4 }}>view</div>
+            <div className="section-label" style={{ marginTop: 4 }}>{tr("view")}</div>
             <Segmented
               light
               className="w100 halves"
               value={mode}
               onChange={onMode}
               options={[
-                { value: 'page', label: <><Icon name="page" size={16} /> Page</> },
-                { value: 'liquid', label: <><Icon name="liquid" size={16} /> Liquid</> },
+                { value: 'page', label: <><Icon name="page" size={16} />{tr(" Page")}</> },
+                { value: 'liquid', label: <><Icon name="liquid" size={16} />{tr(" Liquid")}</> },
               ]}
             />
             {prep && !prep.ready && prep.known ? (
               <div className="sheet-status">
                 <LiquidStatus prep={prep} pages={pages} onRetry={() => onRetry?.()} compact />
-                {!prep.error && !prep.none && <p className="muted">You can switch now: the pages that are ready are shown and the rest appear as they’re converted. Listen opens once it’s complete.</p>}
+                {!prep.error && !prep.none && <p className="muted">{tr("You can switch now: the pages that are ready are shown and the rest appear as they’re converted. Listen opens once it’s complete.")}</p>}
               </div>
             ) : (
-              <p className="muted sheet-note">Liquid reflows the PDF to fit your screen — equations and figures are kept intact.</p>
+              <p className="muted sheet-note">{tr("Liquid reflows the PDF to fit your screen — equations and figures are kept intact.")}</p>
             )}
           </>
         )}
         {/* always here, so the sheet keeps its shape when the view changes; in the pages view they wait for Liquid */}
         <div className={`type-block${isPdf && mode === 'page' ? ' idle' : ''}`} aria-disabled={isPdf && mode === 'page'}>
           <>
-            <div className="section-label">
-              typeface{isPdf && mode === 'page' && <span className="type-note"> · for the Liquid view</span>}
+            <div className="section-label">{tr("typeface")}{isPdf && mode === 'page' && <span className="type-note">{tr(" · for the Liquid view")}</span>}
             </div>
             <div className="fontpick four">
               {s.fontFaves.slice(0, 4).map((id) => {
                 const f = fontById(id);
                 return (
                   <button key={id} className={s.font === id ? 'on' : ''} onClick={() => updateSettings({ font: id })}>
-                    <b style={{ fontFamily: f.family }}>Aa</b>
+                    <b style={{ fontFamily: f.family }}>{tr("Aa")}</b>
                     <span>{f.name}</span>
                   </button>
                 );
               })}
             </div>
-            <button className="pill ghost sm" style={{ marginTop: 10 }} onClick={() => setFonts(true)}>
-              More fonts · {FONTS.length}
+            <button className="pill ghost sm" style={{ marginTop: 10 }} onClick={() => setFonts(true)}>{tr("More fonts · ")}{FONTS.length}
             </button>
-            <div className="section-label">size</div>
+            <div className="section-label">{tr("size")}</div>
             <Ruler value={s.fontSize} min={13} max={32} step={1} onChange={(v) => updateSettings({ fontSize: v })} format={(v) => `${v}px`} label="Font size" />
-            <div className="section-label">line spacing</div>
+            <div className="section-label">{tr("line spacing")}</div>
             <Ruler value={s.lineHeight} min={1.2} max={2.2} step={0.05} onChange={(v) => updateSettings({ lineHeight: v })} format={(v) => v.toFixed(2)} label="Line spacing" />
-            <div className="section-label">margins</div>
+            <div className="section-label">{tr("margins")}</div>
             <Ruler value={s.margin} min={8} max={56} step={2} onChange={(v) => updateSettings({ margin: v })} format={(v) => `${v}`} label="Margins" />
-            <div className="section-label">layout</div>
+            <div className="section-label">{tr("layout")}</div>
             <Segmented
               value={s.pageFlip ? 'pages' : 'scroll'}
               onChange={(v) => updateSettings({ pageFlip: v === 'pages' })}
@@ -80,24 +79,20 @@ export function TypeSheet({ open, onClose, isPdf, mode, onMode, prep, pages, onR
                 { value: 'pages', label: 'Flip pages' },
               ]}
             />
-            <div className="row-sub" style={{ marginTop: 6 }}>
-              Pages: swipe sideways or tap the edges to turn, and the bar below moves through the book. (Text views only.)
-            </div>
+            <div className="row-sub" style={{ marginTop: 6 }}>{tr("Pages: swipe sideways or tap the edges to turn, and the bar below moves through the book. (Text views only.)")}</div>
             <div className="row" style={{ marginTop: 8 }}>
               <div className="grow">
-                <div className="row-label">Justify text</div>
-                <div className="row-sub">Even edges with hyphenation</div>
+                <div className="row-label">{tr("Justify text")}</div>
+                <div className="row-sub">{tr("Even edges with hyphenation")}</div>
               </div>
               <Toggle on={s.justify} onChange={(v) => updateSettings({ justify: v })} label="Justify" />
             </div>
           </>
         </div>
-        <div className="section-label">theme</div>
+        <div className="section-label">{tr("theme")}</div>
         <div className="themes">
           {THEMES.map((t) => (
-            <button key={t.id} className={s.readerTheme === t.id ? 'on' : ''} style={{ background: t.bg, color: t.ink }} onClick={() => updateSettings({ readerTheme: t.id })} aria-label={t.name}>
-              Aa
-            </button>
+            <button key={t.id} className={s.readerTheme === t.id ? 'on' : ''} style={{ background: t.bg, color: t.ink }} onClick={() => updateSettings({ readerTheme: t.id })} aria-label={t.name}>{tr("Aa")}</button>
           ))}
         </div>
       </div>
@@ -157,22 +152,19 @@ export function ContentsSheet({
               </button>
             ))
           ) : (
-            <p className="muted mono" style={{ fontSize: 12, textAlign: 'center', padding: 30 }}>
-              no table of contents
-            </p>
+            <p className="muted mono" style={{ fontSize: 12, textAlign: 'center', padding: 30 }}>{tr("no table of contents")}</p>
           )
         ) : (
           <>
             <button className="pill ghost sm" style={{ margin: '4px 0 10px' }} onClick={onAddMark}>
-              <Icon name="bookmark" size={16} /> Bookmark this spot
-            </button>
+              <Icon name="bookmark" size={16} />{tr(" Bookmark this spot")}</button>
             {marks.map((b) => (
               <div key={b.id} style={{ display: 'flex', alignItems: 'center' }}>
                 <button className="mark-item" onClick={() => onGoMark(b)}>
                   <span style={{ fontSize: 15 }}>{b.label}</span>
-                  <small>{b.auto ? 'where you stopped' : 'bookmark'} · {Math.round(b.progress * 100)}%</small>
+                  <small>{b.auto ? 'where you stopped' : 'bookmark'}{tr(" · ")}{Math.round(b.progress * 100)}{tr("%")}</small>
                 </button>
-                <button className="chip" onClick={() => onDeleteMark(b)} aria-label="Delete bookmark">
+                <button className="chip" onClick={() => onDeleteMark(b)} aria-label={tr("Delete bookmark")}>
                   <Icon name="close" size={16} />
                 </button>
               </div>
@@ -181,17 +173,15 @@ export function ContentsSheet({
               <div key={h.id} style={{ display: 'flex', alignItems: 'center' }}>
                 <button className="mark-item" onClick={() => onGoHighlight(h)}>
                   <q>{h.text.length > 220 ? h.text.slice(0, 220) + '…' : h.text}</q>
-                  <small>highlight · {new Date(h.at).toLocaleDateString()}</small>
+                  <small>{tr("highlight · ")}{new Date(h.at).toLocaleDateString()}</small>
                 </button>
-                <button className="chip" onClick={() => onDeleteHighlight(h)} aria-label="Delete highlight">
+                <button className="chip" onClick={() => onDeleteHighlight(h)} aria-label={tr("Delete highlight")}>
                   <Icon name="close" size={16} />
                 </button>
               </div>
             ))}
             {!marks.length && !highlights.length && (
-              <p className="muted" style={{ fontSize: 13.5, textAlign: 'center', padding: '24px 10px' }}>
-                Select text to highlight it. Your bookmarks and highlights collect here.
-              </p>
+              <p className="muted" style={{ fontSize: 13.5, textAlign: 'center', padding: '24px 10px' }}>{tr("Select text to highlight it. Your bookmarks and highlights collect here.")}</p>
             )}
           </>
         )}
@@ -268,21 +258,17 @@ export function FontsSheet({ open, onClose }: { open: boolean; onClose: () => vo
     }
   };
   return (
-    <Sheet open={open} onClose={onClose} title="Fonts">
+    <Sheet open={open} onClose={onClose} title={tr("Fonts")}>
       <div className="sheet-body" style={{ paddingBottom: 16 }}>
-        <p className="muted" style={{ margin: '-4px 4px 12px', fontSize: 13.5, textAlign: 'center' }}>
-          Tap a font to read in it. Star up to four to keep them one tap away.
-        </p>
+        <p className="muted" style={{ margin: '-4px 4px 12px', fontSize: 13.5, textAlign: 'center' }}>{tr("Tap a font to read in it. Star up to four to keep them one tap away.")}</p>
         {FONTS.map((f) => (
           <div key={f.id} className={`fontrow${s.font === f.id ? ' on' : ''}`}>
             <button className="fontrow-main" onClick={() => updateSettings({ font: f.id })}>
-              <span className="fontrow-aa" style={{ fontFamily: f.family }}>
-                Aa
-              </span>
+              <span className="fontrow-aa" style={{ fontFamily: f.family }}>{tr("Aa")}</span>
               <span className="fontrow-text">
-                <span style={{ fontFamily: f.family, fontSize: 17 }}>The quiet pleasure of a good page</span>
+                <span style={{ fontFamily: f.family, fontSize: 17 }}>{tr("The quiet pleasure of a good page")}</span>
                 <small className="mono">
-                  {f.name} · {f.note}
+                  {f.name}{tr(" · ")}{f.note}
                 </small>
               </span>
               {s.font === f.id && <Icon name="check" size={18} />}

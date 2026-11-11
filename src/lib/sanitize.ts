@@ -1,3 +1,10 @@
+import DOMPurify from 'dompurify';
+
+export function safeHref(value: string): boolean {
+  const url = value.replace(/[\u0000-\u0020\u007f]/g, '');
+  return !/^[a-z][a-z0-9+.-]*:/i.test(url) || /^(https?:|mailto:|tel:)/i.test(url);
+}
+
 // Allowlist HTML sanitizer used for every document that arrives as markup (EPUB, DOCX, HTML, Markdown).
 
 const TAGS = new Set(
@@ -40,7 +47,7 @@ export function sanitizeHtml(input: string | Document | Element, opts: SanitizeO
     const c = clean(child, opts);
     if (c) out.appendChild(c);
   }
-  return out.innerHTML;
+  return DOMPurify.sanitize(out.innerHTML, { ADD_TAGS: ['math', 'mfrac', 'msqrt'], ADD_ATTR: ['target'] });
 }
 
 function clean(node: Node, opts: SanitizeOpts): Node | null {
@@ -71,7 +78,7 @@ function clean(node: Node, opts: SanitizeOpts): Node | null {
     let v = a.value;
     if (name === 'id') v = (opts.idPrefix ?? '') + v;
     if (name === 'href') {
-      if (/^\s*javascript:/i.test(v)) continue;
+      if (!safeHref(v)) continue;
       if (opts.resolveHref && !/^[a-z]+:/i.test(v)) v = opts.resolveHref(v) ?? '#';
       else if (v.startsWith('#')) v = '#' + (opts.idPrefix ?? '') + v.slice(1);
       else if (opts.idPrefix !== undefined && !/^[a-z]+:/i.test(v)) {
@@ -85,6 +92,7 @@ function clean(node: Node, opts: SanitizeOpts): Node | null {
       if (r) v = r;
       else if (!/^(https?:|data:image\/|blob:)/i.test(v)) continue;
     }
+    if (name === 'src' && /^https?:/i.test(v)) { let allowed = false; try { allowed = localStorage.getItem('frogity:remote-images') === 'yes'; } catch {} if (!allowed) continue; }
     out.setAttribute(name, v);
   }
   if (tag === 'img' && !out.getAttribute('src')) {
@@ -95,7 +103,7 @@ function clean(node: Node, opts: SanitizeOpts): Node | null {
     const href = out.getAttribute('href') ?? '';
     if (/^https?:/i.test(href)) {
       out.setAttribute('target', '_blank');
-      out.setAttribute('rel', 'noopener');
+      out.setAttribute('rel', 'noopener noreferrer');
     }
   }
   out.appendChild(kids());
