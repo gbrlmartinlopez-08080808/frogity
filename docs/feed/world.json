@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-11T19:46:24.391Z",
+ "built": "2026-11-12T01:59:46.236Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -2044,21 +2044,6 @@
   },
   {
    "k": "election",
-   "t": "Brazilian parliamentary election",
-   "w": "Brazil",
-   "a": "2026-10-04",
-   "cc": [
-    "br"
-   ],
-   "icon": {
-    "cc": "br"
-   },
-   "level": "national",
-   "wiki": "2026 Brazilian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Brazilian presidential election",
    "w": "Brazil",
    "a": "2026-10-04",
@@ -2071,21 +2056,6 @@
    },
    "level": "national",
    "wiki": "2026 Brazilian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Bosnian parliamentary election",
-   "w": "Bosnia and Herzegovina",
-   "a": "2026-10-04",
-   "cc": [
-    "ba"
-   ],
-   "icon": {
-    "cc": "ba"
-   },
-   "level": "national",
-   "wiki": "2026 Bosnian parliamentary election",
    "auto": true
   },
   {
@@ -2131,6 +2101,36 @@
    },
    "level": "national",
    "wiki": "2026 Federation of Bosnia and Herzegovina general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Brazilian parliamentary election",
+   "w": "Brazil",
+   "a": "2026-10-04",
+   "cc": [
+    "br"
+   ],
+   "icon": {
+    "cc": "br"
+   },
+   "level": "national",
+   "wiki": "2026 Brazilian parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Bosnian parliamentary election",
+   "w": "Bosnia and Herzegovina",
+   "a": "2026-10-04",
+   "cc": [
+    "ba"
+   ],
+   "icon": {
+    "cc": "ba"
+   },
+   "level": "national",
+   "wiki": "2026 Bosnian parliamentary election",
    "auto": true
   },
   {
@@ -2516,22 +2516,6 @@
   },
   {
    "k": "election",
-   "t": "Papua New Guinean general election",
-   "w": "Papua New Guinea",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "pg"
-   ],
-   "icon": {
-    "cc": "pg"
-   },
-   "level": "national",
-   "wiki": "Papua New Guinean general election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Slovak parliamentary election",
    "w": "Slovakia",
    "a": "2027-01-01",
@@ -2560,6 +2544,38 @@
    },
    "level": "national",
    "wiki": "2027 Gambian parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Papua New Guinean general election",
+   "w": "Papua New Guinea",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "pg"
+   ],
+   "icon": {
+    "cc": "pg"
+   },
+   "level": "national",
+   "wiki": "Papua New Guinean general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Maltese general election",
+   "w": "Malta",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "mt"
+   ],
+   "icon": {
+    "cc": "mt"
+   },
+   "level": "national",
+   "wiki": "2027 Maltese general election",
    "auto": true
   },
   {
@@ -2640,22 +2656,6 @@
    },
    "level": "national",
    "wiki": "2027 Nicaraguan presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Maltese general election",
-   "w": "Malta",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "mt"
-   ],
-   "icon": {
-    "cc": "mt"
-   },
-   "level": "national",
-   "wiki": "2027 Maltese general election",
    "auto": true
   },
   {
