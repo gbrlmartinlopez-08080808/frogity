@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-12T22:21:19.540Z",
+ "built": "2026-11-13T06:59:52.006Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -1864,21 +1864,6 @@
   },
   {
    "k": "election",
-   "t": "Okinawa gubernatorial election",
-   "w": "Japan",
-   "a": "2026-09-13",
-   "cc": [
-    "jp"
-   ],
-   "icon": {
-    "cc": "jp"
-   },
-   "level": "regional",
-   "wiki": "2026 Okinawa gubernatorial election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Bangsamoro Parliament election",
    "w": "Philippines",
    "a": "2026-09-14",
@@ -2166,21 +2151,6 @@
   },
   {
    "k": "election",
-   "t": "first round of Brazilian presidential election, 2026",
-   "w": "Brazil",
-   "a": "2026-10-04",
-   "cc": [
-    "br"
-   ],
-   "icon": {
-    "cc": "br"
-   },
-   "level": "national",
-   "wiki": "first round of Brazilian presidential election, 2026",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "São Paulo general election",
    "w": "Brazil",
    "a": "2026-10-04",
@@ -2192,6 +2162,21 @@
    },
    "level": "national",
    "wiki": "2026 São Paulo general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "first round of Brazilian presidential election, 2026",
+   "w": "Brazil",
+   "a": "2026-10-04",
+   "cc": [
+    "br"
+   ],
+   "icon": {
+    "cc": "br"
+   },
+   "level": "national",
+   "wiki": "first round of Brazilian presidential election, 2026",
    "auto": true
   },
   {
@@ -2756,22 +2741,6 @@
   },
   {
    "k": "election",
-   "t": "Punjab Legislative Assembly election",
-   "w": "India",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "in"
-   ],
-   "icon": {
-    "cc": "in"
-   },
-   "level": "national",
-   "wiki": "2027 Punjab Legislative Assembly election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Upper Austrian state election",
    "w": "Austria",
    "a": "2027-01-01",
@@ -2784,6 +2753,22 @@
    },
    "level": "regional",
    "wiki": "2027 Upper Austrian state election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Punjab Legislative Assembly election",
+   "w": "India",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "in"
+   ],
+   "icon": {
+    "cc": "in"
+   },
+   "level": "national",
+   "wiki": "2027 Punjab Legislative Assembly election",
    "auto": true
   },
   {
