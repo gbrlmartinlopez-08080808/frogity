@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-14T11:40:46.405Z",
+ "built": "2026-11-14T18:23:57.718Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -1577,7 +1577,7 @@
    "k": "election",
    "t": "Spanish general election",
    "w": "Spain",
-   "a": "2026-11-29",
+   "a": "2027-05-23",
    "cc": [
     "es"
    ],
@@ -2059,21 +2059,6 @@
   },
   {
    "k": "election",
-   "t": "Bosnian presidential election",
-   "w": "Bosnia and Herzegovina",
-   "a": "2026-10-04",
-   "cc": [
-    "ba"
-   ],
-   "icon": {
-    "cc": "ba"
-   },
-   "level": "national",
-   "wiki": "2022 Bosnian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Republika Srpska general election",
    "w": "Bosnia and Herzegovina",
    "a": "2026-10-04",
@@ -2100,6 +2085,21 @@
    },
    "level": "national",
    "wiki": "2026 Federation of Bosnia and Herzegovina general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Bosnian presidential election",
+   "w": "Bosnia and Herzegovina",
+   "a": "2026-10-04",
+   "cc": [
+    "ba"
+   ],
+   "icon": {
+    "cc": "ba"
+   },
+   "level": "national",
+   "wiki": "2022 Bosnian presidential election",
    "auto": true
   },
   {
@@ -2517,22 +2517,6 @@
   },
   {
    "k": "election",
-   "t": "Gambian parliamentary election",
-   "w": "The Gambia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "gm"
-   ],
-   "icon": {
-    "cc": "gm"
-   },
-   "level": "national",
-   "wiki": "2027 Gambian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Maltese general election",
    "w": "Malta",
    "a": "2027-01-01",
@@ -2545,6 +2529,22 @@
    },
    "level": "national",
    "wiki": "2027 Maltese general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Gambian parliamentary election",
+   "w": "The Gambia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "gm"
+   ],
+   "icon": {
+    "cc": "gm"
+   },
+   "level": "national",
+   "wiki": "2027 Gambian parliamentary election",
    "auto": true
   },
   {
@@ -2905,51 +2905,6 @@
    },
    "level": "national",
    "wiki": "Manipur Legislative Assembly election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Madrilenian regional election",
-   "w": "Spain",
-   "a": "2027-05-23",
-   "cc": [
-    "es"
-   ],
-   "icon": {
-    "cc": "es"
-   },
-   "level": "regional",
-   "wiki": "Madrilenian regional election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Cantabrian regional election",
-   "w": "Spain",
-   "a": "2027-05-23",
-   "cc": [
-    "es"
-   ],
-   "icon": {
-    "cc": "es"
-   },
-   "level": "regional",
-   "wiki": "Cantabrian regional election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Valencian regional election",
-   "w": "Spain",
-   "a": "2027-05-23",
-   "cc": [
-    "es"
-   ],
-   "icon": {
-    "cc": "es"
-   },
-   "level": "regional",
-   "wiki": "Valencian regional election",
    "auto": true
   },
   {
@@ -3334,6 +3289,22 @@
    },
    "level": "national",
    "wiki": "Turkish presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Taiwanese legislative election",
+   "w": "Taiwan",
+   "a": "2028-01-01",
+   "when": "2028",
+   "cc": [
+    "tw"
+   ],
+   "icon": {
+    "cc": "tw"
+   },
+   "level": "national",
+   "wiki": "Taiwanese legislative election",
    "auto": true
   },
   {
