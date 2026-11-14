@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-13T16:37:54.074Z",
+ "built": "2026-11-14T00:58:14.627Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -110,10 +110,9 @@
    "k": "election",
    "t": "Nigeria general election",
    "w": "Nigeria",
-   "a": "2027-02-20",
+   "a": "2027-01-16",
    "n": "Africa’s most populous country chooses a president and National Assembly.",
    "wiki": "2027 Nigerian general election",
-   "when": "February 2027",
    "icon": {
     "cc": "ng"
    },
@@ -1864,21 +1863,6 @@
   },
   {
    "k": "election",
-   "t": "Bangsamoro Parliament election",
-   "w": "Philippines",
-   "a": "2026-09-14",
-   "cc": [
-    "ph"
-   ],
-   "icon": {
-    "cc": "ph"
-   },
-   "level": "regional",
-   "wiki": "2026 Bangsamoro Parliament election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Russian legislative election",
    "w": "Russia",
    "a": "2026-09-20",
@@ -2120,6 +2104,21 @@
   },
   {
    "k": "election",
+   "t": "first round of Brazilian presidential election, 2026",
+   "w": "Brazil",
+   "a": "2026-10-04",
+   "cc": [
+    "br"
+   ],
+   "icon": {
+    "cc": "br"
+   },
+   "level": "national",
+   "wiki": "first round of Brazilian presidential election, 2026",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Brazilian general election",
    "w": "Brazil",
    "a": "2026-10-04",
@@ -2147,21 +2146,6 @@
    },
    "level": "national",
    "wiki": "2026 Bosnian general election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "first round of Brazilian presidential election, 2026",
-   "w": "Brazil",
-   "a": "2026-10-04",
-   "cc": [
-    "br"
-   ],
-   "icon": {
-    "cc": "br"
-   },
-   "level": "national",
-   "wiki": "first round of Brazilian presidential election, 2026",
    "auto": true
   },
   {
@@ -3441,6 +3425,230 @@
    },
    "level": "national",
    "wiki": "Togolese parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Kazakh presidential election",
+   "w": "Kazakhstan",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "kz"
+   ],
+   "icon": {
+    "cc": "kz"
+   },
+   "level": "national",
+   "wiki": "2029 Kazakh presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Liberian parliamentary election",
+   "w": "Liberia",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "lr"
+   ],
+   "icon": {
+    "cc": "lr"
+   },
+   "level": "national",
+   "wiki": "Liberian parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "South African parliamentary election",
+   "w": "South Africa",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "za"
+   ],
+   "icon": {
+    "cc": "za"
+   },
+   "level": "national",
+   "wiki": "South African parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Italian presidential election",
+   "w": "Italy",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "it"
+   ],
+   "icon": {
+    "cc": "it"
+   },
+   "level": "national",
+   "wiki": "2029 Italian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Pakistani general election",
+   "w": "Pakistan",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "pk"
+   ],
+   "icon": {
+    "cc": "pk"
+   },
+   "level": "national",
+   "wiki": "Pakistani general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "German federal election",
+   "w": "Germany",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "de"
+   ],
+   "icon": {
+    "cc": "de"
+   },
+   "level": "national",
+   "wiki": "German federal election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Indian general election",
+   "w": "India",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "in"
+   ],
+   "icon": {
+    "cc": "in"
+   },
+   "level": "national",
+   "wiki": "Indian general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Turkmenistan presidential election",
+   "w": "Turkmenistan",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "tm"
+   ],
+   "icon": {
+    "cc": "tm"
+   },
+   "level": "national",
+   "wiki": "2029 Turkmenistan presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Equatorial Guinean presidential election",
+   "w": "Equatorial Guinea",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "gq"
+   ],
+   "icon": {
+    "cc": "gq"
+   },
+   "level": "national",
+   "wiki": "2029 Equatorial Guinean presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Thuringian state election",
+   "w": "Germany",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "de"
+   ],
+   "icon": {
+    "cc": "de"
+   },
+   "level": "regional",
+   "wiki": "2029 Thuringian state election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Saxony state election",
+   "w": "Germany",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "de"
+   ],
+   "icon": {
+    "cc": "de"
+   },
+   "level": "regional",
+   "wiki": "2029 Saxony state election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Brandenburg state election",
+   "w": "Germany",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "de"
+   ],
+   "icon": {
+    "cc": "de"
+   },
+   "level": "regional",
+   "wiki": "2029 Brandenburg state election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Sri Lankan presidential election",
+   "w": "Sri Lanka",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "lk"
+   ],
+   "icon": {
+    "cc": "lk"
+   },
+   "level": "national",
+   "wiki": "2029 Sri Lankan presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "North Macedonian presidential election",
+   "w": "North Macedonia",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "mk"
+   ],
+   "icon": {
+    "cc": "mk"
+   },
+   "level": "national",
+   "wiki": "2029 North Macedonian presidential election",
    "auto": true
   }
  ]
