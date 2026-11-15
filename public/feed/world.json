@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-14T18:23:57.718Z",
+ "built": "2026-11-15T00:14:53.197Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -1577,7 +1577,7 @@
    "k": "election",
    "t": "Spanish general election",
    "w": "Spain",
-   "a": "2027-05-23",
+   "a": "2026-11-29",
    "cc": [
     "es"
    ],
@@ -1983,21 +1983,6 @@
   },
   {
    "k": "election",
-   "t": "Cape Verdean presidential election",
-   "w": "Cape Verde",
-   "a": "2026-10-01",
-   "cc": [
-    "cv"
-   ],
-   "icon": {
-    "cc": "cv"
-   },
-   "level": "national",
-   "wiki": "2026 Cape Verdean presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Latvian parliamentary election",
    "w": "Latvia",
    "a": "2026-10-03",
@@ -2009,21 +1994,6 @@
    },
    "level": "national",
    "wiki": "2026 Latvian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Brazilian parliamentary election",
-   "w": "Brazil",
-   "a": "2026-10-04",
-   "cc": [
-    "br"
-   ],
-   "icon": {
-    "cc": "br"
-   },
-   "level": "national",
-   "wiki": "2026 Brazilian parliamentary election",
    "auto": true
   },
   {
@@ -2040,6 +2010,36 @@
    },
    "level": "national",
    "wiki": "2026 Brazilian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Bosnian presidential election",
+   "w": "Bosnia and Herzegovina",
+   "a": "2026-10-04",
+   "cc": [
+    "ba"
+   ],
+   "icon": {
+    "cc": "ba"
+   },
+   "level": "national",
+   "wiki": "2022 Bosnian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Brazilian parliamentary election",
+   "w": "Brazil",
+   "a": "2026-10-04",
+   "cc": [
+    "br"
+   ],
+   "icon": {
+    "cc": "br"
+   },
+   "level": "national",
+   "wiki": "2026 Brazilian parliamentary election",
    "auto": true
   },
   {
@@ -2085,21 +2085,6 @@
    },
    "level": "national",
    "wiki": "2026 Federation of Bosnia and Herzegovina general election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Bosnian presidential election",
-   "w": "Bosnia and Herzegovina",
-   "a": "2026-10-04",
-   "cc": [
-    "ba"
-   ],
-   "icon": {
-    "cc": "ba"
-   },
-   "level": "national",
-   "wiki": "2022 Bosnian presidential election",
    "auto": true
   },
   {
@@ -2316,6 +2301,21 @@
   },
   {
    "k": "election",
+   "t": "Cape Verdean presidential election",
+   "w": "Cape Verde",
+   "a": "2026-11-15",
+   "cc": [
+    "cv"
+   ],
+   "icon": {
+    "cc": "cv"
+   },
+   "level": "national",
+   "wiki": "2026 Cape Verdean presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Victorian state election",
    "w": "Australia",
    "a": "2026-11-28",
@@ -2517,38 +2517,6 @@
   },
   {
    "k": "election",
-   "t": "Maltese general election",
-   "w": "Malta",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "mt"
-   ],
-   "icon": {
-    "cc": "mt"
-   },
-   "level": "national",
-   "wiki": "2027 Maltese general election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Gambian parliamentary election",
-   "w": "The Gambia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "gm"
-   ],
-   "icon": {
-    "cc": "gm"
-   },
-   "level": "national",
-   "wiki": "2027 Gambian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Angolan parliamentary election",
    "w": "Angola",
    "a": "2027-01-01",
@@ -2629,6 +2597,22 @@
   },
   {
    "k": "election",
+   "t": "Maltese general election",
+   "w": "Malta",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "mt"
+   ],
+   "icon": {
+    "cc": "mt"
+   },
+   "level": "national",
+   "wiki": "2027 Maltese general election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Barbadian parliamentary election",
    "w": "Barbados",
    "a": "2027-01-01",
@@ -2673,6 +2657,22 @@
    },
    "level": "national",
    "wiki": "2027 Mongolian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Gambian parliamentary election",
+   "w": "The Gambia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "gm"
+   ],
+   "icon": {
+    "cc": "gm"
+   },
+   "level": "national",
+   "wiki": "2027 Gambian parliamentary election",
    "auto": true
   },
   {
@@ -2905,6 +2905,51 @@
    },
    "level": "national",
    "wiki": "Manipur Legislative Assembly election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Madrilenian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Madrilenian regional election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Cantabrian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Cantabrian regional election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Valencian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Valencian regional election",
    "auto": true
   },
   {
@@ -3149,22 +3194,6 @@
   },
   {
    "k": "election",
-   "t": "Mauritanian parliamentary election",
-   "w": "Mauritania",
-   "a": "2028-01-01",
-   "when": "2028",
-   "cc": [
-    "mr"
-   ],
-   "icon": {
-    "cc": "mr"
-   },
-   "level": "national",
-   "wiki": "Mauritanian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Israeli presidential election",
    "w": "Israel",
    "a": "2028-01-01",
@@ -3209,6 +3238,22 @@
    },
    "level": "national",
    "wiki": "2028 Austrian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Mauritanian parliamentary election",
+   "w": "Mauritania",
+   "a": "2028-01-01",
+   "when": "2028",
+   "cc": [
+    "mr"
+   ],
+   "icon": {
+    "cc": "mr"
+   },
+   "level": "national",
+   "wiki": "Mauritanian parliamentary election",
    "auto": true
   },
   {
@@ -3416,6 +3461,38 @@
   },
   {
    "k": "election",
+   "t": "Italian presidential election",
+   "w": "Italy",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "it"
+   ],
+   "icon": {
+    "cc": "it"
+   },
+   "level": "national",
+   "wiki": "2029 Italian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "German federal election",
+   "w": "Germany",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "de"
+   ],
+   "icon": {
+    "cc": "de"
+   },
+   "level": "national",
+   "wiki": "German federal election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Liberian parliamentary election",
    "w": "Liberia",
    "a": "2029-01-01",
@@ -3448,22 +3525,6 @@
   },
   {
    "k": "election",
-   "t": "Italian presidential election",
-   "w": "Italy",
-   "a": "2029-01-01",
-   "when": "2029",
-   "cc": [
-    "it"
-   ],
-   "icon": {
-    "cc": "it"
-   },
-   "level": "national",
-   "wiki": "2029 Italian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Pakistani general election",
    "w": "Pakistan",
    "a": "2029-01-01",
@@ -3476,38 +3537,6 @@
    },
    "level": "national",
    "wiki": "Pakistani general election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "German federal election",
-   "w": "Germany",
-   "a": "2029-01-01",
-   "when": "2029",
-   "cc": [
-    "de"
-   ],
-   "icon": {
-    "cc": "de"
-   },
-   "level": "national",
-   "wiki": "German federal election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Indian general election",
-   "w": "India",
-   "a": "2029-01-01",
-   "when": "2029",
-   "cc": [
-    "in"
-   ],
-   "icon": {
-    "cc": "in"
-   },
-   "level": "national",
-   "wiki": "Indian general election",
    "auto": true
   },
   {
@@ -3540,6 +3569,22 @@
    },
    "level": "national",
    "wiki": "2029 Equatorial Guinean presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Indian general election",
+   "w": "India",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "in"
+   ],
+   "icon": {
+    "cc": "in"
+   },
+   "level": "national",
+   "wiki": "Indian general election",
    "auto": true
   },
   {
