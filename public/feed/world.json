@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-16T07:00:33.908Z",
+ "built": "2026-11-16T18:42:35.435Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -2105,21 +2105,6 @@
   },
   {
    "k": "election",
-   "t": "first round of Brazilian presidential election, 2026",
-   "w": "Brazil",
-   "a": "2026-10-04",
-   "cc": [
-    "br"
-   ],
-   "icon": {
-    "cc": "br"
-   },
-   "level": "national",
-   "wiki": "first round of Brazilian presidential election, 2026",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Bosnian general election",
    "w": "Bosnia and Herzegovina",
    "a": "2026-10-04",
@@ -2131,6 +2116,21 @@
    },
    "level": "national",
    "wiki": "2026 Bosnian general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "first round of Brazilian presidential election, 2026",
+   "w": "Brazil",
+   "a": "2026-10-04",
+   "cc": [
+    "br"
+   ],
+   "icon": {
+    "cc": "br"
+   },
+   "level": "national",
+   "wiki": "first round of Brazilian presidential election, 2026",
    "auto": true
   },
   {
