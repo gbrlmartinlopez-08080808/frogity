@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-15T21:09:42.673Z",
+ "built": "2026-11-16T07:00:33.908Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -1577,7 +1577,7 @@
    "k": "election",
    "t": "Spanish general election",
    "w": "Spain",
-   "a": "2027-05-23",
+   "a": "2026-11-29",
    "cc": [
     "es"
    ],
@@ -2044,6 +2044,21 @@
   },
   {
    "k": "election",
+   "t": "Bosnian presidential election",
+   "w": "Bosnia and Herzegovina",
+   "a": "2026-10-04",
+   "cc": [
+    "ba"
+   ],
+   "icon": {
+    "cc": "ba"
+   },
+   "level": "national",
+   "wiki": "2022 Bosnian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Republika Srpska general election",
    "w": "Bosnia and Herzegovina",
    "a": "2026-10-04",
@@ -2070,21 +2085,6 @@
    },
    "level": "national",
    "wiki": "2026 Federation of Bosnia and Herzegovina general election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Bosnian presidential election",
-   "w": "Bosnia and Herzegovina",
-   "a": "2026-10-04",
-   "cc": [
-    "ba"
-   ],
-   "icon": {
-    "cc": "ba"
-   },
-   "level": "national",
-   "wiki": "2022 Bosnian presidential election",
    "auto": true
   },
   {
@@ -2454,6 +2454,22 @@
   },
   {
    "k": "election",
+   "t": "Slovenian presidential election",
+   "w": "Slovenia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "si"
+   ],
+   "icon": {
+    "cc": "si"
+   },
+   "level": "national",
+   "wiki": "2027 Slovenian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Papua New Guinean general election",
    "w": "Papua New Guinea",
    "a": "2027-01-01",
@@ -2498,22 +2514,6 @@
    },
    "level": "national",
    "wiki": "2027 Gambian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Slovenian presidential election",
-   "w": "Slovenia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "si"
-   ],
-   "icon": {
-    "cc": "si"
-   },
-   "level": "national",
-   "wiki": "2027 Slovenian presidential election",
    "auto": true
   },
   {
@@ -2920,6 +2920,51 @@
    },
    "level": "national",
    "wiki": "Manipur Legislative Assembly election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Madrilenian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Madrilenian regional election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Cantabrian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Cantabrian regional election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Valencian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Valencian regional election",
    "auto": true
   },
   {
