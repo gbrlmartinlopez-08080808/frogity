@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-17T03:10:09.330Z",
+ "built": "2026-11-17T13:40:17.492Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -2044,21 +2044,6 @@
   },
   {
    "k": "election",
-   "t": "Bosnian presidential election",
-   "w": "Bosnia and Herzegovina",
-   "a": "2026-10-04",
-   "cc": [
-    "ba"
-   ],
-   "icon": {
-    "cc": "ba"
-   },
-   "level": "national",
-   "wiki": "2022 Bosnian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Republika Srpska general election",
    "w": "Bosnia and Herzegovina",
    "a": "2026-10-04",
@@ -2085,6 +2070,21 @@
    },
    "level": "national",
    "wiki": "2026 Federation of Bosnia and Herzegovina general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Bosnian presidential election",
+   "w": "Bosnia and Herzegovina",
+   "a": "2026-10-04",
+   "cc": [
+    "ba"
+   ],
+   "icon": {
+    "cc": "ba"
+   },
+   "level": "national",
+   "wiki": "2022 Bosnian presidential election",
    "auto": true
   },
   {
@@ -2406,22 +2406,6 @@
   },
   {
    "k": "election",
-   "t": "Serbian presidential election",
-   "w": "Serbia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "rs"
-   ],
-   "icon": {
-    "cc": "rs"
-   },
-   "level": "national",
-   "wiki": "2027 Serbian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Albanian presidential election",
    "w": "Albania",
    "a": "2027-01-01",
@@ -2434,22 +2418,6 @@
    },
    "level": "national",
    "wiki": "2027 Albanian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Kenyan presidential election",
-   "w": "Kenya",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "ke"
-   ],
-   "icon": {
-    "cc": "ke"
-   },
-   "level": "national",
-   "wiki": "2027 Kenyan presidential election",
    "auto": true
   },
   {
@@ -2502,18 +2470,18 @@
   },
   {
    "k": "election",
-   "t": "Maltese general election",
-   "w": "Malta",
+   "t": "Serbian presidential election",
+   "w": "Serbia",
    "a": "2027-01-01",
    "when": "2027",
    "cc": [
-    "mt"
+    "rs"
    ],
    "icon": {
-    "cc": "mt"
+    "cc": "rs"
    },
    "level": "national",
-   "wiki": "2027 Maltese general election",
+   "wiki": "2027 Serbian presidential election",
    "auto": true
   },
   {
@@ -2530,6 +2498,22 @@
    },
    "level": "national",
    "wiki": "2027 Gambian parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Kenyan presidential election",
+   "w": "Kenya",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "ke"
+   ],
+   "icon": {
+    "cc": "ke"
+   },
+   "level": "national",
+   "wiki": "2027 Kenyan presidential election",
    "auto": true
   },
   {
@@ -2610,6 +2594,22 @@
    },
    "level": "national",
    "wiki": "2027 Nicaraguan presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Maltese general election",
+   "w": "Malta",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "mt"
+   ],
+   "icon": {
+    "cc": "mt"
+   },
+   "level": "national",
+   "wiki": "2027 Maltese general election",
    "auto": true
   },
   {
