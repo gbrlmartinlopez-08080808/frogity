@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-17T13:40:17.492Z",
+ "built": "2026-11-17T23:37:15.123Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -1577,7 +1577,7 @@
    "k": "election",
    "t": "Spanish general election",
    "w": "Spain",
-   "a": "2026-11-29",
+   "a": "2027-05-23",
    "cc": [
     "es"
    ],
@@ -2120,21 +2120,6 @@
   },
   {
    "k": "election",
-   "t": "first round of Brazilian presidential election, 2026",
-   "w": "Brazil",
-   "a": "2026-10-04",
-   "cc": [
-    "br"
-   ],
-   "icon": {
-    "cc": "br"
-   },
-   "level": "national",
-   "wiki": "first round of Brazilian presidential election, 2026",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "São Paulo general election",
    "w": "Brazil",
    "a": "2026-10-04",
@@ -2146,6 +2131,21 @@
    },
    "level": "national",
    "wiki": "2026 São Paulo general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "first round of Brazilian presidential election, 2026",
+   "w": "Brazil",
+   "a": "2026-10-04",
+   "cc": [
+    "br"
+   ],
+   "icon": {
+    "cc": "br"
+   },
+   "level": "national",
+   "wiki": "first round of Brazilian presidential election, 2026",
    "auto": true
   },
   {
@@ -2406,6 +2406,22 @@
   },
   {
    "k": "election",
+   "t": "Serbian presidential election",
+   "w": "Serbia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "rs"
+   ],
+   "icon": {
+    "cc": "rs"
+   },
+   "level": "national",
+   "wiki": "2027 Serbian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Albanian presidential election",
    "w": "Albania",
    "a": "2027-01-01",
@@ -2470,18 +2486,18 @@
   },
   {
    "k": "election",
-   "t": "Serbian presidential election",
-   "w": "Serbia",
+   "t": "Kenyan presidential election",
+   "w": "Kenya",
    "a": "2027-01-01",
    "when": "2027",
    "cc": [
-    "rs"
+    "ke"
    ],
    "icon": {
-    "cc": "rs"
+    "cc": "ke"
    },
    "level": "national",
-   "wiki": "2027 Serbian presidential election",
+   "wiki": "2027 Kenyan presidential election",
    "auto": true
   },
   {
@@ -2498,22 +2514,6 @@
    },
    "level": "national",
    "wiki": "2027 Gambian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Kenyan presidential election",
-   "w": "Kenya",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "ke"
-   ],
-   "icon": {
-    "cc": "ke"
-   },
-   "level": "national",
-   "wiki": "2027 Kenyan presidential election",
    "auto": true
   },
   {
@@ -2924,51 +2924,6 @@
   },
   {
    "k": "election",
-   "t": "Madrilenian regional election",
-   "w": "Spain",
-   "a": "2027-05-23",
-   "cc": [
-    "es"
-   ],
-   "icon": {
-    "cc": "es"
-   },
-   "level": "regional",
-   "wiki": "Madrilenian regional election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Cantabrian regional election",
-   "w": "Spain",
-   "a": "2027-05-23",
-   "cc": [
-    "es"
-   ],
-   "icon": {
-    "cc": "es"
-   },
-   "level": "regional",
-   "wiki": "Cantabrian regional election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Valencian regional election",
-   "w": "Spain",
-   "a": "2027-05-23",
-   "cc": [
-    "es"
-   ],
-   "icon": {
-    "cc": "es"
-   },
-   "level": "regional",
-   "wiki": "Valencian regional election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Sarawak state election",
    "w": "Malaysia",
    "a": "2027-06-16",
@@ -3119,21 +3074,6 @@
   },
   {
    "k": "election",
-   "t": "Nicaraguan general election",
-   "w": "Nicaragua",
-   "a": "2027-11-01",
-   "cc": [
-    "ni"
-   ],
-   "icon": {
-    "cc": "ni"
-   },
-   "level": "national",
-   "wiki": "2027 Nicaraguan general election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Malagasy presidential election",
    "w": "Madagascar",
    "a": "2027-11-01",
@@ -3145,6 +3085,21 @@
    },
    "level": "national",
    "wiki": "2027 Malagasy presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Nicaraguan general election",
+   "w": "Nicaragua",
+   "a": "2027-11-01",
+   "cc": [
+    "ni"
+   ],
+   "icon": {
+    "cc": "ni"
+   },
+   "level": "national",
+   "wiki": "2027 Nicaraguan general election",
    "auto": true
   },
   {
