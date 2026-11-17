@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-16T18:42:35.435Z",
+ "built": "2026-11-17T03:10:09.330Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -2502,6 +2502,22 @@
   },
   {
    "k": "election",
+   "t": "Maltese general election",
+   "w": "Malta",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "mt"
+   ],
+   "icon": {
+    "cc": "mt"
+   },
+   "level": "national",
+   "wiki": "2027 Maltese general election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Gambian parliamentary election",
    "w": "The Gambia",
    "a": "2027-01-01",
@@ -2594,22 +2610,6 @@
    },
    "level": "national",
    "wiki": "2027 Nicaraguan presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Maltese general election",
-   "w": "Malta",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "mt"
-   ],
-   "icon": {
-    "cc": "mt"
-   },
-   "level": "national",
-   "wiki": "2027 Maltese general election",
    "auto": true
   },
   {
