@@ -27,7 +27,7 @@ const FONTS: [string, string][] = [
 
 export function About({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <Sheet open={open} onClose={onClose} title={tr("About Frogity")} onBackBtn={onClose}>
+    <Sheet open={open} onClose={onClose} title={tr("About Frogity")}>
       <div className="sheet-body about" style={{ paddingBottom: 18 }}>
         <p className="mono muted" style={{ textAlign: 'center', margin: '-4px 0 14px', fontSize: 12 }}>{tr("version ")}{APP_VERSION}{tr(" · free · no ads · no accounts · no tracking")}</p>
 

@@ -3623,3 +3623,195 @@ button.tcard:active {
 .nmode button {
   min-height: 52px;
 }
+
+/* ---- the word climb: Froggy above, the board and the keys below, all in the same ink-on-paper */
+.wordbox {
+  --wt: clamp(26px, calc(31.5vh / var(--rows, 6)), 46px);
+  gap: 0;
+}
+.wordbox .game-hud {
+  padding-bottom: 6px;
+}
+.wordbox .wd-stage {
+  flex: 1 1 0;
+  min-height: 104px;
+}
+.wd-board {
+  display: grid;
+  gap: 5px;
+  justify-content: center;
+  padding: 12px 12px 0;
+}
+.wd-row {
+  display: grid;
+  grid-template-columns: repeat(5, var(--wt));
+  gap: 5px;
+}
+.wd-t {
+  display: grid;
+  place-items: center;
+  height: var(--wt);
+  border-radius: 10px;
+  font: 700 calc(var(--wt) * 0.5) / 1 var(--mono);
+  text-transform: uppercase;
+  font-style: normal;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+}
+.wd-t.on {
+  box-shadow: inset 0 0 0 1.5px var(--ink-2);
+  animation: wdPop 0.12s var(--ease);
+}
+.wd-t.hit,
+.wd-k.hit {
+  background: #7fb87f;
+  color: #0c1f0c;
+  box-shadow: none;
+}
+.wd-t.near,
+.wd-k.near {
+  background: #e6bf55;
+  color: #2a1f00;
+  box-shadow: none;
+}
+.wd-t.miss,
+.wd-k.miss {
+  background: var(--line);
+  color: var(--muted);
+  box-shadow: none;
+}
+.wd-t.flip {
+  animation: wdFlip 0.5s var(--ease) backwards;
+}
+@keyframes wdFlip {
+  0% {
+    transform: rotateX(0);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  49% {
+    transform: rotateX(90deg);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  50% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0);
+  }
+}
+@keyframes wdPop {
+  50% {
+    transform: scale(1.08);
+  }
+}
+.wd-row.shake {
+  animation: wdShake 0.4s;
+}
+@keyframes wdShake {
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+.wd-note {
+  margin: 0;
+  min-height: 24px;
+  padding: 6px 16px 2px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+.wd-keys {
+  display: grid;
+  gap: 6px;
+  padding: 2px 6px 0;
+}
+.wd-krow {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+.wd-k {
+  flex: 1 1 0;
+  max-width: 38px;
+  height: clamp(38px, 6vh, 48px);
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font: 600 14px var(--mono);
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.wd-k.wide {
+  flex: 1.6 1 0;
+  max-width: 60px;
+  font-size: 11px;
+  text-transform: lowercase;
+}
+.wd-k:active {
+  transform: scale(0.94);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wd-t.flip,
+  .wd-row.shake,
+  .wd-t.on {
+    animation: none;
+  }
+}
+
+/* the five blocks sit centred under the title, and the freeze day (~) is the same cool blue as in the calendar */
+.play-hero.flat .bk-row {
+  justify-self: center;
+}
+.bk.freeze {
+  color: #5b8dff;
+  box-shadow: inset 0 0 0 1.5px rgba(91, 141, 255, 0.45);
+}
+.bk.freeze.near {
+  color: #5b8dff;
+  box-shadow: inset 0 0 0 1.5px #5b8dff;
+}
+@media (max-height: 700px) {
+  .wordbox {
+    --wt: clamp(24px, calc(29vh / var(--rows, 6)), 32px);
+  }
+  .wordbox .wd-stage {
+    min-height: 118px;
+  }
+  .wd-board {
+    padding-top: 6px;
+    gap: 4px;
+  }
+  .wd-row {
+    gap: 4px;
+  }
+  .wd-k {
+    height: 34px;
+  }
+  .wd-keys {
+    gap: 4px;
+  }
+  .wd-note {
+    min-height: 20px;
+    padding-top: 4px;
+  }
+}
+@media (max-height: 600px) {
+  .wordbox .wd-stage {
+    min-height: 80px;
+  }
+  .wd-k {
+    height: 32px;
+  }
+}

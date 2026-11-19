@@ -201,17 +201,15 @@ test('game difficulty stays bounded and physics stays finite', async ({
     }),
   ).toEqual({ finite: true, bounded: true, seeded: true });
 });
-test('Deep cuts can pause without losing the prompt', async ({ page }) => {
+test('Word climb: type a word, pause and resume keep the board', async ({ page }) => {
   await page.goto('/tests/games.html');
-  await page.getByText('Deep cuts', { exact: true }).first().click();
+  await page.getByText('Word climb', { exact: true }).first().click();
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Let’s climb' }).click();
-  const prompt = page.locator('.deep2 h2');
-  await expect(prompt).toBeVisible();
-  const question = await prompt.innerText();
+  for (const ch of 'crane') await page.getByRole('button', { name: ch, exact: true }).click();
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   await page.getByRole('button', { name: 'Resume climb' }).click();
-  await expect(prompt).toHaveText(question);
+  await expect(page.locator('.wd-row').first().locator('.wd-t.on')).toHaveCount(5);
 });
 test('Pond pairs practice completes without granting a reward', async ({
   page,
@@ -317,4 +315,53 @@ test('production web library and reader reopen offline', async ({
   await expect(
     page.getByRole('heading', { name: 'Welcome to Frogity', exact: true }),
   ).toBeVisible();
+});
+
+test('Word climb scoring handles repeated letters, and words do not repeat within a year', async ({ page }) => {
+  await page.goto('/tests/games.html');
+  const out = await page.evaluate(async () => {
+    const { scoreGuess } = await import('/src/screens/Climb.tsx');
+    const { pickWord } = await import('/src/lib/games.ts');
+    const { ANSWERS } = await import('/src/data/words.ts');
+    localStorage.clear();
+    const seen = new Map<string, number>();
+    let early = 0;
+    const day0 = Math.floor(Date.now() / 864e5);
+    for (let d = 0; d < 500; d++) {
+      for (let p = 0; p < (d % 40 === 0 ? 8 : 2); p++) {
+        const w = pickWord(ANSWERS, (day0 + d) * 864e5 + 3e7);
+        if (seen.has(w) && d - seen.get(w)! < 365) early++;
+        seen.set(w, d);
+      }
+    }
+    return { speed: scoreGuess('speed', 'abide').join(','), allgreen: scoreGuess('crane', 'crane').join(','), early, pool: ANSWERS.length };
+  });
+  expect(out.speed).toBe('miss,miss,near,miss,near');
+  expect(out.allgreen).toBe('hit,hit,hit,hit,hit');
+  expect(out.early).toBe(0);
+  expect(out.pool).toBeGreaterThan(1000);
+});
+
+test('pulling past the end of a book finishes it and takes it off the shelf, with an Undo', async ({ page }) => {
+  await page.goto('/');
+  await page.getByText('skip intro').click().catch(() => {});
+  await page.waitForTimeout(1000);
+  const text = '# End test\n\n' + Array.from({ length: 40 }, (_, i) => `Paragraph ${i}. ` + 'A sentence that goes on for a while. '.repeat(8)).join('\n\n');
+  await page.locator('input[type=file]:not([capture])').first().setInputFiles({ name: 'end-test.md', mimeType: 'text/markdown', buffer: Buffer.from(text) });
+  await page.waitForTimeout(2500);
+  const reader = page.locator('.reader-scroll');
+  if (!(await reader.count())) await page.getByText('End test').first().click();
+  await expect(reader).toBeVisible();
+  await page.waitForTimeout(1500);
+  await expect(page.locator('.endpull')).toHaveCount(0); // not at the end yet
+  for (let i = 0; i < 8; i++) {
+    await reader.evaluate((el) => (el.scrollTop = el.scrollHeight));
+    await page.waitForTimeout(250);
+  }
+  await expect(page.locator('.endpull')).toBeVisible();
+  await page.waitForTimeout(1300);
+  await reader.hover();
+  await page.mouse.wheel(0, 500);
+  await expect(page.locator('.frogity-toast')).toContainText('Undo');
+  await expect(page.locator('.reader')).toHaveCount(0);
 });

@@ -8,7 +8,7 @@ import { onBack } from '../lib/native';
 import { Icon } from '../ui/Icon';
 import { Froggy } from '../ui/Froggy';
 import { toast } from '../ui/kit';
-import { Deep, Pick, Sling } from './Climb';
+import { Pick, Sling, Word } from './Climb';
 
 /**
  * The five blocks on the way to a freeze day, drawn the way the streak calendar draws a day: an `@` for each block won, and the
@@ -78,9 +78,9 @@ const INTRO: Record<Variant, { title: string; art: string; steps: string[] }> = 
     steps: ['Put your thumb anywhere and pull back, like a sling. Let go: the tongue flies the other way.', 'Stick to a fly and Froggy swings. Let go and shoot the next one before the fly wriggles free (the ring shows how long).', 'Falling? Just tap: the tongue grabs the nearest thing. Avoid the bees, and look for twigs, leaves, dragonflies and wind.'],
   },
   deep: {
-    title: 'Deep cuts',
-    art: '    .--.\n   ( ?? )   ^\n    `--´   /|\\\n   (@) (@)',
-    steps: ['You get a question with many right answers: name a country, a bird, a battle…', 'The rarer your answer, the higher the tongue soars, and Froggy follows it to a new lily. Common answers barely lift it.', 'Wrong or unknown answers are forgiven a few times. Time out and Froggy slips. Rare answers in a row build a streak.'],
+    title: 'Word climb',
+    art: '[F][R][O][G][?]\n  (@)  ^  ^  ^',
+    steps: ['Guess the secret five-letter word. Green: right letter, right place. Gold: right letter, wrong place. Grey: not in the word.', 'Every letter you put in its right place is a hop up to the next lily. Find the whole word and Froggy leaps to the blossom.', 'You have six guesses. Run out and Froggy lands in the water. A new word every time, and none repeats for a year.'],
   },
 };
 function Intro({ variant, onGo }: { variant: Variant; onGo: () => void }) {
@@ -167,7 +167,7 @@ function Run({ variant, onClose }: { variant: Variant; onClose: () => void }) {
         <button className="game-x" onClick={onClose} aria-label={tr("Close the game")}>
           <Icon name="back" size={22} />
         </button>
-        <b>{variant === 'sling' ? 'Sling' : variant === 'deep' ? 'Deep cuts' : 'Pond pairs'}</b>
+        <b>{variant === 'sling' ? 'Sling' : variant === 'deep' ? 'Word climb' : 'Pond pairs'}</b>
         <span className="mono">{tr("level ")}{lv ?? 1}</span>
       </header>
       <div className="game-controls">
@@ -191,7 +191,7 @@ function Run({ variant, onClose }: { variant: Variant; onClose: () => void }) {
         />
       )}
       </div>
-      {!intro && lv !== null && !result && (variant === 'sling' ? <Sling key={round} practice={practice} level={lv} onEnd={finish} /> : variant === 'deep' ? <Deep key={round} practice={practice} level={lv} onEnd={finish} /> : <PondPairs key={round} paused={paused} level={lv} onEnd={finish} />)}
+      {!intro && lv !== null && !result && (variant === 'sling' ? <Sling key={round} practice={practice} level={lv} onEnd={finish} /> : variant === 'deep' ? <Word key={round} practice={practice} level={lv} onEnd={finish} /> : <PondPairs key={round} paused={paused} level={lv} onEnd={finish} />)}
       {result && (
         <div className="game-end">
           <Froggy mood={result.win ? 'bigSmile' : 'sad'} size="lg" />

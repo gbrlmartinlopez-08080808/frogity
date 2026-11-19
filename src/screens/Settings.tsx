@@ -47,7 +47,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <Sheet open={open} onClose={onClose} title={tr("App Settings")} onBackBtn={onClose}>
+    <Sheet open={open} onClose={onClose} title={tr("App Settings")} className="settings">
       <div className="sheet-body"><StorageTools /><button className="pill ghost" onClick={() => void import("../lib/samples").then(m => m.addSamples(Date.now())).then(() => toast("Sample books added"))}>{tr("Add optional sample books")}</button><button className="pill ghost" onClick={() => { if (window.confirm("Download a studio reading voice? This may use tens of megabytes. Use Wi-Fi if data is limited.")) void ensureNaturalVoice(s.lang, { force: true }); }}>{tr("Download reading voice")}</button>
         <Segmented
           light
@@ -290,14 +290,6 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
             <div className="row-sub">
               {docs.length}{tr(" documents")}{usage ? ` · ${usage} used` : ''}{tr(" · all on this device")}</div>
           </div>
-          <button
-            className="pill sm ghost"
-            onClick={async () => {
-              const keys = await db.entries('cache');
-              for (const [k] of keys) await db.del('cache', k);
-              toast('Cleared liquid-mode cache');
-            }}
-          >{tr("Clear cache")}</button>
         </div>
         <button className="row" style={{ width: '100%', textAlign: 'left' }} onClick={() => { onClose(); updateSettings({ onboarded: false }); }}>
           <Icon name="ask" />

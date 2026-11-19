@@ -534,7 +534,7 @@ function Reels({ d, stories, setDetail }: { d: Daily; stories: Story[]; setDetai
 }
 
 // ------------------------------------------------------------------------------------------------------- for you
-type Sub = 'week' | 'articles' | 'curious' | 'long';
+type Sub = 'week' | 'articles' | 'long';
 function ForYou({ book, d, setDetail, wiki }: { book?: DocMeta; d?: Daily; setDetail: (x: Detail) => void; wiki: (t: string, note?: string) => void }) {
   const [sub, setSub] = useState<Sub>('week');
   const [pick, setPick] = useState<WeekPick | null | undefined>();
@@ -557,7 +557,6 @@ function ForYou({ book, d, setDetail, wiki }: { book?: DocMeta; d?: Daily; setDe
           [
             ['week', 'Article of the week'],
             ['articles', 'Articles'],
-            ['curious', 'Curious things'],
             ['long', 'Long reads'],
           ] as const
         ).map(([v, l]) => (
@@ -630,7 +629,7 @@ function ForYou({ book, d, setDetail, wiki }: { book?: DocMeta; d?: Daily; setDe
 
       {sub !== 'week' && d && (
         <>
-          {sub === 'curious' && !!d.mostread?.length && (
+          {sub === 'articles' && !!d.mostread?.length && (
             <div className="tcard more">
               <span className="tag mono">{tr("what the world is reading on wikipedia today")}</span>
               <ul>
@@ -647,12 +646,12 @@ function ForYou({ book, d, setDetail, wiki }: { book?: DocMeta; d?: Daily; setDe
               </ul>
             </div>
           )}
-          {reads(sub === 'articles' ? 'article' : sub).map((r) => (
+          {reads(sub === 'articles' ? 'article' : 'long').map((r) => (
             <div className="tcard readcard" key={r.id}>
               <ReadRow r={r} d={d} onOpen={() => setDetail({ kind: 'read', read: r })} />
             </div>
           ))}
-          {!reads(sub === 'articles' ? 'article' : sub).length && sub !== 'curious' && (
+          {!reads(sub === 'articles' ? 'article' : 'long').length && !(sub === 'articles' && d.mostread?.length) && (
             <div className="int-wait inline">
               <Froggy mood="sleepy" size="md" />
               <p>{tr("Nothing new here yet. Froggy checks again a few times a day.")}</p>
@@ -660,7 +659,7 @@ function ForYou({ book, d, setDetail, wiki }: { book?: DocMeta; d?: Daily; setDe
           )}
         </>
       )}
-      <p className="int-foot mono">{tr("· · ·")}{'\n'}{tr("articles, curiosities and long reads from around the web, always credited")}</p>
+      <p className="int-foot mono">{tr("· · ·")}{'\n'}{tr("articles and long reads from around the web, always credited")}</p>
     </div>
   );
 }

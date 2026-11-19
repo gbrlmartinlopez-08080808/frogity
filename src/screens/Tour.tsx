@@ -11,7 +11,7 @@ interface Step {
 const STEPS: Step[] = [
   { sel: '.carousel', title: 'Your shelf', text: 'What you are reading sits here in frosted holders. Swipe through them, tap one to open it, press and hold for more options.' },
   { sel: '.ring-btn', title: 'Daily goal ring', text: 'It fills as you read. Fill it to light today’s place on your reading globe.' },
-  { sel: '.streak-strip', title: 'Your streak', text: 'Read a minute a day to keep it alive. A free freeze day each week saves you when life gets in the way.' },
+  { sel: '.streak-strip', title: 'Your streak', text: 'Read a minute a day to keep it alive. A free freeze day (it comes back every 15 days) saves you when life gets in the way; it shows in blue.' },
   { sel: '.shelf-head', title: 'Sort, select, search', text: 'Reorder the shelf, pick several books to remove at once, or search by title and author.' },
   { sel: '.filters', title: 'Filters', text: 'Jump between what you are reading, PDFs, books, documents and finished titles.' },
   { sel: '.dock .pill:not(.round)', title: 'Add anything', text: 'Files, whole folders, web links, pasted text — or find free books to read right now.' },

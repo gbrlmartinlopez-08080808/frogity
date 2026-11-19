@@ -19,6 +19,7 @@ export interface FreezeState {
   bonus: number; // extra freezes earned (feedback, or five blocks from the games)
   blocks?: number; // blocks won toward the next freeze day (0–4)
   blockDay?: string; // the day the last block was won (one block a day)
+  pending?: string[]; // freeze days spent that the reader has not been told about yet (said the next time the app is open)
 }
 
 let state: State = { ready: false, docs: [], settings: DEFAULT_SETTINGS, days: {}, hours: {}, freeze: { used: [], bonus: 0 } };
@@ -72,7 +73,7 @@ export async function init() {
     settings: merged,
     days: Object.fromEntries(dayEntries),
     hours: hours ?? {},
-    freeze: { used: freeze?.used ?? [], paid: freeze?.paid ?? [], bonus: freeze?.bonus ?? 0, blocks: freeze?.blocks ?? 0, blockDay: freeze?.blockDay },
+    freeze: { used: freeze?.used ?? [], paid: freeze?.paid ?? [], bonus: freeze?.bonus ?? 0, blocks: freeze?.blocks ?? 0, blockDay: freeze?.blockDay, pending: freeze?.pending ?? [] },
   });
   applyFreeze();
 }
@@ -242,26 +243,44 @@ export function earnBlock(): { ok: boolean; blocks: number; freeze: boolean; rea
   return { ok: true, blocks, freeze: false };
 }
 
-/** If yesterday was missed but the streak was alive before it, spend a freeze on it (once, automatically). */
+/**
+ * Spends freeze days on the days that were missed, once, automatically. The streak has to have been alive just before the gap,
+ * and there must be a freeze for every missed day (a gap of two days needs two): otherwise the streak is simply over and nothing
+ * is spent. The free freeze goes first, then the ones that were won. What was spent is remembered in `pending`, so the reader is
+ * told the next time the app is open even if it was closed when the day was saved.
+ */
 export function applyFreeze() {
-  const y = new Date();
-  y.setDate(y.getDate() - 1);
-  const yk = dayKey(y);
-  const before = new Date(y);
-  before.setDate(before.getDate() - 1);
-  const bk = dayKey(before);
   const { days, freeze } = state;
   const counts = (k: string) => (days[k] ?? 0) >= COUNT_MS;
-  if (counts(yk) || freeze.used.includes(yk)) return;
-  if (!counts(bk) && !freeze.used.includes(bk)) return; // there was no streak to save
+  const live = (k: string) => counts(k) || freeze.used.includes(k);
+  const d = new Date();
+  d.setDate(d.getDate() - 1); // today is not over: it is never "missed" yet
+  const missed: string[] = [];
+  for (let i = 0; i < 14 && !live(dayKey(d)); i++) {
+    missed.push(dayKey(d));
+    d.setDate(d.getDate() - 1);
+  }
+  if (!missed.length || !live(dayKey(d))) return; // nothing missed, or no streak to save
   const st = freezeStatus(freeze);
-  if (!st.available) return;
-  const next: FreezeState = st.weekly
-    ? { ...freeze, used: [...freeze.used, yk] }
-    : { ...freeze, used: [...freeze.used, yk], paid: [...(freeze.paid ?? []), yk], bonus: freeze.bonus - 1 };
-  saveFreeze(next);
-  // let the screen settle first, so the toast isn't missed
-  setTimeout(() => window.dispatchEvent(new CustomEvent('quire:freeze', { detail: { day: yk } })), 1800);
+  if (st.available < missed.length) return;
+  const used = [...freeze.used];
+  const paid = [...(freeze.paid ?? [])];
+  let bonus = freeze.bonus;
+  let free = st.weekly;
+  for (const k of [...missed].reverse()) {
+    used.push(k);
+    if (free) free = false;
+    else {
+      paid.push(k);
+      bonus--;
+    }
+  }
+  saveFreeze({ ...freeze, used, paid, bonus, pending: [...(freeze.pending ?? []), ...missed] });
+}
+
+/** The reader has been told about the freeze days that were spent. */
+export function ackFreeze() {
+  if (state.freeze.pending?.length) saveFreeze({ ...state.freeze, pending: [] });
 }
 
 /** Gives the reader an extra freeze day (e.g. a thank-you for feedback). */

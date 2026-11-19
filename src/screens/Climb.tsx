@@ -1,7 +1,7 @@
 import { tr } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
-import { deepLevel, rng, slingLevel } from '../lib/games';
-import { deepestOf, pickPrompt, scoreAnswer, type Prompt } from '../data/deepcuts';
+import { pickWord, rng, slingLevel, wordLevel } from '../lib/games';
+import { ANSWERS, GUESSES } from '../data/words';
 import { froggyFace, type Mood } from '../lib/froggy';
 import { tap } from '../lib/native';
 import { Icon } from '../ui/Icon';
@@ -33,7 +33,6 @@ function text(c: CanvasRenderingContext2D, s: string, x: number, y: number, colo
 }
 // a muted palette that sits on both the light and the dark paper
 const CO = { gold: '#d9a21b', coral: '#e2664a', blue: '#5f9bd0', violet: '#9a73d6', green: '#6aa56a', petal: '#e8907a' };
-export const TIER_COLOR: Record<string, string> = { unknown: '#8a8a86', common: '#8a8a86', known: CO.blue, uncommon: CO.gold, 'deep cut': CO.coral, 'deepest cut': CO.violet };
 const mono = (px: number, w = 700) => `${w} ${px}px "JetBrains Mono", ui-monospace, monospace`;
 
 type Pose = 'sit' | 'air' | 'swing' | 'none';
@@ -1083,245 +1082,293 @@ function drawSlingScene(c: CanvasRenderingContext2D, k: Ink, s: SlingState, cfg:
   }
 }
 
-// ------------------------------------------------------------------------------------------------ variant two: deep cuts
-interface Lily {
-  y: number; // world px
-  m: number; // metres
-  born: number;
-  x: number;
-  col?: string; // the colour of the answer that put it here
-}
-type Note =
-  | { kind: 'info'; tag: string; line: string }
-  | { kind: 'rank'; streak?: number; name: string; tier: string; rank: number; of: number; points: number; gain: number; rare: string[] };
+// ------------------------------------------------------------------------------------------------ variant two: the word climb
+// A five-letter word. Each letter you place in the right spot is one hop up to the next lily; the whole word is the leap to
+// the blossom. Six guesses; running out drops Froggy in the water. A new word every time, none repeating within a year.
+type Mark = 'hit' | 'near' | 'miss';
+const ROWS_KEYS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+const STEP = 62; // world px between lilies
+const TOP = STEP * 5 + 70; // the blossom
 
-/** how rare an answer was, as the long tail every list of names has: many bars on the left (the familiar), few on the right; the answer's own bar lit */
-function RankCard({ n }: { n: Extract<Note, { kind: 'rank' }> }) {
-  const col = TIER_COLOR[n.tier] ?? TIER_COLOR.common;
-  const BARS = 26;
-  const at = Math.round((clamp(n.points, 0, 100) / 100) * (BARS - 1));
-  return (
-    <div className="rank" style={{ ['--tc' as string]: col }}>
-      <div className="rank-top">
-        <b className="rank-name">{n.name}</b>
-        <span className="rank-chip mono">{n.tier}</span>
-      </div>
-      <div className="rank-meter" aria-hidden>
-        {Array.from({ length: BARS }, (_, i) => (
-          <i key={i} className={i === at ? 'on' : i < at ? 'pre' : ''} style={{ height: `${Math.round(6 + 30 / (1 + i * 0.55))}px` }} />
-        ))}
-      </div>
-      <div className="rank-axis mono">
-        <span>{tr("familiar")}</span>
-        <span>{tr("rare")}</span>
-      </div>
-      <div className="rank-row mono">
-        <span>{tr("#")}{n.rank}{tr(" of ")}{n.of}
-        </span>
-        <b>{tr("+")}{n.gain}{tr(" m")}{n.streak ? ` · streak +${n.streak}%` : ''}
-        </b>
-      </div>
-      <p>{tr("Rarest of all: ")}{n.rare.join(', ')}{tr(".")}</p>
-    </div>
-  );
+/** the usual five-letter scoring, with repeated letters counted once each */
+export function scoreGuess(guess: string, word: string): Mark[] {
+  const res: Mark[] = Array(word.length).fill('miss');
+  const left: Record<string, number> = {};
+  for (let i = 0; i < word.length; i++) {
+    if (guess[i] === word[i]) res[i] = 'hit';
+    else left[word[i]] = (left[word[i]] ?? 0) + 1;
+  }
+  for (let i = 0; i < word.length; i++) {
+    if (res[i] === 'hit') continue;
+    if (left[guess[i]] > 0) {
+      res[i] = 'near';
+      left[guess[i]]--;
+    }
+  }
+  return res;
 }
-const PPM = 5; // pixels per metre
-export function Deep({ level, onEnd, practice = false }: { practice?: boolean; level: number; onEnd: (win: boolean, text: string) => void }) {
-  const cfg = useRef(practice ? { ...deepLevel(1), goal: 220, seconds: 55, slack: 5 } : deepLevel(level)).current;
-  const [prompt, setPrompt] = useState<Prompt | null>(null);
-  const [answer, setAnswer] = useState('');
-  const [note, setNote] = useState<null | Note>(null);
-  const [slack, setSlack] = useState(cfg.slack);
-  const [streak, setStreak] = useState(0);
-  const [hints, setHints] = useState(1);
-  const [skips, setSkips] = useState(2);
-  const [hint, setHint] = useState('');
-  const [m, setM] = useState(0);
-  const used = useRef<string[]>([]);
+
+export function Word({ level, onEnd, practice = false }: { practice?: boolean; level: number; onEnd: (win: boolean, text: string) => void }) {
+  const cfg = useRef(wordLevel(level, practice)).current;
+  const word = useRef('');
+  if (!word.current) word.current = pickWord(ANSWERS);
+  const [rows, setRows] = useState<{ g: string; m: Mark[] }[]>([]);
+  const [cur, setCur] = useState('');
+  const [shown, setShown] = useState(0); // rows whose colours are revealed (the last row flips in tile by tile)
+  const [note, setNote] = useState('');
+  const [shake, setShake] = useState(false);
+  const [locked, setLocked] = useState<boolean[]>([false, false, false, false, false]);
+  const lockedRef = useRef<boolean[]>([false, false, false, false, false]);
+  const busy = useRef(false);
   const done = useRef(false);
-  const S = useRef({
-    t: 0,
-    frogY: PPM * 0,
-    frogX: 0,
-    cam: -40,
-    lilies: [{ y: 0, m: 0, born: -9, x: 0 }] as Lily[],
-    mood: 'neutral' as Mood,
-    anim: null as null | { kind: 'soar' | 'slip' | 'sink'; t0: number; from: number; to: number; apex: number; ok: boolean; text?: string; col?: string },
-    pops: [] as { x: number; y: number; t0: number; s: string; col?: string }[],
-    winAt: -1,
-    sparks: [] as { x: number; y: number; vx: number; vy: number; t0: number; c: string }[],
-    endAt: 0,
-  }).current;
-  const ask = () => {
-    // a different question every time: never one from this climb, and not one from the last few climbs either
-    let recent: string[] = [];
-    try {
-      recent = JSON.parse(localStorage.getItem('deep:recent') || '[]');
-    } catch {
-      /* private mode */
-    }
-    const p = pickPrompt(Math.random, [...used.current, ...recent], used.current.length);
-    used.current.push(p.id);
-    try {
-      localStorage.setItem('deep:recent', JSON.stringify([...recent, p.id].slice(-600)));
-    } catch {
-      /* private mode */
-    }
-    setPrompt(p);
-    setAnswer('');
-    setNote(null);
-    setHint('');
+  const alive = useRef(true);
+  const timers = useRef<number[]>([]);
+  const later = (fn: () => void, ms: number) => {
+    const id = window.setTimeout(() => alive.current && fn(), ms);
+    timers.current.push(id);
   };
   useEffect(() => {
-    const t = setTimeout(ask, 500);
-    return () => clearTimeout(t);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      timers.current.forEach(clearTimeout);
+    };
+  }, []);
+  const S = useRef({
+    t: 0,
+    frogY: 0,
+    frogX: 0,
+    cam: -40,
+    lilies: [{ y: 0, born: -9 }] as { y: number; born: number }[],
+    mood: 'neutral' as Mood,
+    queue: [] as number[],
+    anim: null as null | { kind: 'hop' | 'leap' | 'sink'; t0: number; from: number; to: number },
+    pops: [] as { x: number; y: number; t0: number; s: string }[],
+    sparks: [] as { x: number; y: number; vx: number; vy: number; t0: number; c: string }[],
+    winAt: -1,
+    lose: false,
+    onQueueEnd: null as null | (() => void),
+  }).current;
 
-  const slip = (why: string) => {
-    if (S.anim || done.current) return;
-    setPrompt(null);
-    const below = S.lilies.filter((l) => l.y < S.frogY - 1).sort((a, b) => b.y - a.y)[0];
-    S.anim = { kind: below ? 'slip' : 'sink', t0: S.t, from: S.frogY, to: below ? below.y : -60, apex: 0, ok: false, text: why };
-    S.mood = 'surprised';
-    setNote({ kind: 'info', tag: below ? 'a slip' : 'a splash', line: why });
+  const flash = (text: string) => {
+    setNote(text);
+    setShake(true);
+    later(() => setShake(false), 420);
+    later(() => setNote((n) => (n === text ? '' : n)), 1900);
   };
-  const submit = () => {
-    if (!prompt || S.anim) return;
-    const r = scoreAnswer(prompt, answer);
-    if (r.tier === 'unknown') {
-      if (slack > 0) {
-        setSlack(slack - 1);
-        setNote({ kind: 'info', tag: `not in Froggy’s list · ${slack - 1} ${slack - 1 === 1 ? 'life' : 'lives'} left`, line: `“${answer.trim()}” isn’t on Froggy’s list. Try another, or check the spelling.` });
-        setAnswer('');
-        return;
+  const keyState: Record<string, Mark> = {};
+  rows.slice(0, shown).forEach((r) =>
+    r.g.split('').forEach((ch, i) => {
+      const m = r.m[i];
+      const o = keyState[ch];
+      if (!o || (o === 'miss' && m !== 'miss') || (o === 'near' && m === 'hit')) keyState[ch] = m;
+    }),
+  );
+
+  const press = (ch: string) => {
+    if (busy.current || done.current) return;
+    setNote('');
+    setCur((c) => (c.length < 5 ? c + ch : c));
+  };
+  const back = () => {
+    if (busy.current || done.current) return;
+    setCur((c) => c.slice(0, -1));
+  };
+  const enter = () => {
+    if (busy.current || done.current) return;
+    if (cur.length < 5) return flash('Not enough letters');
+    if (!ANSWERS.includes(cur) && !GUESSES.has(cur)) return flash('Not in the word list');
+    busy.current = true;
+    const marks = scoreGuess(cur, word.current);
+    const g = cur;
+    const next = [...rows, { g, m: marks }];
+    setRows(next);
+    setCur('');
+    tap('light');
+    // the tiles flip one by one (about 1.3 s), then Froggy hops once for each letter newly in its place
+    later(() => setShown(next.length), 60);
+    later(() => {
+      const had = lockedRef.current;
+      const hopTo: number[] = [];
+      const now = [...had];
+      let count = had.filter(Boolean).length;
+      marks.forEach((m, i) => {
+        if (m === 'hit' && !had[i]) {
+          now[i] = true;
+          count++;
+          hopTo.push(count >= 5 ? TOP : count * STEP);
+        }
+      });
+      lockedRef.current = now;
+      setLocked(now);
+      const solved = g === word.current;
+      const finish = () => {
+        if (solved) {
+          if (!done.current) {
+            done.current = true;
+            later(() => onEnd(true, `Froggy reached the blossom — the word was ${word.current.toUpperCase()}.`), 2300);
+          }
+        } else if (next.length >= cfg.guesses) {
+          S.queue = [];
+          S.lose = true;
+          S.mood = 'surprised';
+          S.anim = { kind: 'sink', t0: S.t, from: S.frogY, to: -60 };
+          done.current = true;
+          later(() => onEnd(false, `The word was ${word.current.toUpperCase()}. Froggy slipped with nothing to land on, and the water is cold.`), 1900);
+        } else {
+          S.mood = hopTo.length ? 'happy' : 'worried';
+          busy.current = false;
+        }
+      };
+      if (hopTo.length) {
+        S.queue = hopTo;
+        S.onQueueEnd = finish;
+      } else {
+        if (!solved) S.mood = 'worried';
+        finish();
       }
-      return slip('Froggy could not place that, and the tongue went limp.');
-    }
-    const top = cfg.goal * PPM;
-    // answers that are rare in a row are worth more and more: +20% for each, up to +60%
-    const bonus = streak > 0 ? 1 + 0.2 * Math.min(3, streak) : 1;
-    const to = Math.min(top, S.frogY + Math.round(Math.max(8, r.points) * bonus) * PPM);
-    setStreak(r.points >= 50 ? streak + 1 : 0);
-    const gain = Math.round((to - S.frogY) / PPM);
-    const col = TIER_COLOR[r.tier] ?? TIER_COLOR.common;
-    S.anim = { kind: 'soar', t0: S.t, from: S.frogY, to, apex: to + 150, ok: true, col };
-    S.mood = 'bigSmile';
-    setPrompt(null);
-    tap('medium');
-    setNote({ kind: 'rank', streak: bonus > 1 ? Math.round((bonus - 1) * 100) : 0, name: r.name ?? answer.trim(), tier: r.tier, rank: r.rank ?? 0, of: r.of, points: r.points, gain, rare: deepestOf(prompt, 3) });
+    }, 1400);
   };
+  const enterRef = useRef(enter);
+  enterRef.current = enter;
+  const pressRef = useRef(press);
+  pressRef.current = press;
+  const backRef = useRef(back);
+  backRef.current = back;
+  useEffect(() => {
+    // a hardware keyboard (web, tablets) works too
+    const kd = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (document.querySelector('.game[data-paused="true"]')) return;
+      if (e.key === 'Enter') enterRef.current();
+      else if (e.key === 'Backspace') backRef.current();
+      else if (/^[a-zA-Z]$/.test(e.key)) pressRef.current(e.key.toLowerCase());
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', kd);
+    return () => window.removeEventListener('keydown', kd);
+  }, []);
 
   const cv = useStage((c, W, H, dt, k) => {
     S.t += dt;
-    const ppm = PPM;
     S.frogX = W / 2;
+    // start the next hop in the queue
+    if (!S.anim && S.queue.length) {
+      const to = S.queue.shift()!;
+      S.anim = { kind: to >= TOP ? 'leap' : 'hop', t0: S.t, from: S.frogY, to };
+      S.mood = 'bigSmile';
+      tap('medium');
+    }
     const A = S.anim;
     let tipY: number | null = null;
     let frogDrawY = S.frogY;
     let squash = 1;
     let mouth: string | undefined;
+    let air = false;
     if (A) {
       const e = S.t - A.t0;
-      if (A.kind === 'soar') {
-        // the tongue goes up very high (and a long way past the lily it is aiming for), the frog follows it and lands
-        const T1 = 1.05;
-        const T2 = 0.7;
-        if (e < T1) {
-          tipY = A.from + 40 + (A.apex - A.from - 40) * ease.expo(e / T1);
+      if (A.kind === 'hop') {
+        const D = 0.62;
+        const kk = clamp(e / D, 0, 1);
+        frogDrawY = A.from + (A.to - A.from) * ease.out(kk) + Math.sin(kk * Math.PI) * 26;
+        if (e < 0.3) {
+          tipY = A.from + 26 + (A.to - A.from + 16) * ease.expo(e / 0.3);
           mouth = 'O';
-          // sparks fly off the tip
+        }
+        air = kk < 1;
+        if (e >= D) {
+          S.frogY = A.to;
+          S.lilies.push({ y: A.to, born: S.t });
+          S.pops.push({ x: S.frogX, y: A.to + 56, t0: S.t, s: '+1' });
+          S.anim = null;
+          S.mood = 'happy';
+          squash = 1.16;
+          if (!S.queue.length) {
+            const f = S.onQueueEnd;
+            S.onQueueEnd = null;
+            f?.();
+          }
+        }
+      } else if (A.kind === 'leap') {
+        // the whole word: the tongue shoots far above the blossom and Froggy follows it
+        const T1 = 0.8;
+        const T2 = 0.75;
+        const apex = A.to + 140;
+        if (e < T1) {
+          tipY = A.from + 40 + (apex - A.from - 40) * ease.expo(e / T1);
+          mouth = 'O';
           if (Math.random() < 0.9) S.sparks.push({ x: W / 2 + (Math.random() - 0.5) * 16, y: tipY, vx: (Math.random() - 0.5) * 90, vy: -30 - Math.random() * 60, t0: S.t, c: Math.random() < 0.5 ? '*' : '.' });
         } else if (e < T1 + T2) {
           const k2 = ease.inq((e - T1) / T2);
           frogDrawY = A.from + (A.to - A.from) * k2;
-          tipY = A.apex - (A.apex - A.to) * k2 * 0.9;
+          tipY = apex - (apex - A.to) * k2 * 0.9;
           mouth = 'O';
+          air = true;
         } else {
           frogDrawY = A.to;
           S.frogY = A.to;
-          const born = S.t;
-          const top = A.to / ppm >= cfg.goal;
-          if (!top) S.lilies.push({ y: A.to, m: Math.round(A.to / ppm), born, x: 0, col: A.col });
-          S.pops.push({ x: S.frogX, y: A.to + 60, t0: S.t, s: `+${Math.round((A.to - A.from) / ppm)} m`, col: A.col });
           S.anim = null;
-          S.mood = top ? 'bigSmile' : 'happy';
-          setM(Math.round(A.to / ppm));
-          if (top) {
-            S.winAt = S.t;
-            if (!done.current) {
-              done.current = true;
-              setTimeout(() => onEnd(true, `Froggy reached the blossom at ${Math.round(A.to / ppm)} m.`), 2700);
-            }
-          } else setTimeout(() => !done.current && ask(), 1600);
+          S.mood = 'bigSmile';
+          S.winAt = S.t;
+          squash = 1.18;
+          S.queue = [];
+          const f = S.onQueueEnd;
+          S.onQueueEnd = null;
+          f?.();
         }
-        if (e > T1 && e < T1 + T2 + 0.25) squash = 1;
-        if (e >= T1 + T2) squash = 1 + 0.18 * Math.max(0, 1 - (e - T1 - T2) * 6);
-      } else if (A.kind === 'slip' || A.kind === 'sink') {
-        // the tongue wobbles up a little, goes limp, and Froggy drops
+      } else if (A.kind === 'sink') {
         if (e < 0.45) {
           tipY = A.from + 30 + 90 * ease.out(e / 0.45);
           mouth = '~';
         } else {
-          const k2 = ease.inq(Math.min(1, (e - 0.45) / 0.55));
-          frogDrawY = A.from + (A.to - A.from) * k2;
-          if (A.kind === 'slip' && e >= 1) {
-            S.frogY = A.to;
-            S.anim = null;
-            S.mood = 'worried';
-            setM(Math.round(A.to / ppm));
-            setTimeout(() => !done.current && ask(), 1100);
-          }
-          if (A.kind === 'sink' && e >= 1.4 && !done.current) {
-            done.current = true;
-            setTimeout(() => onEnd(false, `Froggy slipped at ${Math.round(S.frogY / ppm)} m with nothing to land on. The water is cold.`), 500);
-          }
+          frogDrawY = A.from + (A.to - A.from) * ease.inq(Math.min(1, (e - 0.45) / 0.55));
         }
+        air = true;
       }
     }
-    // the camera glides: it follows the tongue as it soars, otherwise the frog
-    const want = (tipY !== null && A?.kind === 'soar' ? Math.max(frogDrawY, tipY - H * 0.15) : frogDrawY) - H * 0.34;
-    S.cam += (want - S.cam) * Math.min(1, dt * (A?.kind === 'soar' ? 7 : 4));
+    const want = (tipY !== null && A?.kind === 'leap' ? Math.max(frogDrawY, tipY - H * 0.15) : frogDrawY) - H * 0.34;
+    S.cam += (want - S.cam) * Math.min(1, dt * (A?.kind === 'leap' ? 7 : 4));
     const Y = (y: number) => H - (y - S.cam);
-    // the scene
     dust(c, k, W, H, S.cam);
-    ruler(c, k, H, S.cam, ppm, cfg.goal + 20);
     water(c, k, W, Y(-4), H, S.t);
     reeds(c, k, W, Y(-4), H, S.t);
-    blossom(c, k, W / 2, Y(cfg.goal * ppm), S.winAt < 0 ? 0 : (S.t - S.winAt) / 0.7, S.t);
-    // the lilies: the newest is bright; older ones drift away and fade, but still hold if Froggy slips onto them
+    blossom(c, k, W / 2, Y(TOP), S.winAt < 0 ? 0 : (S.t - S.winAt) / 0.7, S.t);
+    // the lilies Froggy has hopped to: the newest bright, the ones below fading; a lily is not drawn until Froggy lands on it
     S.lilies.forEach((l, i) => {
-      const last = i === S.lilies.length - 1 && !(A?.kind === 'soar' && S.lilies.length - 1 === i && false);
       const age = Math.min(1, (S.t - l.born) / 0.5);
       const px = W / 2 + Math.sin(S.t * 0.5 + i * 1.7) * (i === 0 ? 0 : 7);
-      if (i === 0) pad(c, k, px, Y(l.y), 104, 1, undefined);
-      else if (A?.kind === 'soar' && i === S.lilies.length - 1 && S.t - A.t0 < 1.7) return;
-      else pad(c, k, px, Y(l.y), 92, last ? 1 : 0.55, `${l.m} m`, 0.4 + 0.6 * ease.out(age) + (age < 1 ? Math.sin(age * 3) * 0.1 : 0), l.col);
+      const last = i === S.lilies.length - 1;
+      if (i === 0) pad(c, k, px, Y(l.y), 104, 1);
+      else pad(c, k, px, Y(l.y), 92, last ? 1 : 0.55, undefined, 0.4 + 0.6 * ease.out(age) + (age < 1 ? Math.sin(age * 3) * 0.1 : 0));
     });
-    // the tongue, going up
-    if (tipY !== null) {
-      const x = S.frogX;
-      tongueLine(c, k, x, Y(frogDrawY) - 8, x + Math.sin(S.t * 30) * (A?.kind === 'slip' ? 8 : 1), Y(tipY), true, 7);
+    // the next lily, a faint hint of where the next right letter goes
+    if (S.winAt < 0 && !S.lose) {
+      const nxt = (S.lilies.length) * STEP;
+      if (nxt < TOP - 20 && !(A && A.kind === 'hop' && A.to >= nxt)) {
+        c.globalAlpha = 0.25;
+        pad(c, k, W / 2, Y(nxt), 70);
+        c.globalAlpha = 1;
+      }
     }
-    // sparks and numbers
+    if (tipY !== null) tongueLine(c, k, S.frogX, Y(frogDrawY) - 8, S.frogX + Math.sin(S.t * 30) * (A?.kind === 'sink' ? 8 : 1), Y(tipY), true, 7);
     S.sparks = S.sparks.filter((p) => S.t - p.t0 < 0.9);
     for (const p of S.sparks) {
       const a = 1 - (S.t - p.t0) / 0.9;
       c.globalAlpha = a;
-      text(c, p.c, p.x + p.vx * (S.t - p.t0), Y(p.y) - p.vy * (S.t - p.t0), A?.col ?? k.ink2, mono(14));
+      text(c, p.c, p.x + p.vx * (S.t - p.t0), Y(p.y) - p.vy * (S.t - p.t0), CO.gold, mono(14));
       c.globalAlpha = 1;
     }
-    S.pops = S.pops.filter((p) => S.t - p.t0 < 1.4);
+    S.pops = S.pops.filter((p) => S.t - p.t0 < 1.2);
     for (const p of S.pops) {
       const e = S.t - p.t0;
-      c.globalAlpha = clamp(1.4 - e, 0, 1);
-      text(c, p.s, p.x + 54, Y(p.y) - e * 30, p.col ?? k.ink, mono(22));
+      c.globalAlpha = clamp(1.2 - e, 0, 1);
+      text(c, p.s, p.x + 54, Y(p.y) - e * 30, CO.green, mono(20));
       c.globalAlpha = 1;
     }
-    // Froggy
     const under = A?.kind === 'sink' ? clamp(-frogDrawY / 55, 0, 1) : 0;
-    const air = A?.kind === 'soar' && S.t - A.t0 > 1.05;
     c.globalAlpha = 1 - under * 0.9;
-    frog(c, k, S.frogX, Y(frogDrawY) + 2, A?.kind === 'sink' && under > 0 ? 'dizzy' : S.mood, mouth, squash, air || A?.kind === 'slip' || A?.kind === 'sink' ? 'air' : 'sit');
+    frog(c, k, S.frogX, Y(frogDrawY) + 2, A?.kind === 'sink' && under > 0 ? 'dizzy' : S.mood, mouth, squash, air ? 'air' : 'sit');
     c.globalAlpha = 1;
     if (A?.kind === 'sink' && frogDrawY < 4) {
       const e = S.t - A.t0 - 0.9;
@@ -1336,84 +1383,87 @@ export function Deep({ level, onEnd, practice = false }: { practice?: boolean; l
     }
     if (S.winAt >= 0) {
       const e = S.t - S.winAt;
-      confetti(c, S.frogX, Y(cfg.goal * ppm) - 40, Math.max(0, e - 0.1) * 0.75);
+      confetti(c, S.frogX, Y(TOP) - 40, Math.max(0, e - 0.1) * 0.75);
       if (e > 0.6) {
         c.globalAlpha = clamp((e - 0.6) * 2, 0, 1);
-        text(c, 'the top!', W / 2, Y(cfg.goal * ppm) - 100, k.ink, mono(20));
+        text(c, 'the top!', W / 2, Y(TOP) - 100, k.ink, mono(20));
         c.globalAlpha = 1;
       }
     }
   });
 
+  const nLocked = locked.filter(Boolean).length;
+  const over = rows.length >= cfg.guesses || rows[rows.length - 1]?.g === word.current;
+  const board = Array.from({ length: cfg.guesses }, (_, r) => {
+    const row = rows[r];
+    const typing = r === rows.length && !over;
+    const letters = row ? row.g : typing ? cur : '';
+    return (
+      <div key={r} className={`wd-row${typing && shake ? ' shake' : ''}`} role="row">
+        {Array.from({ length: 5 }, (_, i) => {
+          const flipped = !!row && r < shown;
+          const m = flipped ? row.m[i] : undefined;
+          return (
+            <i
+              key={i}
+              role="cell"
+              className={`wd-t${m ? ' ' + m : ''}${letters[i] ? ' on' : ''}${row && !flipped ? ' pend' : ''}${row && r === rows.length - 1 && flipped ? ' flip' : ''}`}
+              style={{ animationDelay: `${i * 0.2}s` }}
+              aria-label={letters[i] ? `${letters[i]}${m === 'hit' ? ', right place' : m === 'near' ? ', wrong place' : m === 'miss' ? ', not in the word' : ''}` : 'empty'}
+            >
+              {letters[i] ?? ''}
+            </i>
+          );
+        })}
+      </div>
+    );
+  });
+
   return (
-    <div className="stagebox deepbox">
+    <div className="stagebox wordbox" style={{ ['--rows' as string]: cfg.guesses }}>
       <div className="game-hud mono">
         <span>
-          {m}{tr(" m of ")}{cfg.goal}{tr(" m")}</span>
-        <span>
-          <b style={{ color: CO.coral }}>{'♥'.repeat(slack)}</b>
-          <span style={{ opacity: 0.35 }}>{'♥'.repeat(Math.max(0, cfg.slack - slack))}</span>
-          {streak > 0 ? ` · streak ×${streak}` : ''}
+          {nLocked}
+          {tr(" of 5 letters placed")}
         </span>
-        <span>{Math.round((m / cfg.goal) * 100)}{tr("%")}</span>
+        <span>
+          {tr("guess ")}
+          {Math.min(rows.length + (over ? 0 : 1), cfg.guesses)}
+          {tr(" of ")}
+          {cfg.guesses}
+        </span>
       </div>
-      <div className="stage short">
-        <canvas ref={cv} aria-label={tr("Froggy's tongue soaring up from a lily pad")} />
+      <div className="stage wd-stage">
+        <canvas ref={cv} aria-label={tr("Froggy hopping up lily pads toward a blossom")} />
       </div>
-      <div className="deep2">
-        {prompt && (
-          <>
-            <div className="timer" key={prompt.id} style={{ animationDuration: `${cfg.seconds}s` }} onAnimationEnd={() => slip('Time ran out, and the tongue lost its grip.')} />
-            <p className="tag mono">{tr("deep cut · the rarer, the higher")}</p>
-            <h2>{prompt.q}</h2>
-            <form
-              className="ask-input"
-              onSubmit={(e) => {
-                e.preventDefault();
-                submit();
-              }}
-            >
-              <input autoFocus value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder={tr("name something rare")} autoCapitalize="words" enterKeyHint="send" />
-              <button className="pill round sm" disabled={answer.trim().length < 2} aria-label={tr("Fire the tongue")}>
-                <Icon name="up" size={18} stroke={2.4} />
+      <div className="wd-board" role="grid" aria-label={tr("Your guesses")}>
+        {board}
+      </div>
+      <p className="wd-note mono" role="status" aria-live="polite">
+        {note ? tr(note) : cur.length === 0 && rows.length === 0 ? tr("Guess the word · each letter in its place is a hop") : ''}
+      </p>
+      <div className="wd-keys" role="group" aria-label={tr("Keyboard")}>
+        {ROWS_KEYS.map((r, ri) => (
+          <div key={r} className="wd-krow">
+            {ri === 2 && (
+              <button type="button" className="wd-k wide" onClick={enter} aria-label={tr("Enter")}>
+                {tr("enter")}
               </button>
-            </form>
-            <div className="deep-help mono">
-              {hint ? (
-                <span>{hint}</span>
-              ) : (
-                <button
-                  type="button"
-                  disabled={!hints}
-                  onClick={() => {
-                    const pick = prompt.a[Math.min(prompt.a.length - 1, Math.floor(prompt.a.length * 0.55))].split('|')[0];
-                    setHint(`something like “${pick[0]}…” (${pick.length} letters)`);
-                    setHints(hints - 1);
-                  }}
-                >
-                  {hints ? 'a hint (one per climb)' : 'no hints left'}
-                </button>
-              )}
-              <button
-                type="button"
-                disabled={!skips}
-                onClick={() => {
-                  setSkips(skips - 1);
-                  ask();
-                }}
-              >
-                {skips ? `skip this one (${skips})` : 'no skips left'}
+            )}
+            {r.split('').map((ch) => (
+              <button type="button" key={ch} className={`wd-k${keyState[ch] ? ' ' + keyState[ch] : ''}`} onClick={() => press(ch)} aria-label={ch}>
+                {ch}
               </button>
-            </div>
-          </>
-        )}
-        {note?.kind === 'rank' && <RankCard n={note} />}
-        {note?.kind === 'info' && (
-          <div className="deep-note">
-            <span className="tag mono">{note.tag}</span>
-            <p>{note.line}</p>
+            ))}
+            {ri === 2 && (
+              <button type="button" className="wd-k wide" onClick={back} aria-label={tr("Delete")}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M21 5H8l-5 7 5 7h13zM12 9.5l5 5M17 9.5l-5 5" />
+                </svg>
+              </button>
+            )}
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
@@ -1447,7 +1497,7 @@ export function Pick({ onPick, levels, inline = false }: { onPick: (v: 'sling' |
     if (!sh) {
       for (let i = 0; i < 3; i++) {
         c.globalAlpha = 0.25 + 0.55 * Math.max(0, Math.sin(S.t * 3 - i * 0.9));
-        text(c, '^', fx, fy - 70 - i * 20, TIER_COLOR.known, mono(15));
+        text(c, '^', fx, fy - 70 - i * 20, CO.blue, mono(15));
       }
       c.globalAlpha = 1;
     }
@@ -1462,7 +1512,7 @@ export function Pick({ onPick, levels, inline = false }: { onPick: (v: 'sling' |
   });
   const ways: { id: 'sling' | 'deep'; title: string; sub: string; art: string }[] = [
     { id: 'sling', title: 'Sling', sub: 'pull back, aim, swing from fly to fly', art: '\\x/    /x\\\n  (@)--\\x/' },
-    { id: 'deep', title: 'Deep cuts', sub: 'name something rare — rarer is higher', art: '  .--.\n ( ?? )\n  `--´' },
+    { id: 'deep', title: 'Word climb', sub: 'find the word — each right letter is a hop', art: '[F][R][O]\n [G]  [?]' },
   ];
   return (
     <div className={inline ? 'stagebox inline' : 'stagebox'}>

@@ -381,6 +381,8 @@ export class NeuralPlayer {
   /** The sentence being heard now (stays on the last one through the pause that follows it). */
   current(): number | null {
     const t = this.ctx.currentTime;
+    // what was heard long ago is forgotten, so a long listen (hours) does not keep growing a list that is searched every frame
+    while (this.slots.length > 12 && this.slots[1].end < t - 30) this.slots.shift();
     let cur: number | null = null;
     for (const s of this.slots) {
       if (s.start <= t + 0.01) cur = s.i;

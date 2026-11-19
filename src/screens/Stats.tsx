@@ -251,9 +251,6 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
                 <Pixel name="crown" size={14} />
                 {info.longest}
               </span>
-              <button onClick={onClose} aria-label={tr("Close")}>
-                <Icon name="close" size={16} stroke={2.2} />
-              </button>
             </div>
           </div>
         </div>
@@ -343,14 +340,14 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
                   })}
                 </div>
                 <div className="cal-legend mono" aria-hidden>
-                  <span>{tr("·&nbsp;0")}</span>
+                  <span>· 0</span>
                   {legendFor(settings.dailyGoal).map((g) => (
                     <span key={g.ch} data-met={g.ch === '@' || undefined}>
-                      {g.ch}{tr("&nbsp;")}{g.from}
+                      {g.ch} {g.from}
                     </span>
                   ))}
                   <span>{tr("min")}</span>
-                  <span data-ice>{tr("~&nbsp;freeze")}</span>
+                  <span data-ice>~ {tr("freeze")}</span>
                 </div>
                 <DayChart date={sel.date} ms={sel.ms} hours={hours[sel.key]} ice={sel.ms < COUNT_MS && frozen.used.includes(sel.key)} />
               </div>
@@ -373,7 +370,7 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
                   <div className="k">{tr("freeze day")}</div>
                   <div className="v mono">
                     {fz.available > 0 ? 'ready' : 'used'}
-                    <small>{fz.bonus > 0 ? `+${fz.bonus} won` : fz.weekly ? 'back every 15 days' : `back in ${fz.back} day${fz.back === 1 ? '' : 's'}`}</small>
+                    <small>{fz.bonus > 0 ? `+${fz.bonus} won` : fz.weekly ? 'back every 15 days' : `back in ${fz.back} day${fz.back === 1 ? '' : 's'}`}{frozen.used.length ? ` · ${frozen.used.length} spent` : ''}</small>
                   </div>
                   <div className="tile-blocks">
                     <Blocks n={Math.min(4, fz.blocks)} />

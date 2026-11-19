@@ -320,10 +320,10 @@ export function Ruler({
 }
 
 // ------------------------------------------------------------------ toasts
-let toastMsg: { text: string; id: number; kind?: 'award'; onClick?: () => void } | null = null;
+let toastMsg: { text: string; id: number; kind?: 'award' | 'ice'; onClick?: () => void } | null = null;
 const toastSubs = new Set<() => void>();
 let toastSeq = 0;
-export function toast(text: string, kind?: 'award', onClick?: () => void) {
+export function toast(text: string, kind?: 'award' | 'ice', onClick?: () => void) {
   // a message that can be tapped gets its arrow from the toast itself: never two
   if (onClick) text = text.replace(/\s*→\s*$/, '');
   toastMsg = { text, id: ++toastSeq, kind, onClick };
@@ -360,8 +360,8 @@ export function Toasts() {
         f();
       }}
     >
-      {tr(msg.text)}
-      {msg.onClick && <span aria-hidden>{tr(" →")}</span>}
+      <span>{tr(msg.text)}</span>
+      {msg.onClick && <span aria-hidden>→</span>}
     </div>, document.body
   ) : null;
 }

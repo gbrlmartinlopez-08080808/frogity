@@ -179,6 +179,7 @@ export function Library({
     return (open.length ? open : docs).slice(0, 8);
   }, [docs]);
   const hero = recent[active] ?? recent[0];
+  const frozen = useStore((st) => st.freeze);
   const streak = streakInfo(days);
   const todayMs = days[dayKey()] ?? 0;
   const goal = settings.dailyGoal * 60_000;
@@ -244,15 +245,16 @@ export function Library({
   }, [recent.length]);
 
   const last14 = useMemo(() => {
-    const out: boolean[] = [];
+    const out: ('on' | 'ice' | 'off')[] = [];
     const d = new Date();
     d.setDate(d.getDate() - 13);
     for (let i = 0; i < 14; i++) {
-      out.push((days[dayKey(d)] ?? 0) >= COUNT_MS);
+      const k = dayKey(d);
+      out.push((days[k] ?? 0) >= COUNT_MS ? 'on' : frozen.used.includes(k) ? 'ice' : 'off'); // a freeze day is drawn in blue
       d.setDate(d.getDate() + 1);
     }
     return out;
-  }, [days]);
+  }, [days, frozen.used]);
 
   const empty = docs.length === 0;
 
@@ -331,7 +333,7 @@ export function Library({
           </div>
           <div className="blocks" aria-label={tr("Last 14 days")}>
             {last14.slice(-10).map((on, i) => (
-              <i key={i} style={{ opacity: on ? 1 : 0.12 }} />
+              <i key={i} className={on === 'ice' ? 'ice' : undefined} style={{ opacity: on === 'off' ? 0.12 : 1 }} title={on === 'ice' ? 'freeze day' : undefined} />
             ))}
           </div>
         </button>

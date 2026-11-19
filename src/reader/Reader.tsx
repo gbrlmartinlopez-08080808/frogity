@@ -24,6 +24,7 @@ import { ContentsSheet, MoreSheet, THEMES, TypeSheet, type MoreAction } from './
 import { BinaryView, CodeView, ImageView, MediaView, SheetView } from './OtherViews';
 import { anchorFromSelection, applyHighlights, clearMarks, findAll, wordAt, wrapSentences } from './dom';
 import { AskSheet } from './Ask';
+import { EndNote, useEndPull } from './EndPull';
 import { FormSheet } from './FormSheet';
 import { detectForm, type FormModel } from '../lib/forms';
 import { LQ_VERSION, focusDoc, liquidPageStore, pageStore, prepareNow, queueScan, rebuildLiquid, useLiquid, type Prep } from '../lib/scan';
@@ -830,6 +831,22 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     onClose();
   };
 
+  // ---------------------------------------------------------------- the end of the book: pull past it to finish and remove
+  const endable = !error && !!content && !growing && (isPdf ? (liquid ? content.type === 'flow' && !!flowReady : !!pdf) : isDocx && !liquid ? !!docxBlob : content.type === 'flow' && !!flowReady);
+  const finishAndRemove = async () => {
+    tap('medium');
+    clearTimeout(saveT.current);
+    const linked = !!doc.uri;
+    if (doc.uri) (await import('../lib/linked')).ignoreUri(doc.uri);
+    await patchDoc(id, { finished: true, progress: 1 });
+    await removeDoc(id);
+    toast(linked ? 'Finished · taken off your shelf · Undo' : 'Finished · removed · Undo', undefined, () => {
+      void import('../lib/store').then((m) => m.undoRemoval());
+    });
+    onClose();
+  };
+  const endPull = useEndPull(scroller, { paged, enabled: endable, onTrigger: finishAndRemove });
+
   // ---------------------------------------------------------------- actions
   const switchMode = (m: 'page' | 'liquid') => {
     if (m === mode) return;
@@ -1385,7 +1402,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
           </button>
         </div>
       ) : (
-        <div className={`r-top${chrome ? '' : ' hide'}`}>
+        <div className={`r-top${chrome ? '' : ' hide'}`} style={{ ['--n' as string]: 3 + (isPdf || (isDocx && !docxFail) ? 1 : 0) }}>
           <button className="r-ibtn" onClick={close} aria-label={tr("Back to library")}>
             <Icon name="back" size={24} />
           </button>
@@ -1416,6 +1433,8 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
           </button>
         </div>
       )}
+
+      <EndNote atEnd={endPull.atEnd} pull={endPull.pull} uri={!!doc.uri} />
 
       {liquid && <div className="r-fade" style={{ opacity: chrome || listen ? 1 : 0.55 }} />}
 

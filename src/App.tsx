@@ -1,6 +1,6 @@
 import { useLang } from './lib/i18n';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { init, useStore, updateSettings, getState, dayKey, applyFreeze, streakInfo } from './lib/store';
+import { init, useStore, updateSettings, getState, dayKey, applyFreeze, ackFreeze, streakInfo } from './lib/store';
 import * as db from './lib/db';
 import { importFile, importText, upgradeCovers } from './lib/library';
 import { appIconGet, appIconSet, initBackButton, isNative, listenIncoming, manageSelectionMenu, readIncoming, setStatusBar, tap, widgetUpdate, onWidgetAction } from './lib/native';
@@ -255,20 +255,33 @@ export default function App() {
     }
   }, [ready, onboarded, longest]);
 
-  // a missed day is covered by a freeze (once a week, plus any you've earned)
+  // a missed day is covered by a freeze (the free one, plus any that were won); the check runs when the app opens, when it comes
+  // back to the front and every minute (a day can end while it is open)
   useEffect(() => {
     if (!ready) return;
-    const onFreeze = () => toast(`A freeze day saved your ${streakInfo(getState().days).current}-day streak`, 'award');
     const check = () => document.visibilityState === 'visible' && applyFreeze();
-    window.addEventListener('quire:freeze', onFreeze);
     document.addEventListener('visibilitychange', check);
-    const t = setTimeout(check, 1500);
+    const t = setTimeout(check, 1200);
+    const iv = setInterval(check, 60_000);
     return () => {
-      window.removeEventListener('quire:freeze', onFreeze);
       document.removeEventListener('visibilitychange', check);
       clearTimeout(t);
+      clearInterval(iv);
     };
   }, [ready]);
+  // ...and the reader is told, in blue, the next time they are here (it stays queued until it has been shown)
+  const pendingFreeze = useStore((st) => st.freeze.pending?.length ?? 0);
+  useEffect(() => {
+    if (!ready || !onboarded || !pendingFreeze) return;
+    const t = setTimeout(() => {
+      const n = getState().freeze.pending?.length ?? 0;
+      if (!n) return;
+      const streak = streakInfo(getState().days).current;
+      toast(`${n === 1 ? 'A freeze day' : `${n} freeze days`} kept your ${streak}-day streak · shown in blue`, 'ice', () => setStats(true));
+      ackFreeze();
+    }, 1800);
+    return () => clearTimeout(t);
+  }, [ready, onboarded, pendingFreeze]);
 
   // keep the home-screen widgets' numbers fresh (streak, the week, a five-week map, and the book you're on)
   const days = useStore((st) => st.days);

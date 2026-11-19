@@ -68,8 +68,31 @@ export function wrapSentences(root: HTMLElement, lang = 'en'): number {
   return n;
 }
 
+/**
+ * The elements of every sentence, found once (a book can hold a hundred thousand of them; looking one up with a selector
+ * walks them all, and Listen looks sentences up all the time). The index is rebuilt when the page it was made from is replaced.
+ */
+const spanIndex = new WeakMap<HTMLElement, { n: number; map: Map<number, HTMLElement[]> }>();
+export function spansOf(root: HTMLElement, i: number): HTMLElement[] {
+  const n = Number(root.dataset.wrapped ?? 0);
+  let ix = spanIndex.get(root);
+  const stale = !ix || ix.n !== n || !!(ix.map.get(i)?.[0] && !ix.map.get(i)![0].isConnected);
+  if (stale) {
+    const map = new Map<number, HTMLElement[]>();
+    root.querySelectorAll<HTMLElement>('.s').forEach((el) => {
+      const k = Number(el.dataset.i);
+      const l = map.get(k);
+      if (l) l.push(el);
+      else map.set(k, [el]);
+    });
+    ix = { n, map };
+    spanIndex.set(root, ix);
+  }
+  return ix!.map.get(i) ?? [];
+}
+
 export function sentenceText(root: HTMLElement, i: number): string {
-  return Array.from(root.querySelectorAll<HTMLElement>(`.s[data-i="${i}"]`))
+  return spansOf(root, i)
     .map((s) => s.textContent ?? '')
     .join('')
     .replace(/\s+/g, ' ')
@@ -78,7 +101,7 @@ export function sentenceText(root: HTMLElement, i: number): string {
 
 /** The sentence's text exactly as it is in the page (whitespace not collapsed), so offsets into it match what was tapped. */
 export function sentenceRaw(root: HTMLElement, i: number): string {
-  return Array.from(root.querySelectorAll<HTMLElement>(`.s[data-i="${i}"]`))
+  return spansOf(root, i)
     .map((s) => s.textContent ?? '')
     .join('');
 }
@@ -101,7 +124,7 @@ export function sentenceAtPoint(root: HTMLElement, x: number, y: number): { i: n
   if (!el || !node || !root.contains(el)) return null;
   const i = Number(el.dataset.i);
   let before = 0;
-  for (const s of Array.from(root.querySelectorAll<HTMLElement>(`.s[data-i="${i}"]`))) {
+  for (const s of spansOf(root, i)) {
     if (s === el) break;
     before += (s.textContent ?? '').length;
   }
@@ -121,11 +144,18 @@ export function sentenceAtPoint(root: HTMLElement, x: number, y: number): { i: n
   return { i, offset };
 }
 
+let sayingEls: HTMLElement[] = [];
 export function markSaying(root: HTMLElement, i: number | null) {
-  root.querySelectorAll('.s.say').forEach((s) => s.classList.remove('say'));
-  if (i === null) return null;
-  const els = root.querySelectorAll<HTMLElement>(`.s[data-i="${i}"]`);
+  // only the sentence that was lit is put out (no search through the whole book); stopping cleans everything
+  sayingEls.forEach((s) => s.classList.remove('say'));
+  sayingEls = [];
+  if (i === null) {
+    root.querySelectorAll('.s.say').forEach((s) => s.classList.remove('say'));
+    return null;
+  }
+  const els = spansOf(root, i);
   els.forEach((s) => s.classList.add('say'));
+  sayingEls = [...els];
   return els[0] ?? null;
 }
 

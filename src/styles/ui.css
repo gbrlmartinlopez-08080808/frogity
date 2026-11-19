@@ -1811,11 +1811,6 @@
   color: var(--ink);
 }
 
-.frogity-toast.tappable {
-  cursor: pointer;
-  pointer-events: auto;
-  padding: 12px 18px;
-}
 /* the frog scene */
 .ascii-card.frog {
   padding: 18px 8px 14px;
@@ -1855,11 +1850,6 @@
 
 .ob-chat .a.t {
   width: auto;
-}
-.frogity-toast.tappable {
-  white-space: normal;
-  max-width: 86vw;
-  text-align: center;
 }
 
 .ascii-card.frog pre i.f {
@@ -2297,13 +2287,6 @@
   flex: 1;
   min-width: 0;
 }
-/* a message you can tap: at most two calm lines, not a pill stretched into a blob */
-.frogity-toast.tappable {
-  border-radius: 18px;
-  max-width: min(380px, calc(100vw - 32px));
-  width: max-content;
-  line-height: 1.4;
-}
 
 
 @keyframes pulse {
@@ -2363,4 +2346,52 @@
 }
 .confirm .art-card {
   margin: 4px auto 14px;
+}
+
+/* a freeze day: the same cool blue as the tilde in the calendar */
+.frogity-toast.ice {
+  background: linear-gradient(110deg, #2f5fd6, #5b8dff 60%, #8fb4ff);
+  color: #fff;
+  box-shadow: 0 10px 34px rgba(60, 110, 255, 0.35);
+  font-weight: 600;
+}
+.streak-strip .blocks i.ice {
+  background: #5b8dff;
+  opacity: 1;
+  box-shadow: 0 0 6px rgba(91, 141, 255, 0.5);
+}
+
+/* menus: full-width switches really are full width; buttons in a menu line up in a grid instead of a ragged row */
+.seg.w100 {
+  display: grid;
+  width: 100%;
+}
+.settings .storage-tools .backup-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.settings .storage-tools .backup-actions .pill {
+  width: 100%;
+  justify-content: center;
+  padding-inline: 10px;
+  text-align: center;
+}
+.settings .sheet-body > .pill.ghost {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin: 10px 0 0;
+}
+.settings .sheet-body > .pill.ghost + .pill.ghost {
+  margin-top: 8px;
+}
+.storage-tools label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.storage-tools label input[type='checkbox'] {
+  flex: none;
+  margin-top: 3px;
 }
