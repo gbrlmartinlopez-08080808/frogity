@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-19T01:58:43.729Z",
+ "built": "2026-11-19T13:31:16.518Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -2089,21 +2089,6 @@
   },
   {
    "k": "election",
-   "t": "first round of Brazilian presidential election, 2026",
-   "w": "Brazil",
-   "a": "2026-10-04",
-   "cc": [
-    "br"
-   ],
-   "icon": {
-    "cc": "br"
-   },
-   "level": "national",
-   "wiki": "first round of Brazilian presidential election, 2026",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Brazilian general election",
    "w": "Brazil",
    "a": "2026-10-04",
@@ -2131,6 +2116,21 @@
    },
    "level": "national",
    "wiki": "2026 Bosnian general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "first round of Brazilian presidential election, 2026",
+   "w": "Brazil",
+   "a": "2026-10-04",
+   "cc": [
+    "br"
+   ],
+   "icon": {
+    "cc": "br"
+   },
+   "level": "national",
+   "wiki": "first round of Brazilian presidential election, 2026",
    "auto": true
   },
   {
@@ -2422,22 +2422,6 @@
   },
   {
    "k": "election",
-   "t": "Albanian presidential election",
-   "w": "Albania",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "al"
-   ],
-   "icon": {
-    "cc": "al"
-   },
-   "level": "national",
-   "wiki": "2027 Albanian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Slovenian presidential election",
    "w": "Slovenia",
    "a": "2027-01-01",
@@ -2502,6 +2486,22 @@
   },
   {
    "k": "election",
+   "t": "Albanian presidential election",
+   "w": "Albania",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "al"
+   ],
+   "icon": {
+    "cc": "al"
+   },
+   "level": "national",
+   "wiki": "2027 Albanian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Kenyan presidential election",
    "w": "Kenya",
    "a": "2027-01-01",
@@ -2514,6 +2514,22 @@
    },
    "level": "national",
    "wiki": "2027 Kenyan presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Maltese general election",
+   "w": "Malta",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "mt"
+   ],
+   "icon": {
+    "cc": "mt"
+   },
+   "level": "national",
+   "wiki": "2027 Maltese general election",
    "auto": true
   },
   {
@@ -2594,22 +2610,6 @@
    },
    "level": "national",
    "wiki": "2027 Nicaraguan presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Maltese general election",
-   "w": "Malta",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "mt"
-   ],
-   "icon": {
-    "cc": "mt"
-   },
-   "level": "national",
-   "wiki": "2027 Maltese general election",
    "auto": true
   },
   {
@@ -3119,21 +3119,6 @@
   },
   {
    "k": "election",
-   "t": "Malagasy presidential election",
-   "w": "Madagascar",
-   "a": "2027-11-01",
-   "cc": [
-    "mg"
-   ],
-   "icon": {
-    "cc": "mg"
-   },
-   "level": "national",
-   "wiki": "2027 Malagasy presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Nicaraguan general election",
    "w": "Nicaragua",
    "a": "2027-11-01",
@@ -3145,6 +3130,21 @@
    },
    "level": "national",
    "wiki": "2027 Nicaraguan general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Malagasy presidential election",
+   "w": "Madagascar",
+   "a": "2027-11-01",
+   "cc": [
+    "mg"
+   ],
+   "icon": {
+    "cc": "mg"
+   },
+   "level": "national",
+   "wiki": "2027 Malagasy presidential election",
    "auto": true
   },
   {
@@ -3209,6 +3209,22 @@
   },
   {
    "k": "election",
+   "t": "Mauritanian parliamentary election",
+   "w": "Mauritania",
+   "a": "2028-01-01",
+   "when": "2028",
+   "cc": [
+    "mr"
+   ],
+   "icon": {
+    "cc": "mr"
+   },
+   "level": "national",
+   "wiki": "Mauritanian parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Israeli presidential election",
    "w": "Israel",
    "a": "2028-01-01",
@@ -3253,22 +3269,6 @@
    },
    "level": "national",
    "wiki": "2028 Austrian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Mauritanian parliamentary election",
-   "w": "Mauritania",
-   "a": "2028-01-01",
-   "when": "2028",
-   "cc": [
-    "mr"
-   ],
-   "icon": {
-    "cc": "mr"
-   },
-   "level": "national",
-   "wiki": "Mauritanian parliamentary election",
    "auto": true
   },
   {
@@ -3476,6 +3476,38 @@
   },
   {
    "k": "election",
+   "t": "Liberian parliamentary election",
+   "w": "Liberia",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "lr"
+   ],
+   "icon": {
+    "cc": "lr"
+   },
+   "level": "national",
+   "wiki": "Liberian parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "South African parliamentary election",
+   "w": "South Africa",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "za"
+   ],
+   "icon": {
+    "cc": "za"
+   },
+   "level": "national",
+   "wiki": "South African parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Italian presidential election",
    "w": "Italy",
    "a": "2029-01-01",
@@ -3520,38 +3552,6 @@
    },
    "level": "national",
    "wiki": "German federal election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Liberian parliamentary election",
-   "w": "Liberia",
-   "a": "2029-01-01",
-   "when": "2029",
-   "cc": [
-    "lr"
-   ],
-   "icon": {
-    "cc": "lr"
-   },
-   "level": "national",
-   "wiki": "Liberian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "South African parliamentary election",
-   "w": "South Africa",
-   "a": "2029-01-01",
-   "when": "2029",
-   "cc": [
-    "za"
-   ],
-   "icon": {
-    "cc": "za"
-   },
-   "level": "national",
-   "wiki": "South African parliamentary election",
    "auto": true
   },
   {
