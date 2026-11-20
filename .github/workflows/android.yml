@@ -78,7 +78,7 @@ jobs:
           git rm -q --ignore-unmatch releases/*.apk
           mkdir -p releases && cp "$APK" "releases/Frogity-$V.apk"
           git add -f "releases/Frogity-$V.apk"
-          git diff --cached --quiet || (git commit -m "Frogity $V APK [skip ci]" && for i in 1 2 3; do git pull -q --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break; sleep 5; done)
+          git diff --cached --quiet || (git commit -m "Frogity $V APK [skip ci]" && for i in 1 2 3; do git pull -q --rebase --autostash origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break; sleep 5; done)
       - uses: actions/upload-artifact@v4
         with:
           name: Frogity-android
