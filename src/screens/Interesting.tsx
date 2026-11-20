@@ -29,6 +29,7 @@ import type { DocMeta } from '../lib/types';
 import { AskSheet } from '../reader/Ask';
 import { Froggy } from '../ui/Froggy';
 import { Play } from './Games';
+import { useHome } from '../lib/worldx';
 import { WorldInfo } from './World';
 import { Icon } from '../ui/Icon';
 import { PixelLoader, Segmented, Sheet, toast } from '../ui/kit';
@@ -258,8 +259,16 @@ function ageLine(generated: string, offline: boolean) {
 function Today({ d, offline, mood, setDetail, wiki, onRefresh }: { d: Daily; offline: boolean; mood: Mood; setDetail: (x: Detail) => void; wiki: (t: string, note?: string) => void; onRefresh: () => void }) {
   const fact = factOfDay();
   const date = new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
-  const kinds = ['long', 'curious', 'article'] as const;
-  const worth = kinds.map((k) => d.reads?.find((r) => r.kind === k)).filter((x): x is Read => !!x);
+  // worth your time: two curious things (one about wildlife, one about history, when the feed has them), then a long read and an article
+  const reads = d.reads ?? [];
+  const curious = [reads.find((r) => r.kind === 'curious' && r.subject === 'wildlife'), reads.find((r) => r.kind === 'curious' && r.subject === 'history')].filter((x): x is Read => !!x);
+  const other = reads.filter((r) => r.kind === 'curious' && !curious.includes(r)).slice(0, curious.length ? 0 : 2);
+  const worth = [...curious, ...other, reads.find((r) => r.kind === 'long'), reads.find((r) => r.kind === 'article')].filter((x): x is Read => !!x);
+  // a wildlife photograph and one from the archives, from free libraries, a different one each day
+  const dayN = Math.floor(Date.now() / 864e5);
+  const pickPhoto = (l?: Card[]) => (l?.length ? l[dayN % l.length] : undefined);
+  const wildPhoto = pickPhoto(d.photos?.wildlife);
+  const oldPhoto = pickPhoto(d.photos?.history);
   return (
     <div className="int-scroll">
       <div className="int-hello">
@@ -320,6 +329,22 @@ function Today({ d, offline, mood, setDetail, wiki, onRefresh }: { d: Daily; off
             <p>{(d.picture.description || d.picture.title).slice(0, 160)}</p>
           </div>
         </button>
+      )}
+
+      {[
+        { p: wildPhoto, tag: 'wildlife · from a free library' },
+        { p: oldPhoto, tag: 'history · from the archives' },
+      ].map(({ p, tag }) =>
+        p ? (
+          <button key={tag} className="tcard picture" onClick={() => setDetail({ kind: 'picture', card: { ...p, tag, extract: p.description } })}>
+            <Photo src={p.image} w={p.iw} h={p.ih} />
+            <div className="pcap">
+              <span className="tag mono">{tr(tag)}</span>
+              <p>{p.title.slice(0, 120)}</p>
+              <small className="mono">{p.library}{tr(" · ")}{p.license}</small>
+            </div>
+          </button>
+        ) : null,
       )}
 
       {d.featured && (
@@ -431,10 +456,37 @@ function NewsMode({ view, set }: { view: 'news' | 'world'; set: (v: 'news' | 'wo
   );
 }
 
+/** an outlet's region, as the feed names it, → the country code the app uses */
+const REGION_CC: Record<string, string> = { USA: 'us', UK: 'gb', Spain: 'es', France: 'fr', Germany: 'de', Italy: 'it', Portugal: 'pt', Ireland: 'ie', Canada: 'ca', Australia: 'au', 'New Zealand': 'nz', India: 'in', Japan: 'jp', 'South Korea': 'kr', Pakistan: 'pk', 'Saudi Arabia': 'sa', UAE: 'ae', Qatar: 'qa', Israel: 'il', 'South Africa': 'za', Switzerland: 'ch', Uruguay: 'uy', Singapore: 'sg', 'Hong Kong': 'hk', Mexico: 'mx', Argentina: 'ar', Colombia: 'co', Chile: 'cl', Peru: 'pe', Brazil: 'br' };
+/**
+ * The day's stories with the reader's own country mixed in: about one card in four is local (the country's own outlets, plus the
+ * stories the world list already has from outlets of that country). Without any local story the list is simply the world's.
+ */
+function withLocal(d: Daily, list: Story[], home: string, topic: 'all' | Topic): Story[] {
+  // a story counts as local when it was led by an outlet of the country (so a world story El PAÍS also covered does not)
+  const isHome = (s: Story) => REGION_CC[d.sources?.[s.sources[0]?.id ?? '']?.region ?? ''] === home;
+  const own = (d.local?.[home] ?? []).filter((s) => topic === 'all' || topic === 'world');
+  const ids = new Set<string>();
+  const locals: Story[] = [];
+  for (const s of [...own, ...list.filter(isHome)]) if (!ids.has(s.id)) (ids.add(s.id), locals.push({ ...s, local: true }));
+  if (!locals.length) return list;
+  const rest = list.filter((s) => !ids.has(s.id));
+  const out: Story[] = [];
+  let li = 0;
+  rest.forEach((s, i) => {
+    out.push(s);
+    // after every three world stories, one of the country's own
+    if (i % 3 === 2 && li < locals.length) out.push(locals[li++]);
+  });
+  while (li < locals.length && out.length < 4) out.push(locals[li++]);
+  return out;
+}
+
 function News({ d, setDetail, mode }: { d: Daily; setDetail: (x: Detail) => void; mode: ReactNode }) {
   const [topic, setTopic] = useState<'all' | Topic>('all');
+  const [home] = useHome();
   const topics = useMemo(() => [...new Set(d.news.map((s) => s.topic).filter((x): x is Topic => !!x))], [d]);
-  const list = topic === 'all' ? d.news : d.news.filter((s) => s.topic === topic);
+  const list = useMemo(() => withLocal(d, topic === 'all' ? d.news : d.news.filter((s) => s.topic === topic), home, topic), [d, topic, home]);
   return (
     <div className="news">
       {mode}
@@ -496,7 +548,8 @@ function Reels({ d, stories, setDetail }: { d: Daily; stories: Story[]; setDetai
                       <Logo key={o.id} o={o} size={20} />
                     ))}
                   </span>
-                  {s.topic && <b>{TOPIC_LABEL[s.topic]}</b>}
+                  {s.local && <b className="loc">{tr("local")}</b>}
+                  {s.topic && !s.local && <b>{TOPIC_LABEL[s.topic]}</b>}
                   <span>
                     {agoShort(s.time)}{tr(" · ")}{outs.length > 1 ? `${outs.length} outlets` : outs[0].name}
                   </span>
@@ -675,14 +728,14 @@ function DetailBody({ det, d, setDetail, onAsk, onFindBooks }: { det: Detail; d?
     return (
       <div className="sheet-body int-detail">
         <Photo src={c.image} className="dimg" />
-        <span className="tag mono">{tr("picture of the day")}</span>
+        <span className="tag mono">{tr(c.tag ?? 'picture of the day')}</span>
         <h3>{c.title}</h3>
         <p>{c.extract}</p>
-        {c.credit && <p className="credit mono">{tr("credit · ")}{c.credit}</p>}
+        {(c.credit || c.license) && <p className="credit mono">{tr("credit · ")}{[c.credit, c.library, c.license].filter(Boolean).join(' · ')}</p>}
         <div className="det-act">
           <button className="pill ghost" onClick={() => onAsk({ id: 'pic:' + c.title, title: c.title, text: `${c.title}. ${c.extract ?? ''}`, chips: READ_CHIPS })}>{tr("Ask Froggy")}</button>
           {c.url && (
-            <button className="pill ghost" onClick={() => openExternal(c.url!)}>{tr("Source: Wikimedia Commons ↗")}</button>
+            <button className="pill ghost" onClick={() => openExternal(c.url!)}>{c.library ? `${tr('Source')}: ${c.library} ↗` : tr("Source: Wikimedia Commons ↗")}</button>
           )}
         </div>
       </div>

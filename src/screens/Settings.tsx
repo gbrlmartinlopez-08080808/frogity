@@ -48,7 +48,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
 
   return (
     <Sheet open={open} onClose={onClose} title={tr("App Settings")} className="settings">
-      <div className="sheet-body"><StorageTools /><button className="pill ghost" onClick={() => void import("../lib/samples").then(m => m.addSamples(Date.now())).then(() => toast("Sample books added"))}>{tr("Add optional sample books")}</button><button className="pill ghost" onClick={() => { if (window.confirm("Download a studio reading voice? This may use tens of megabytes. Use Wi-Fi if data is limited.")) void ensureNaturalVoice(s.lang, { force: true }); }}>{tr("Download reading voice")}</button>
+      <div className="sheet-body">
         <Segmented
           light
           value={s.appTheme}
@@ -322,6 +322,11 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
           </div>
           <Icon name="right" size={18} />
         </button>
+        <div className="section-label">{tr("data")}</div>
+        <StorageTools />
+        <div className="settings-actions">
+          <button className="pill ghost" onClick={() => void import("../lib/samples").then(m => m.addSamples(Date.now())).then(() => toast("Sample books added"))}>{tr("Add optional sample books")}</button><button className="pill ghost" onClick={() => { if (window.confirm("Download a studio reading voice? This may use tens of megabytes. Use Wi-Fi if data is limited.")) void ensureNaturalVoice(s.lang, { force: true }); }}>{tr("Download reading voice")}</button>
+        </div>
         <div style={{ textAlign: 'center', padding: '26px 0 10px' }} className="mono muted">
           <div style={{ fontSize: 11 }}>{tr("frogity ")}{APP_VERSION}{tr(" · free · no ads · no accounts · no tracking")}</div>
           <div style={{ fontSize: 10.5, marginTop: 6, lineHeight: 1.5 }}>{tr("Your library stays on this phone.")}<br />{tr("Only word lookups, saved links and Ask use the internet.")}</div>

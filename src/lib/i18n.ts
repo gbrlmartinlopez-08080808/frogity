@@ -62,6 +62,14 @@ const PATTERNS: { re: RegExp; es: string; fr: string }[] = [
   { re: /^(\d+) min to today’s goal$/, es: '$1 min para la meta de hoy', fr: '$1 min pour l’objectif du jour' },
   { re: /^from (\d+) days? ago · waiting for a fresh copy$/, es: 'de hace $1 d · esperando una copia nueva', fr: 'd’il y a $1 j · en attente d’une copie à jour' },
   { re: /^offline · from (\d+) days? ago · waiting for a fresh copy$/, es: 'sin conexión · de hace $1 d · esperando una copia nueva', fr: 'hors ligne · d’il y a $1 j · en attente d’une copie à jour' },
+  { re: /^updated today (.+)$/, es: 'actualizado hoy $1', fr: 'mis à jour aujourd’hui $1' },
+  { re: /^offline · updated today (.+)$/, es: 'sin conexión · actualizado hoy $1', fr: 'hors ligne · mis à jour aujourd’hui $1' },
+  { re: /^updated today (.+) · refreshes through the day$/, es: 'actualizado hoy $1 · se renueva durante el día', fr: 'mis à jour aujourd’hui $1 · se renouvelle dans la journée' },
+  { re: /^updated yesterday (.+) · refreshes through the day$/, es: 'actualizado ayer $1 · se renueva durante el día', fr: 'mis à jour hier $1 · se renouvelle dans la journée' },
+  { re: /^offline · updated today (.+) · refreshes through the day$/, es: 'sin conexión · actualizado hoy $1 · se renueva durante el día', fr: 'hors ligne · mis à jour aujourd’hui $1 · se renouvelle dans la journée' },
+  { re: /^offline · updated yesterday (.+) · refreshes through the day$/, es: 'sin conexión · actualizado ayer $1 · se renueva durante el día', fr: 'hors ligne · mis à jour hier $1 · se renouvelle dans la journée' },
+  { re: /^(\d+) of 5 blocks toward a freeze day$/, es: '$1 de 5 bloques hacia un día de congelación', fr: '$1 bloc(s) sur 5 vers un jour de gel' },
+  { re: /^(\d+)\/5 · a block comes only when Froggy reaches the top$/, es: '$1/5 · solo se gana un bloque cuando Froggy llega arriba', fr: '$1/5 · un bloc ne vient que lorsque Froggy arrive en haut' },
   { re: /^Preparing Liquid mode, (\d+)%$/, es: 'Preparando el modo Líquido, $1 %', fr: 'Préparation du mode Liquide, $1 %' },
   { re: /^Reading the pictures, (\d+)%$/, es: 'Leyendo las imágenes, $1 %', fr: 'Lecture des images, $1 %' },
   { re: /^Open (.+)$/, es: 'Abrir $1', fr: 'Ouvrir $1' },
@@ -95,6 +103,86 @@ export function tr(s: string, lang: Lang = getLang()): string {
 /** for code that builds a string itself */
 export const t = (s: string) => tr(s);
 
-// React owns the rendered text. Components translate explicitly while rendering.
-export function retranslate() { /* useLang subscribers rerender */ }
-export function startI18n() { document.documentElement.lang = getLang(); }
+// ------------------------------------------------------------------ the screen: every text node and label is translated in place
+const SKIP = 'script, style, textarea, input, pre, code, .flow, .wk-body, .ask-msg, .lk-body, .no-i18n, [contenteditable], .reel-title, .reel-sum, .story-title';
+const ATTRS = ['aria-label', 'placeholder', 'title', 'alt'];
+/** what we last wrote into a node, and the English it came from (so a language switch can start from the English) */
+const orig = new WeakMap<Node, { base: string; shown: string }>();
+const origAttr = new WeakMap<Element, Record<string, { base: string; shown: string }>>();
+let busy = false;
+
+function textNode(n: Text, lang: Lang) {
+  const el = n.parentElement;
+  if (!el || el.closest(SKIP)) return;
+  const cur = n.nodeValue ?? '';
+  const rec = orig.get(n);
+  // React may have put new English text in since we translated it: then what is there now is the English
+  const base = rec && cur === rec.shown ? rec.base : cur;
+  const out = tr(base, lang);
+  if (out !== base || rec) orig.set(n, { base, shown: out });
+  if (cur !== out) n.nodeValue = out;
+}
+function attrs(el: Element, lang: Lang) {
+  if (el.closest(SKIP)) return;
+  for (const a of ATTRS) {
+    const v = el.getAttribute(a);
+    if (v === null) continue;
+    const all = origAttr.get(el) ?? {};
+    const rec = all[a];
+    const base = rec && v === rec.shown ? rec.base : v;
+    const out = tr(base, lang);
+    if (out !== base || rec) {
+      all[a] = { base, shown: out };
+      origAttr.set(el, all);
+    }
+    if (v !== out) el.setAttribute(a, out);
+  }
+}
+function walk(root: Node, lang: Lang) {
+  if (root.nodeType === Node.TEXT_NODE) return textNode(root as Text, lang);
+  if (root.nodeType !== Node.ELEMENT_NODE) return;
+  const el = root as Element;
+  if (el.closest(SKIP) && el !== document.body) return;
+  attrs(el, lang);
+  const w = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+  for (let n = w.nextNode(); n; n = w.nextNode()) {
+    if (n.nodeType === Node.TEXT_NODE) textNode(n as Text, lang);
+    else attrs(n as Element, lang);
+  }
+}
+export function retranslate() {
+  if (busy || typeof document === 'undefined') return;
+  busy = true;
+  try {
+    walk(document.body, getLang());
+  } finally {
+    busy = false;
+  }
+}
+
+let started = false;
+export function startI18n() {
+  if (started || typeof document === 'undefined') return;
+  started = true;
+  document.documentElement.lang = getLang();
+  let raf = 0;
+  const pending = new Set<Node>();
+  const flush = () => {
+    raf = 0;
+    const lang = getLang();
+    busy = true;
+    try {
+      pending.forEach((n) => n.isConnected && walk(n, lang));
+    } finally {
+      pending.clear();
+      busy = false;
+    }
+  };
+  new MutationObserver((muts) => {
+    if (busy) return;
+    if (getLang() === 'en') return;
+    for (const m of muts) pending.add(m.type === 'childList' ? (m.target as Node) : m.type === 'characterData' ? m.target.parentNode ?? m.target : m.target);
+    if (!raf) raf = requestAnimationFrame(flush);
+  }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+  retranslate();
+}

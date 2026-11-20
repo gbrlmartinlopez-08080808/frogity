@@ -2377,14 +2377,46 @@
   padding-inline: 10px;
   text-align: center;
 }
-.settings .sheet-body > .pill.ghost {
-  display: flex;
+/* settings: the theme switch first, the backup tools quietly in their own section at the end */
+.settings .sheet-body {
+  padding-top: 4px;
+}
+.settings .seg.w100 {
+  margin-bottom: 6px;
+}
+.settings .storage-tools {
+  padding: 0 0 6px;
+  border: 0;
+}
+.settings .storage-tools h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.settings .storage-tools p {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.settings .storage-tools .field {
+  margin-bottom: 10px;
+}
+.settings .storage-tools label {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.settings-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.settings-actions .pill {
   width: 100%;
   justify-content: center;
-  margin: 10px 0 0;
-}
-.settings .sheet-body > .pill.ghost + .pill.ghost {
-  margin-top: 8px;
+  padding-inline: 10px;
+  text-align: center;
 }
 .storage-tools label {
   display: flex;
@@ -2394,4 +2426,38 @@
 .storage-tools label input[type='checkbox'] {
   flex: none;
   margin-top: 3px;
+}
+
+/* an empty shelf: the card fills the screen above the dock and its content sits in the middle, buttons stacked and equal */
+.lib-card.is-empty {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--safe-t) - var(--safe-b) - 150px);
+}
+.lib-card.is-empty .empty {
+  flex: 1;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 0 20px 24px;
+  margin: 0;
+}
+.lib-card.is-empty .empty h2,
+.lib-card.is-empty .empty p {
+  margin: 0;
+  text-align: center;
+}
+.lib-card.is-empty .empty p {
+  max-width: 300px;
+  margin-bottom: 14px;
+}
+.empty-actions {
+  display: grid;
+  gap: 10px;
+  width: min(280px, 100%);
+}
+.empty-actions .pill {
+  width: 100%;
+  justify-content: center;
 }

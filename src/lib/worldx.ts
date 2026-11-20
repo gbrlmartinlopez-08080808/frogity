@@ -35,8 +35,12 @@ export const country = (cc: string) => COUNTRIES.find((c) => c.cc === cc.toLower
 const KEY = 'world:home';
 const bus = new EventTarget();
 function guess(): string {
-  const region = (navigator.language || 'en-US').split('-')[1]?.toLowerCase();
-  return region && country(region) ? region : 'us';
+  const [lang, reg] = (navigator.language || 'en-US').split('-');
+  const region = reg?.toLowerCase();
+  if (region && country(region)) return region;
+  // a language with no country attached: the country most of its readers live in
+  const byLang: Record<string, string> = { es: 'es', fr: 'fr', de: 'de', it: 'it', pt: 'pt', nl: 'nl', pl: 'pl', sv: 'se' };
+  return byLang[lang?.toLowerCase()] ?? 'us';
 }
 export const getHome = () => {
   try {

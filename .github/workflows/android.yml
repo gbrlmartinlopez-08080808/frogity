@@ -5,6 +5,9 @@ on:
     branches: ['**']
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -39,9 +42,43 @@ jobs:
         env:
           FROGITY_REQUIRE_SIGNING: 'true'
         run: cd android && ./gradlew assembleRelease bundleRelease --no-daemon
-      - name: Build debug test APK (release key unavailable)
+      # No upload key configured: sign with a sideload key that is created once and kept in the repository's private Actions cache
+      # (never committed), so every APK built here carries the SAME signature and installs over the previous one as an update.
+      # Play uploads use the ANDROID_KEYSTORE_* secrets above instead.
+      - name: Restore the sideload signing key
         if: env.KS_B64 == ''
-        run: cd android && ./gradlew assembleDebug --no-daemon
+        uses: actions/cache@v4
+        with:
+          path: android/sideload-key
+          key: frogity-sideload-key-v1
+      - name: Build sideload APK (stable signature)
+        if: env.KS_B64 == ''
+        run: |
+          mkdir -p android/sideload-key
+          if [ ! -f android/sideload-key/frogity.keystore ]; then
+            openssl rand -hex 16 > android/sideload-key/pass
+            keytool -genkeypair -keystore android/sideload-key/frogity.keystore -alias frogity -keyalg RSA -keysize 2048 -validity 36500 -storepass "$(cat android/sideload-key/pass)" -keypass "$(cat android/sideload-key/pass)" -dname "CN=Frogity, O=Frogity, C=ES"
+            echo "A NEW sideload key was created (no cached key found): this APK will not install over one signed by an earlier key."
+          fi
+          cat > android/keystore.properties <<PROPS
+          storeFile=../sideload-key/frogity.keystore
+          storePassword=$(cat android/sideload-key/pass)
+          keyAlias=frogity
+          keyPassword=$(cat android/sideload-key/pass)
+          PROPS
+          cd android && ./gradlew assembleRelease --no-daemon
+      - name: Keep the APK in the repository (releases/)
+        if: github.ref_type == 'branch'
+        run: |
+          V=$(grep -o 'versionName "[^"]*"' android/app/build.gradle | cut -d'"' -f2)
+          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          keytool -printcert -jarfile "$APK" | grep -E "Owner|SHA256" || true
+          git config user.name "frogity-build"
+          git config user.email "build@users.noreply.github.com"
+          git rm -q --ignore-unmatch releases/*.apk
+          mkdir -p releases && cp "$APK" "releases/Frogity-$V.apk"
+          git add -f "releases/Frogity-$V.apk"
+          git diff --cached --quiet || (git commit -m "Frogity $V APK [skip ci]" && git push origin "HEAD:${GITHUB_REF_NAME}")
       - uses: actions/upload-artifact@v4
         with:
           name: Frogity-android

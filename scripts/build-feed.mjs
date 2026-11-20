@@ -233,8 +233,14 @@ const OUTLETS = [
   { id: 'pos', name: 'Positive News', region: 'UK', domain: 'positive.news', kind: 'cooperative', lean: null, about: 'Journalism about progress, owned by its readers.', feeds: [['https://www.positive.news/feed/', 'good']] },
 ];
 const READ_SOURCES = [
-  { id: 'atl', name: 'Atlas Obscura', domain: 'atlasobscura.com', kind: 'curious', url: 'https://www.atlasobscura.com/feeds/latest' },
-  { id: 'smi', name: 'Smithsonian', domain: 'smithsonianmag.com', kind: 'curious', url: 'https://www.smithsonianmag.com/rss/latest_articles/' },
+  // curious things, most of them about wildlife or history (what readers find the most interesting)
+  { id: 'gwl', name: 'The Guardian · Wildlife', domain: 'theguardian.com', kind: 'curious', subject: 'wildlife', url: 'https://www.theguardian.com/environment/wildlife/rss' },
+  { id: 'mon', name: 'Mongabay', domain: 'mongabay.com', kind: 'curious', subject: 'wildlife', url: 'https://news.mongabay.com/feed/' },
+  { id: 'phy', name: 'Phys.org · Plants & Animals', domain: 'phys.org', kind: 'curious', subject: 'wildlife', url: 'https://phys.org/rss-feed/biology-news/plants-animals/' },
+  { id: 'smn', name: 'Smithsonian · Science & Nature', domain: 'smithsonianmag.com', kind: 'curious', subject: 'wildlife', url: 'https://www.smithsonianmag.com/rss/science-nature/' },
+  { id: 'smh2', name: 'Smithsonian · History', domain: 'smithsonianmag.com', kind: 'curious', subject: 'history', url: 'https://www.smithsonianmag.com/rss/history/' },
+  { id: 'ark', name: 'Arkeonews', domain: 'arkeonews.net', kind: 'curious', subject: 'history', url: 'https://arkeonews.net/feed/' },
+  { id: 'atl', name: 'Atlas Obscura', domain: 'atlasobscura.com', kind: 'curious', subject: 'history', url: 'https://www.atlasobscura.com/feeds/latest' },
   { id: 'aeo', name: 'Aeon', domain: 'aeon.co', kind: 'long', url: 'https://aeon.co/feed.rss' },
   { id: 'lgr', name: 'Longreads', domain: 'longreads.com', kind: 'long', url: 'https://longreads.com/feed/' },
   { id: 'nau', name: 'Nautilus', domain: 'nautil.us', kind: 'long', url: 'https://nautil.us/feed/' },
@@ -422,6 +428,194 @@ async function news() {
   return mixed;
 }
 
+// ------------------------------------------------------------------ local news: the reader's own country (the app mixes about a quarter of it in)
+// National outlets by country (ISO code, lower case), in the country's own language. Each is optional: a feed that is down is skipped.
+const LOCAL = [
+  { cc: 'es', region: 'Spain', id: 'rtv', name: 'RTVE', domain: 'rtve.es', kind: 'public', about: 'Spain’s public broadcaster.', feeds: ['https://www.rtve.es/api/noticias.rss'] },
+  { cc: 'es', region: 'Spain', id: 'epe', name: 'EL PAÍS', domain: 'elpais.com', kind: 'commercial', about: 'Spanish national daily.', feeds: ['https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada'] },
+  { cc: 'es', region: 'Spain', id: 'emu', name: 'El Mundo', domain: 'elmundo.es', kind: 'commercial', about: 'Spanish national daily.', feeds: ['https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml'] },
+  { cc: 'es', region: 'Spain', id: 'v20', name: '20minutos', domain: '20minutos.es', kind: 'commercial', about: 'Spanish free daily and news site.', feeds: ['https://www.20minutos.es/rss/'] },
+  { cc: 'es', region: 'Spain', id: 'lva', name: 'La Vanguardia', domain: 'lavanguardia.com', kind: 'commercial', about: 'Barcelona daily.', feeds: ['https://www.lavanguardia.com/rss/home.xml'] },
+  { cc: 'mx', region: 'Mexico', id: 'meu', name: 'El Universal', domain: 'eluniversal.com.mx', kind: 'commercial', about: 'Mexico City daily.', feeds: ['https://www.eluniversal.com.mx/rss.xml'] },
+  { cc: 'mx', region: 'Mexico', id: 'mil', name: 'Milenio', domain: 'milenio.com', kind: 'commercial', about: 'Mexican news group.', feeds: ['https://www.milenio.com/rss'] },
+  { cc: 'mx', region: 'Mexico', id: 'jor', name: 'La Jornada', domain: 'jornada.com.mx', kind: 'commercial', about: 'Mexican daily, left of centre.', feeds: ['https://www.jornada.com.mx/rss/edicion.xml'] },
+  { cc: 'ar', region: 'Argentina', id: 'cla', name: 'Clarín', domain: 'clarin.com', kind: 'commercial', about: 'Argentina’s largest daily.', feeds: ['https://www.clarin.com/rss/lo-ultimo/'] },
+  { cc: 'ar', region: 'Argentina', id: 'lna', name: 'La Nación', domain: 'lanacion.com.ar', kind: 'commercial', about: 'Buenos Aires daily.', feeds: ['https://www.lanacion.com.ar/arc/outboundfeeds/rss/'] },
+  { cc: 'ar', region: 'Argentina', id: 'ibf', name: 'Infobae', domain: 'infobae.com', kind: 'commercial', about: 'Argentine news site.', feeds: ['https://www.infobae.com/arc/outboundfeeds/rss/'] },
+  { cc: 'ar', region: 'Argentina', id: 'p12', name: 'Página/12', domain: 'pagina12.com.ar', kind: 'commercial', about: 'Argentine daily, left of centre.', feeds: ['https://www.pagina12.com.ar/rss/portada'] },
+  { cc: 'co', region: 'Colombia', id: 'etm', name: 'El Tiempo', domain: 'eltiempo.com', kind: 'commercial', about: 'Colombia’s largest daily.', feeds: ['https://www.eltiempo.com/rss/colombia.xml'] },
+  { cc: 'co', region: 'Colombia', id: 'ees', name: 'El Espectador', domain: 'elespectador.com', kind: 'commercial', about: 'Bogotá daily.', feeds: ['https://www.elespectador.com/arc/outboundfeeds/rss/'] },
+  { cc: 'cl', region: 'Chile', id: 'ltr', name: 'La Tercera', domain: 'latercera.com', kind: 'commercial', about: 'Santiago daily.', feeds: ['https://www.latercera.com/arc/outboundfeeds/rss/'] },
+  { cc: 'cl', region: 'Chile', id: 'bio', name: 'BioBioChile', domain: 'biobiochile.cl', kind: 'commercial', about: 'Chilean news site and radio.', feeds: ['https://www.biobiochile.cl/static/rss/nacional.xml'] },
+  { cc: 'pe', region: 'Peru', id: 'rpp', name: 'RPP', domain: 'rpp.pe', kind: 'commercial', about: 'Peruvian radio and news site.', feeds: ['https://rpp.pe/feed'] },
+  { cc: 'pe', region: 'Peru', id: 'eco', name: 'El Comercio', domain: 'elcomercio.pe', kind: 'commercial', about: 'Lima daily.', feeds: ['https://elcomercio.pe/arc/outboundfeeds/rss/'] },
+  { cc: 'fr', region: 'France', id: 'fti', name: 'franceinfo', domain: 'francetvinfo.fr', kind: 'public', about: 'French public broadcaster’s news service.', feeds: ['https://www.francetvinfo.fr/titres.rss'] },
+  { cc: 'fr', region: 'France', id: 'lmf', name: 'Le Monde', domain: 'lemonde.fr', kind: 'commercial', about: 'French newspaper of record.', feeds: ['https://www.lemonde.fr/rss/une.xml'] },
+  { cc: 'fr', region: 'France', id: 'lfi', name: 'Le Figaro', domain: 'lefigaro.fr', kind: 'commercial', about: 'French daily, centre-right.', feeds: ['https://www.lefigaro.fr/rss/figaro_actualites.xml'] },
+  { cc: 'de', region: 'Germany', id: 'tag', name: 'tagesschau', domain: 'tagesschau.de', kind: 'public', about: 'German public broadcaster’s news.', feeds: ['https://www.tagesschau.de/index~rss2.xml'] },
+  { cc: 'de', region: 'Germany', id: 'zdf', name: 'ZDFheute', domain: 'zdf.de', kind: 'public', about: 'German public broadcaster ZDF’s news.', feeds: ['https://www.zdf.de/rss/zdf/nachrichten'] },
+  { cc: 'it', region: 'Italy', id: 'ans', name: 'ANSA', domain: 'ansa.it', kind: 'agency', about: 'Italy’s main news agency.', feeds: ['https://www.ansa.it/sito/ansait_rss.xml'] },
+  { cc: 'it', region: 'Italy', id: 'rep', name: 'la Repubblica', domain: 'repubblica.it', kind: 'commercial', about: 'Italian daily, centre-left.', feeds: ['https://www.repubblica.it/rss/homepage/rss2.0.xml'] },
+  { cc: 'pt', region: 'Portugal', id: 'rtp', name: 'RTP Notícias', domain: 'rtp.pt', kind: 'public', about: 'Portugal’s public broadcaster.', feeds: ['https://www.rtp.pt/noticias/rss'] },
+  { cc: 'pt', region: 'Portugal', id: 'pub', name: 'PÚBLICO', domain: 'publico.pt', kind: 'commercial', about: 'Portuguese daily.', feeds: ['https://feeds.feedburner.com/PublicoRSS'] },
+  { cc: 'br', region: 'Brazil', id: 'g1', name: 'g1', domain: 'g1.globo.com', kind: 'commercial', about: 'Brazil’s largest news portal.', feeds: ['https://g1.globo.com/rss/g1/'] },
+  { cc: 'br', region: 'Brazil', id: 'fsp', name: 'Folha de S.Paulo', domain: 'folha.uol.com.br', kind: 'commercial', about: 'São Paulo daily.', feeds: ['https://feeds.folha.uol.com.br/emcimadahora/rss091.xml'] },
+];
+/** The outlets already in the world list also count as local for their own country (BBC for the UK, NPR for the USA…): the app matches by region name. */
+async function localNews() {
+  const out = {};
+  const byCc = {};
+  for (const o of LOCAL) (byCc[o.cc] ??= []).push(o);
+  const now = Date.now();
+  await Promise.all(
+    Object.entries(byCc).map(async ([cc, outlets]) => {
+      const lists = await Promise.all(
+        outlets.map(async (o) => {
+          const got = [];
+          for (const url of o.feeds) {
+            try {
+              const xml = await (await get(url, 3, 'application/rss+xml, application/xml, text/xml')).text();
+              for (const it of parseFeed(xml).slice(0, 14)) if (!it.time || now - it.time < 48 * 3600e3) got.push({ ...it, src: o });
+            } catch (e) {
+              console.warn(`  local ${o.name}: skipped (${e.message})`);
+            }
+          }
+          return got;
+        }),
+      );
+      // the outlets take turns, so one does not fill the list; each story needs a good picture
+      const picked = [];
+      for (let i = 0; picked.length < 8 && i < 14; i++) {
+        for (const l of lists) {
+          const it = l[i];
+          if (!it || picked.length >= 8 || it.summary.length < 40) continue;
+          let photo = await bestPhoto(it.image ? [{ image: it.image, from: it.src.name }] : []);
+          if (!photo) {
+            const og = await ogImage(it.link);
+            if (og) photo = await bestPhoto([{ image: og, from: it.src.name }]);
+          }
+          if (!photo) continue;
+          picked.push({
+            id: createHash('sha1').update(it.link).digest('hex').slice(0, 10),
+            title: it.title,
+            summary: it.summary,
+            image: photo.image,
+            imageFrom: photo.from,
+            iw: photo.w,
+            ih: photo.h,
+            time: it.time || now,
+            topic: 'world',
+            tone: toneOf(`${it.title} ${it.summary}`),
+            local: true,
+            sources: [{ id: it.src.id, title: it.title, url: it.link }],
+          });
+        }
+      }
+      if (picked.length) out[cc] = picked;
+      console.log(`  local ${cc}: ${picked.length} stories`);
+    }),
+  );
+  return out;
+}
+
+// ------------------------------------------------------------------ photographs from free libraries: wildlife and history
+// Public-domain or openly licensed pictures only, each with the library, the licence and a link back. Every library is optional:
+// one that is down or has changed is skipped, and the app shows the others (or nothing at all).
+const strip = (h) => String(h ?? '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;/g, '’').replace(/\s+/g, ' ').trim();
+const seedOf = (d) => Number(d.toISOString().slice(0, 10).replace(/-/g, ''));
+async function commonsWildlife(d) {
+  const cats = ['Featured pictures of birds', 'Featured pictures of mammals', 'Featured pictures of reptiles', 'Featured pictures of insects', 'Featured pictures of fish', 'Featured pictures of amphibians'];
+  const seed = seedOf(d);
+  const out = [];
+  for (let k = 0; k < cats.length && out.length < 6; k++) {
+    const cat = cats[(seed + k) % cats.length];
+    try {
+      const qs = new URLSearchParams({ action: 'query', format: 'json', formatversion: '2', generator: 'categorymembers', gcmtitle: `Category:${cat}`, gcmtype: 'file', gcmlimit: '60', prop: 'imageinfo', iiprop: 'url|size|extmetadata', iiurlwidth: '1080' });
+      const j = await (await get(`https://commons.wikimedia.org/w/api.php?${qs}`, 3)).json();
+      const pages = (j.query?.pages ?? []).filter((p) => p.imageinfo?.[0]?.thumburl && (p.imageinfo[0].width ?? 0) >= 1200 && /\.(jpe?g|png|webp)$/i.test(p.title));
+      if (!pages.length) continue;
+      const p = pages[(seed * 7 + k * 13) % pages.length];
+      const ii = p.imageinfo[0];
+      const m = ii.extmetadata ?? {};
+      out.push({
+        title: p.title.replace(/^File:/, '').replace(/\.[a-z]+$/i, '').replace(/_/g, ' '),
+        description: strip(m.ImageDescription?.value).slice(0, 200),
+        image: ii.thumburl,
+        iw: ii.thumbwidth,
+        ih: ii.thumbheight,
+        credit: strip(m.Artist?.value).slice(0, 80),
+        library: 'Wikimedia Commons',
+        license: strip(m.LicenseShortName?.value) || 'open licence',
+        url: ii.descriptionurl,
+      });
+    } catch (e) {
+      console.warn(`  Commons ${cat}: skipped (${e.message})`);
+    }
+  }
+  return out;
+}
+async function metHistory(d) {
+  const terms = ['Egyptian', 'Roman', 'medieval', 'armor', 'Greek', 'Japanese', 'Islamic', 'Mesopotamian', 'Byzantine', 'Viking'];
+  const seed = seedOf(d);
+  const out = [];
+  for (let k = 0; k < 3 && out.length < 3; k++) {
+    try {
+      const term = terms[(seed + k * 3) % terms.length];
+      const j = await (await get(`https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&isPublicDomain=true&q=${encodeURIComponent(term)}`, 3)).json();
+      const ids = j.objectIDs ?? [];
+      for (let t = 0; t < 8 && ids.length && out.length < 3; t++) {
+        const o = await (await get(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${ids[(seed + t * 17) % ids.length]}`, 2)).json();
+        const img = o.primaryImageSmall || o.primaryImage;
+        if (!o.isPublicDomain || !img || !o.title) continue;
+        const photo = await bestPhoto([{ image: img, from: 'The Met' }]);
+        if (!photo) continue;
+        out.push({
+          title: o.title,
+          description: [o.objectDate, o.culture || o.period, o.artistDisplayName].filter(Boolean).join(' · '),
+          image: img,
+          iw: photo.w,
+          ih: photo.h,
+          credit: 'The Metropolitan Museum of Art',
+          library: 'The Met Open Access',
+          license: 'public domain (CC0)',
+          url: o.objectURL,
+        });
+        break;
+      }
+    } catch (e) {
+      console.warn(`  Met: skipped (${e.message})`);
+    }
+  }
+  return out;
+}
+async function locHistory(d) {
+  const terms = ['ancient ruins', 'castle', 'cathedral', 'old map', 'steam locomotive', 'sailing ship', 'explorers', 'lighthouse'];
+  try {
+    const q = terms[seedOf(d) % terms.length];
+    const j = await (await get(`https://www.loc.gov/photos/?q=${encodeURIComponent(q)}&fo=json&c=40&fa=access-restricted:false`, 3)).json();
+    const res = (j.results ?? []).filter((r) => Array.isArray(r.image_url) && r.image_url.length && r.title && r.url);
+    const out = [];
+    for (let t = 0; t < res.length && out.length < 2; t++) {
+      const r = res[(seedOf(d) + t * 5) % res.length];
+      const img = r.image_url[r.image_url.length - 1];
+      const photo = await bestPhoto([{ image: img.startsWith('//') ? `https:${img}` : img, from: 'Library of Congress' }]);
+      if (!photo) continue;
+      out.push({ title: strip(r.title).slice(0, 120), description: strip(r.date ?? ''), image: photo.image, iw: photo.w, ih: photo.h, credit: 'Library of Congress', library: 'Library of Congress', license: 'no known restrictions', url: r.url });
+    }
+    return out;
+  } catch (e) {
+    console.warn(`  Library of Congress: skipped (${e.message})`);
+    return [];
+  }
+}
+async function gallery(d) {
+  const [wildlife, met, loc] = await Promise.all([commonsWildlife(d), metHistory(d), locHistory(d)]);
+  const history = [];
+  for (let i = 0; i < Math.max(met.length, loc.length); i++) { if (met[i]) history.push(met[i]); if (loc[i]) history.push(loc[i]); }
+  console.log(`  photos: ${wildlife.length} wildlife, ${history.length} history`);
+  return { wildlife, history };
+}
+
 // ------------------------------------------------------------------ links to Wikipedia: names in a story that have an article
 const NAME = /\b(?:[A-Z][\p{L}'’.-]+)(?:\s+(?:of|the|de|del|von|van|bin|al|and|&)?\s*[A-Z][\p{L}'’.-]+){0,3}\b/gu;
 const NOT_NAMES = new Set('The A An In On At For To By With From After Before As And But Or If When While This That These Those It He She They We You His Her Their Its Our Your Why How What Who Where Which Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March April May June July August September October November December New Live Watch Video Latest Breaking Photos Opinion Analysis Explained'.split(' '));
@@ -476,7 +670,7 @@ async function reads() {
           const cands = [it.image && { image: it.image, from: s.name }, ...(it.image ? [] : [{ image: await ogImage(it.link), from: s.name }])].filter((c) => c && c.image);
           const photo = await bestPhoto(cands);
           if (!photo || it.summary.length < 60) continue;
-          got.push({ id: createHash('sha1').update(it.link).digest('hex').slice(0, 10), kind: s.kind, source: s.id, title: it.title, summary: it.summary, image: photo.image, iw: photo.w, ih: photo.h, time: it.time, url: it.link });
+          got.push({ id: createHash('sha1').update(it.link).digest('hex').slice(0, 10), kind: s.kind, subject: s.subject, source: s.id, title: it.title, summary: it.summary, image: photo.image, iw: photo.w, ih: photo.h, time: it.time, url: it.link });
           if (got.length >= 3) break;
         }
         out.push(...got);
@@ -584,15 +778,16 @@ async function wikipedia(d) {
 
 const today = new Date();
 console.log('Building the daily feed for', today.toISOString().slice(0, 10));
-const [stories, wiki, readsList] = await Promise.all([news(), wikipedia(today), reads()]);
+const [stories, wiki, readsList, local, photos] = await Promise.all([news(), wikipedia(today), reads(), localNews().catch((e) => (console.warn('  local news skipped:', e.message), {})), gallery(today).catch((e) => (console.warn('  photos skipped:', e.message), { wildlife: [], history: [] }))]);
 await linkTerms(stories);
 // the outlets that appear, with their logos
-const usedIds = new Set([...stories.flatMap((s) => s.sources.map((x) => x.id)), ...readsList.map((r) => r.source)]);
+const usedIds = new Set([...stories.flatMap((s) => s.sources.map((x) => x.id)), ...Object.values(local).flat().flatMap((s) => s.sources.map((x) => x.id)), ...readsList.map((r) => r.source)]);
 const sources = {};
 for (const o of OUTLETS) if (usedIds.has(o.id)) sources[o.id] = { name: o.name, region: o.region, domain: o.domain, kind: o.kind, lean: o.lean, about: o.about };
+for (const o of LOCAL) if (usedIds.has(o.id)) sources[o.id] = { name: o.name, region: o.region, domain: o.domain, kind: o.kind, lean: null, about: o.about };
 for (const r of READ_SOURCES) if (usedIds.has(r.id)) sources[r.id] = { name: r.name, region: '', domain: r.domain, kind: r.kind, lean: null, about: '' };
 await Promise.all(Object.values(sources).map(async (s) => (s.logo = await logo(s.domain))));
-const feed = { v: 2, date: today.toISOString().slice(0, 10), generated: today.toISOString(), sources, news: stories, reads: readsList, ...wiki };
+const feed = { v: 2, date: today.toISOString().slice(0, 10), generated: today.toISOString(), sources, news: stories, local, photos, reads: readsList, ...wiki };
 await mkdir(dirname(OUT), { recursive: true });
 await writeFile(OUT, JSON.stringify(feed));
 const tones = stories.reduce((m, s) => ((m[s.tone] = (m[s.tone] || 0) + 1), m), {});

@@ -7,7 +7,7 @@
 // last copy (or the one inside the app) is shown.
 import * as db from './db';
 import { FEED_URLS } from './config';
-import { FACTS, type Fact } from '../data/facts';
+import { FACTS, FAVOURITE_TOPICS, type Fact } from '../data/facts';
 import type { DocMeta } from './types';
 
 /** an outlet: who it is, who pays for it, roughly where it stands (−2 left … 0 centre … +2 right; null = not a political outlet) */
@@ -42,10 +42,13 @@ export interface Story {
   /** names in the story that have a Wikipedia article */
   terms?: { t: string; w: string }[];
   sources: NewsSource[];
+  /** from the reader's own country */
+  local?: boolean;
 }
 export interface Read {
   id: string;
   kind: 'article' | 'curious' | 'long';
+  subject?: 'wildlife' | 'history';
   source: string;
   title: string;
   summary: string;
@@ -65,6 +68,10 @@ export interface Card {
   url?: string;
   year?: number;
   credit?: string;
+  /** for pictures from the free libraries: which library, under what licence, and what to call the card */
+  library?: string;
+  license?: string;
+  tag?: string;
 }
 export interface HistoryEvent {
   year: number;
@@ -79,6 +86,10 @@ export interface Daily {
   date: string;
   generated: string;
   news: Story[];
+  /** the country's own stories, by ISO code (lower case) */
+  local?: Record<string, Story[]>;
+  /** pictures from free public-domain libraries */
+  photos?: { wildlife?: Card[]; history?: Card[] };
   figure?: Card & { year: number };
   picture?: Card;
   featured?: Card;
@@ -164,7 +175,13 @@ export async function loadDaily(onNewer: (d: Loaded) => void, force = false): Pr
 
 const dayNumber = (d = new Date()) => Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(1970, 0, 1)) / 864e5);
 /** The fact for today: a different one each day, the same one for everybody. */
-export const factOfDay = (d = new Date()): Fact => FACTS[dayNumber(d) % FACTS.length];
+export const factOfDay = (d = new Date()): Fact => {
+  // three days in four a fact about wildlife or history (the two kinds most people find the most interesting), one in four anything else
+  const n = dayNumber(d);
+  const fav = FACTS.filter((f) => FAVOURITE_TOPICS.has(f.topic));
+  const rest = FACTS.filter((f) => !FAVOURITE_TOPICS.has(f.topic));
+  return n % 4 === 3 ? rest[Math.floor(n / 4) % rest.length] : fav[(n - Math.floor(n / 4)) % fav.length];
+};
 export const wikiUrl = (title: string) => `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
 
 export const isoWeek = (d = new Date()) => {

@@ -362,7 +362,6 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
   return (
     <div className="ob" role="dialog" aria-label={`Welcome, step ${i + 1} of ${STEPS.length}`} style={{ ['--g1' as string]: GLOW[i][0], ['--g2' as string]: GLOW[i][1] }}>
       <div className="ob-top">
-        <button className="pill sm" style={{ position:'absolute', top:16, right:16, zIndex:3 }} onClick={() => onDone('add')}>{tr('Open my first document')}</button>
       <button className="ob-back" onClick={() => go(-1)} aria-label={tr("Back")} style={{ visibility: i === 0 ? 'hidden' : 'visible' }}>
           <Icon name="back" size={22} />
         </button>

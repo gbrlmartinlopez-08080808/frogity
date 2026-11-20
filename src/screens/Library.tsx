@@ -260,7 +260,7 @@ export function Library({
 
   return (
     <div className="lib">
-      <div className="lib-card">
+      <div className={`lib-card${empty ? ' is-empty' : ''}`}>
         <div className="lib-top">
           <h1>
             <HomeTabs active="library" onPick={(t) => t === 'interesting' && onInteresting()} />
@@ -282,7 +282,7 @@ export function Library({
             <pre>{ASCII.shelf}</pre>
             <h2>{tr("A place to read")}</h2>
             <p>{tr("PDFs, books, documents, sheets, scans — opened beautifully, read comfortably, no paywalls.")}</p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+            <div className="empty-actions">
               <button className="pill" onClick={onAdd}>
                 <Icon name="plus" size={18} />{tr(" Add a file")}</button>
               <button className="pill ghost" onClick={onDiscover}>{tr("Find free books")}</button>

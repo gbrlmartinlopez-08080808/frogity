@@ -58,6 +58,7 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
         <div className="section-label">{tr("sources")}</div>
         <p>{tr("Definitions, word origins and article summaries come from ")}<b>{tr("Wiktionary")}</b>{tr(" and ")}<b>{tr("Wikipedia")}</b>{tr(", licensed")}{' '}
           <a href="https://creativecommons.org/licenses/by-sa/4.0/" onClick={(e) => (e.preventDefault(), openExternal('https://creativecommons.org/licenses/by-sa/4.0/'))}>{tr("CC BY-SA 4.0")}</a>{tr(". Pictures belong to their authors (see the linked article). The reading globe uses Natural Earth data (public domain). Free books come from Project Gutenberg, the Internet Archive and arXiv; each work’s licence is its source’s own.")}</p>
+        <p>{tr("The wildlife and history photographs on the Interesting tab come from free public-domain or openly licensed libraries (Wikimedia Commons, The Met Open Access, the Library of Congress). Each picture names its library and licence and links back to it.")}</p>
         <p>{tr("The two samples on your first shelf: ")}<i>{tr("Ulysses")}</i>{tr(" by James Joyce (1922, public domain, from Project Gutenberg) and ")}<i>{tr("The impact of life-saving interventions on fertility")}</i>{tr(" by David Roodman (CC BY-NC-SA 4.0, arXiv:2007.11388, for non-commercial sharing with credit). You can delete them like any other file.")}</p>
 
         <div className="section-label">{tr("open source")}</div>
