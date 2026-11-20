@@ -151,10 +151,7 @@
   pointer-events: none;
   z-index: 8;
   background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--r-bg) 92%, transparent) 72%);
-  -webkit-mask: linear-gradient(to bottom, transparent, #000 48%);
-  mask: linear-gradient(to bottom, transparent, #000 48%);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+  /* a plain gradient: a blur drawn over text that is scrolling costs a frame on every frame, on a phone */
   transition: opacity 0.35s;
 }
 .r-dock {
@@ -1774,17 +1771,17 @@
 }
 
 /* the end of a book: the whole page follows the pull (with resistance) and a small message shows in the space it leaves */
-.reader-scroll.endpulling > *,
-.reader-scroll.endsettle > * {
+.reader-scroll.endpulling,
+.reader-scroll.endsettle {
   will-change: transform;
 }
-.reader-scroll.endpulling > * {
-  transform: translateY(calc(var(--ev, 0) * -1px));
+.reader-scroll.endpulling {
+  transform: translate3d(0, calc(var(--ev, 0) * -1px), 0);
 }
-.reader-scroll.endpulling[data-end-axis='x'] > * {
-  transform: translateX(calc(var(--ev, 0) * -1px));
+.reader-scroll.endpulling[data-end-axis='x'] {
+  transform: translate3d(calc(var(--ev, 0) * -1px), 0, 0);
 }
-.reader-scroll.endsettle > * {
+.reader-scroll.endsettle {
   transform: none;
   transition: transform 0.38s cubic-bezier(0.2, 0.9, 0.25, 1);
 }
@@ -1793,28 +1790,28 @@
   left: 50%;
   bottom: calc(var(--safe-b) + 18px);
   z-index: 9;
-  width: min(260px, calc(100% - 48px));
+  width: min(300px, calc(100% - 40px));
   display: grid;
   justify-items: center;
-  gap: 2px;
+  gap: 3px;
   text-align: center;
   color: var(--r-ink, var(--ink));
   pointer-events: none;
   transform: translateX(-50%);
 }
 .endpull b {
-  font: 600 13.5px var(--serif);
+  font: 600 16.5px var(--serif);
 }
 .endpull small {
-  font-size: 10.5px;
-  line-height: 1.35;
+  font-size: 12.5px;
+  line-height: 1.4;
   color: var(--r-muted, var(--muted));
 }
 .endpull .ep-bar {
   display: block;
-  width: 64px;
-  height: 2px;
-  margin-top: 6px;
+  width: 84px;
+  height: 3px;
+  margin-top: 8px;
   border-radius: 2px;
   background: var(--r-line, var(--line-2));
   overflow: hidden;
@@ -1839,4 +1836,9 @@
 .pages.gesturing .textLayer,
 .pages.gesturing canvas.hi {
   visibility: hidden;
+}
+
+/* the light copy of the pages carried while pinching: the same dark treatment as the real ones, and no big shadows to redraw */
+.reader[data-dark='1'] .pdf-snap canvas {
+  filter: invert(0.9) hue-rotate(180deg) contrast(1.05);
 }

@@ -194,7 +194,7 @@ async function openstax(q: string): Promise<Page> {
         year: b.publish_date ? Number(b.publish_date.slice(0, 4)) : undefined,
         blurb: b.description ? clean(b.description.replace(/<[^>]+>/g, ' ')).slice(0, 140) : undefined,
         cover: b.cover_url,
-        get: { url: (b.pdf_url ?? b.high_resolution_pdf_url)!, name: safeName(b.title, 'pdf') },
+        get: { url: (b.pdf_url ?? b.high_resolution_pdf_url)!, name: safeName(b.title, 'pdf'), alt: b.pdf_url && b.high_resolution_pdf_url && b.pdf_url !== b.high_resolution_pdf_url ? [b.high_resolution_pdf_url] : undefined },
         web: b.meta?.html_url,
         tag: 'large pdf',
       }));
@@ -495,35 +495,40 @@ async function nativeGet(url: string, ms = 45000): Promise<{ blob?: Blob; status
  * Download a file (free). On the phone the download is done by Android itself, straight to a temporary file, and then
  * read back through the WebView: much faster for big PDFs than carrying the whole file across the JavaScript bridge.
  */
-async function nativeDownload(url: string): Promise<Blob | null> {
+async function nativeDownload(url: string, onProgress?: (f: number) => void): Promise<Blob | null> {
   const { Capacitor } = await import('@capacitor/core');
   if (!Capacitor.isNativePlatform()) return null;
   const { Filesystem, Directory } = await import('@capacitor/filesystem');
   const path = `dl/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  let sub: { remove: () => Promise<void> } | undefined;
   try {
-    const r = await Filesystem.downloadFile({ url, path, directory: Directory.Cache, recursive: true, headers: BROWSER_HEADERS, connectTimeout: 15000, readTimeout: 120000 } as never);
+    if (onProgress) sub = await Filesystem.addListener('progress', (p: { bytes: number; contentLength: number }) => p.contentLength > 0 && onProgress(Math.min(1, p.bytes / p.contentLength)));
+    const r = await Filesystem.downloadFile({ url, path, directory: Directory.Cache, recursive: true, progress: !!onProgress, headers: BROWSER_HEADERS, connectTimeout: 20000, readTimeout: 180000 } as never);
     const res = await fetch(Capacitor.convertFileSrc(r.path ?? ''));
     return res.ok ? await res.blob() : null;
   } catch {
     return null;
   } finally {
+    void sub?.remove();
     Filesystem.deleteFile({ path, directory: Directory.Cache }).catch(() => {});
   }
 }
 
-export async function fetchFile(g: NonNullable<Item['get']>, onStep?: (label: string) => void): Promise<Blob> {
+export async function fetchFile(g: NonNullable<Item['get']>, onProgress?: (fraction: number) => void): Promise<Blob> {
   const urls = [g.url, ...(g.alt ?? [])];
   let why = 'Download failed.';
   for (const url of urls) {
     const host = new URL(url).hostname.replace(/^www\./, '');
     // three ways, quickest first; each one is checked to be the book itself before it is accepted
+    const big = /\.pdf$/i.test(g.name); // a textbook or a paper: tens of megabytes, which must never be carried over the page's bridge as text
     const ways: [string, () => Promise<Blob | null>][] = [
       ['phone', async () => {
+        if (big) return null;
         const r = await nativeGet(url).catch((e) => (why = `${host}: ${(e as Error).message}`, { status: -1 } as { blob?: Blob; status: number }));
         if (r.status > 0 && !r.blob) why = `${host} answered ${r.status}.`;
         return r.blob ?? null;
       }],
-      ['download', () => (g.as === 'jats' ? Promise.resolve(null) : nativeDownload(url))],
+      ['download', () => (g.as === 'jats' ? Promise.resolve(null) : nativeDownload(url, onProgress))],
       ['web', async () => {
         const r = await fetch(url, { redirect: 'follow' });
         if (!r.ok) {
@@ -541,9 +546,9 @@ export async function fetchFile(g: NonNullable<Item['get']>, onStep?: (label: st
         return r.blob();
       }],
     ];
-    for (const [label, run] of ways) {
+    if (big) ways.unshift(ways.splice(1, 1)[0]); // the download to a file goes first for big ones
+    for (const [, run] of ways) {
       try {
-        onStep?.(label);
         const b = await run();
         if (b && (await looksRight(b, g))) return b;
         if (b) why = `${host} sent something that is not the book.`;
@@ -578,6 +583,41 @@ export function fetchThumb(url?: string): Promise<Blob | undefined> {
     })();
     thumbs.set(url, p);
     if (thumbs.size > 400) thumbs.delete(thumbs.keys().next().value as string);
+  }
+  return p;
+}
+
+const found = new Map<string, Promise<string | undefined>>();
+/**
+ * A real cover for a title when the catalogue's own picture is missing or will not load: Google Books and Open Library both
+ * know most books (OpenStax's textbooks included). Only the title (and author) is sent, and the answer is remembered.
+ */
+export function lookupCover(title: string, author?: string): Promise<string | undefined> {
+  const k = `${title}|${author ?? ''}`;
+  let p = found.get(k);
+  if (!p) {
+    p = (async () => {
+      const t = title.replace(/["“”]/g, '').slice(0, 90);
+      const who = author && !/openstax|arxiv|^\s*$/i.test(author) ? author.split(/[,·]/)[0].trim() : /openstax/i.test(author ?? '') ? 'OpenStax' : '';
+      try {
+        const q = `intitle:"${t}"${who ? ` ${/openstax/i.test(who) ? 'inpublisher' : 'inauthor'}:"${who}"` : ''}`;
+        const j = (await J(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=4&fields=items(volumeInfo(title,imageLinks))`)) as { items?: { volumeInfo?: { title?: string; imageLinks?: { thumbnail?: string; smallThumbnail?: string } } }[] };
+        const hit = j.items?.find((i) => i.volumeInfo?.imageLinks?.thumbnail);
+        const u = hit?.volumeInfo?.imageLinks?.thumbnail;
+        if (u) return u.replace(/^http:/, 'https:').replace(/&edge=curl/, '').replace(/zoom=\d/, 'zoom=1');
+      } catch {
+        /* the next one */
+      }
+      try {
+        const j = (await J(`https://openlibrary.org/search.json?title=${encodeURIComponent(t)}&limit=3&fields=cover_i`)) as { docs?: { cover_i?: number }[] };
+        const c = j.docs?.find((d) => d.cover_i)?.cover_i;
+        if (c) return `https://covers.openlibrary.org/b/id/${c}-M.jpg`;
+      } catch {
+        /* none */
+      }
+      return undefined;
+    })();
+    found.set(k, p);
   }
   return p;
 }

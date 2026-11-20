@@ -40,6 +40,7 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
   const curRef = useRef(initialPage);
   curRef.current = cur;
   const wrap = useRef<HTMLDivElement>(null);
+  const snapRef = useRef<HTMLDivElement | null>(null); // the light copy carried while pinching
   const pageEls = useRef<(HTMLDivElement | null)[]>([]);
   const done = useRef(new Map<number, number>()); // page index -> scale already rendered at
   const hiDone = useRef(new Map<number, { x0: number; y0: number; x1: number; y1: number; s: number }>());
@@ -413,7 +414,10 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
       tl.style.transform = Math.abs(r - 1) < 0.001 ? '' : `scale(${r})`;
     });
     const wr = wrap.current;
+    snapRef.current?.remove();
+    snapRef.current = null;
     if (wr) {
+      wr.style.visibility = '';
       wr.classList.remove('gesturing');
       wr.style.transition = '';
       wr.style.transform = '';
@@ -537,6 +541,47 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
     const MIN = 0.6;
     const MAX = 4;
     const wrapEl = inner;
+    // While fingers are down the page stack itself is not moved (it can be hundreds of pages tall, and scaling that on a phone is
+    // what stutters). A light copy of just the pages in view is carried instead, and thrown away the moment the real ones have
+    // their new size.
+    let snap: HTMLDivElement | null = null;
+    const takeSnap = (ox: number, oy: number) => {
+      dropSnap();
+      const host = el.parentElement;
+      if (!host) return;
+      const sr = el.getBoundingClientRect();
+      const hr = host.getBoundingClientRect();
+      const d = document.createElement('div');
+      d.className = 'pdf-snap';
+      d.style.cssText = `position:absolute;left:${sr.left - hr.left}px;top:${sr.top - hr.top}px;width:${sr.width}px;height:${sr.height}px;overflow:hidden;pointer-events:none;z-index:6;transform-origin:${ox}px ${oy}px;will-change:transform;`;
+      for (const pg of pageEls.current) {
+        if (!pg) continue;
+        const r = pg.getBoundingClientRect();
+        if (r.bottom < sr.top - 80 || r.top > sr.bottom + 80 || r.right < sr.left || r.left > sr.right) continue;
+        const box = document.createElement('div');
+        box.style.cssText = `position:absolute;left:${r.left - sr.left}px;top:${r.top - sr.top}px;width:${r.width}px;height:${r.height}px;background:var(--r-page-bg,#fff);border-radius:3px;overflow:hidden;`;
+        const src = pg.querySelector<HTMLCanvasElement>(':scope > canvas:not(.hi)');
+        if (src && src.width > 0) {
+          const c = document.createElement('canvas');
+          c.width = src.width;
+          c.height = src.height;
+          c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
+          c.getContext('2d')?.drawImage(src, 0, 0);
+          box.appendChild(c);
+        }
+        d.appendChild(box);
+      }
+      host.appendChild(d);
+      inner.style.visibility = 'hidden';
+      snap = d;
+      snapRef.current = d;
+    };
+    const dropSnap = () => {
+      snap?.remove();
+      snap = null;
+      snapRef.current = null;
+      inner.style.visibility = '';
+    };
     let gen = 0;
     let start: { d: number; cx: number; cy: number; sl: number; st: number } | null = null;
     let live = { scale: 1, dx: 0, dy: 0 };
@@ -579,6 +624,7 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
       return cols.find((c) => x >= c.left - 8 && x <= c.right + 8) ?? cols.sort((a, b) => Math.abs((a.left + a.right) / 2 - x) - Math.abs((b.left + b.right) / 2 - x))[0];
     };
     const clearTransform = () => {
+      dropSnap();
       wrapEl.classList.remove('gesturing');
       inner.style.transition = '';
       inner.style.transform = '';
@@ -586,7 +632,7 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
     };
     const paint = () => {
       raf = 0;
-      inner.style.transform = `translate(${live.dx}px, ${live.dy}px) scale(${live.scale})`;
+      if (snap) snap.style.transform = `translate(${live.dx}px, ${live.dy}px) scale(${live.scale})`;
     };
     /** Which page, and where in it, sits at content point (x, y) of the unzoomed layout. */
     const anchorAt = (x: number, y: number) => {
@@ -638,8 +684,10 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
       };
       if (Math.abs(real - live.scale) < 0.015) return go();
       // spring back from the rubber band
-      inner.style.transition = 'transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1)';
-      inner.style.transform = `translate(${ex - s.cx}px, ${ey - s.cy}px) scale(${real})`;
+      if (snap) {
+        snap.style.transition = 'transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        snap.style.transform = `translate(${ex - s.cx}px, ${ey - s.cy}px) scale(${real})`;
+      }
       finish = go;
       window.setTimeout(() => my === gen && go(), 170);
     };
@@ -653,10 +701,7 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
         gesturing.current = true;
         tasks.current.forEach((t) => t.cancel());
         tasks.current.clear();
-        inner.style.transition = '';
-        inner.style.transformOrigin = `${start.cx + start.sl}px ${start.cy + start.st}px`;
-        inner.style.willChange = 'transform';
-        inner.classList.add('gesturing'); // the invisible text layers and sharp tiles are left out while fingers move: nothing but the pages to carry
+        takeSnap(start.cx, start.cy);
         lastTap = 0;
       } else if (e.touches.length === 1) {
         const now = Date.now();
@@ -687,11 +732,12 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
           tasks.current.forEach((t) => t.cancel());
           tasks.current.clear();
           // glide to the new size, then lay out once
-          inner.classList.add('gesturing');
-          inner.style.transformOrigin = `${bcx}px ${cy + st}px`;
-          inner.style.willChange = 'transform';
-          inner.style.transition = 'transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1)';
-          inner.style.transform = `translate(${real === 1 ? 0 : moveX}px, 0) scale(${real})`;
+          takeSnap(bcx - sl, cy);
+          if (snap) {
+            snap.getBoundingClientRect(); // (settled in place before it is moved, so the glide starts from where it is)
+            snap.style.transition = 'transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            snap.style.transform = `translate(${real === 1 ? 0 : moveX}px, 0) scale(${real})`;
+          }
           const go = () => {
             finish = null;
             commit(real, bcx, st + cy, real === 1 ? cx : el.clientWidth / 2 - (col ? 0 : el.clientWidth / 2 - cx), cy);

@@ -1,7 +1,7 @@
 import { tr } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
-import { SOURCES, archivePdf, featuredNow, fetchFile, fetchThumb, peek, search, type Item, type SourceId } from '../lib/catalog';
-import { importFile } from '../lib/library';
+import { SOURCES, archivePdf, featuredNow, fetchFile, fetchThumb, lookupCover, peek, search, type Item, type SourceId } from '../lib/catalog';
+import { generatedCover, importFile } from '../lib/library';
 import { onBack, openExternal, tap } from '../lib/native';
 import { Icon } from '../ui/Icon';
 import { PixelLoader, toast } from '../ui/kit';
@@ -17,6 +17,7 @@ export function Discover({ onClose, onOpen, initial }: { onClose: () => void; on
   const [err, setErr] = useState<string | null>(null);
   const [adding, setAdding] = useState<Set<string>>(new Set()); // several books can be on their way at once
   const [added, setAdded] = useState<Record<string, string>>({}); // item id → doc id
+  const [pct, setPct] = useState<Record<string, number>>({}); // how far each download has come
   const seq = useRef(0);
   const src = SOURCES.find((s) => s.id === source)!;
   const query = q || src.topics[topic]?.q || '';
@@ -69,12 +70,15 @@ export function Discover({ onClose, onOpen, initial }: { onClose: () => void; on
     setAdding((a) => new Set(a).add(it.id));
     tap('medium');
     try {
-      // the thumbnail is fetched while the file's address is being worked out and while it downloads
-      const thumb = fetchThumb(it.cover);
+      // the cover is found while the file's address is being worked out and while it downloads: the catalogue's own picture first,
+      // then a real one looked up by title (never a made-up one when a real one exists)
+      const thumb = fetchThumb(it.cover).then(async (b) => b ?? (await lookupCover(it.title, it.author).then(fetchThumb)));
       let g = it.get;
       if (!g && it.source === 'archive') g = await archivePdf(it.id.slice(1));
       if (!g) throw new Error('No free file for this one.');
-      const [blob, cover] = await Promise.all([fetchFile(g), thumb]);
+      const [blob, found] = await Promise.all([fetchFile(g, (f) => setPct((x) => ({ ...x, [it.id]: f }))), thumb]);
+      // a big book is never opened just to draw its cover while it is being added: a made-up one stands in for a moment and the real one is drawn in the background
+      const cover = found ?? (await generatedCover(it.title, /\.epub$/i.test(g.name) ? 'epub' : 'pdf', it.author));
       const meta = await importFile(blob, g.name, { title: it.title, author: it.author, cover });
       setAdded((a) => ({ ...a, [it.id]: meta.id }));
       toast('Added to your shelf');
@@ -85,6 +89,10 @@ export function Discover({ onClose, onOpen, initial }: { onClose: () => void; on
         const n = new Set(a);
         n.delete(it.id);
         return n;
+      });
+      setPct((x) => {
+        const { [it.id]: _gone, ...rest } = x;
+        return rest;
       });
     }
   };
@@ -171,7 +179,7 @@ export function Discover({ onClose, onOpen, initial }: { onClose: () => void; on
                       <button className="get done" onClick={() => (onClose(), onOpen(have))}>{tr("Open")}</button>
                     ) : (
                       <button className="get" disabled={adding.has(it.id)} onClick={() => add(it)}>
-                        {adding.has(it.id) ? <PixelLoader size={3} gap={2} /> : 'Add'}
+                        {adding.has(it.id) ? (pct[it.id] ? `${Math.round(pct[it.id] * 100)}%` : <PixelLoader size={3} gap={2} />) : 'Add'}
                       </button>
                     )
                   ) : null}
@@ -236,14 +244,25 @@ function ItemCover({ item }: { item: Item }) {
   }, [item.cover]);
   // the page could not show it: ask the phone's own network stack, which is not bound by the page's rules
   const rescue = async () => {
-    if (rescued.current || !item.cover) return setBad(true);
+    if (rescued.current) return setBad(true);
     rescued.current = true;
-    const b = await fetchThumb(item.cover);
+    // 1. the same picture through the phone's own network stack; 2. a real cover looked up by title; 3. only then a made-up one
+    const b = item.cover ? await fetchThumb(item.cover) : undefined;
     if (b) {
       setSrc(URL.createObjectURL(b));
+      return setBad(false);
+    }
+    if (item.source === 'papers') return setBad(true);
+    const u = await lookupCover(item.title, item.author);
+    const lb = u ? await fetchThumb(u) : undefined;
+    if (lb) {
+      setSrc(URL.createObjectURL(lb));
       setBad(false);
     } else setBad(true);
   };
+  useEffect(() => {
+    if (!item.cover && item.source !== 'papers') void rescue(); // no picture at all in the catalogue: look one up straight away
+  }, [item.id]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className={`disc-cover${bad ? ' gen' : ''}${item.source === 'papers' ? ' paper' : ''}`} style={bad ? ({ ['--h' as string]: hue(item.title) } as React.CSSProperties) : undefined}>
       {src && !bad && (
@@ -255,7 +274,7 @@ function ItemCover({ item }: { item: Item }) {
           onLoad={(e) => {
             const i = e.currentTarget;
             // catalogues sometimes answer with a blank or tiny placeholder: that is not a cover
-            if (i.naturalWidth < 60 || i.naturalHeight < 80 || i.naturalWidth / i.naturalHeight > 1.4) void rescue();
+            if (i.naturalWidth < 60 || i.naturalHeight < 80 || i.naturalWidth / i.naturalHeight > 1.8) void rescue();
           }}
           onError={() => void rescue()}
         />

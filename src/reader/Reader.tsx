@@ -845,7 +845,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     });
     onClose();
   };
-  const endPull = useEndPull(scroller, { paged, enabled: endable, onTrigger: finishAndRemove });
+  useEndPull(scroller, { paged, enabled: endable, onTrigger: finishAndRemove });
 
   // ---------------------------------------------------------------- actions
   const switchMode = (m: 'page' | 'liquid') => {
@@ -1454,7 +1454,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         </div>
       )}
 
-      <EndNote pull={endPull.pull} raw={endPull.raw} uri={!!doc.uri} />
+      <EndNote uri={!!doc.uri} />
 
       {liquid && <div className="r-fade" style={{ opacity: chrome || listen ? 1 : 0.55 }} />}
 

@@ -2,7 +2,7 @@
 // finger left on a turning page, or the wheel on a computer) drags the whole page up (with some resistance, like a rubber band),
 // and in the space that opens below it a small message appears; hold the pull far enough and letting go finishes the book and
 // takes it off the shelf. Nothing happens by accident, and the removal has an Undo.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { tr } from '../lib/i18n';
 
 const NEED = 150; // px of pull, past the end, that count as "yes"
@@ -10,10 +10,23 @@ const SHOW = 14; // px of pull before the message starts to appear
 const rubber = (d: number) => 150 * (1 - Math.exp(-d / 190)); // how far the page follows the finger: it gives, then resists
 const WHEEL_NEED = 420; // the wheel (a computer) needs a longer, deliberate push
 
+// The pull is kept outside React: every touch move updates the page's transform and this tiny store, and only the message
+// (a few lines) renders again. The reader itself, a very large component, is never re-rendered by a pull.
+const store = { raw: 0, pull: 0 };
+const subs = new Set<() => void>();
+const put = (raw: number) => {
+  store.raw = raw;
+  store.pull = Math.min(1, raw / NEED);
+  subs.forEach((f) => f());
+};
+let snap = { ...store };
+const getSnap = () => {
+  if (snap.raw !== store.raw || snap.pull !== store.pull) snap = { raw: store.raw, pull: store.pull };
+  return snap;
+};
+const sub = (f: () => void) => (subs.add(f), () => void subs.delete(f));
+
 export function useEndPull(scroller: HTMLElement | null, opts: { paged: boolean; enabled: boolean; onTrigger: () => void }) {
-  const [atEnd, setAtEnd] = useState(false);
-  const [pull, setPull] = useState(0); // 0..1
-  const [raw, setRaw] = useState(0);
   const cb = useRef(opts.onTrigger);
   cb.current = opts.onTrigger;
   const { paged, enabled } = opts;
@@ -21,9 +34,7 @@ export function useEndPull(scroller: HTMLElement | null, opts: { paged: boolean;
   useEffect(() => {
     const el = scroller;
     if (!el || !enabled) {
-      setAtEnd(false);
-      setPull(0);
-      setRaw(0);
+      put(0);
       return;
     }
     const born = performance.now();
@@ -35,20 +46,31 @@ export function useEndPull(scroller: HTMLElement | null, opts: { paged: boolean;
     let wheelT = 0;
     const horizontal = paged;
     // the page itself moves with the pull; this is set on the scroller directly, so there is no re-render for every pixel
-    const drive = (raw: number, settle = false) => {
-      el.style.setProperty('--ev', rubber(raw).toFixed(1));
-      el.classList.toggle('endpulling', raw > 0);
-      el.classList.toggle('endsettle', settle);
+    let frame = 0;
+    let want = 0;
+    let wantSettle = false;
+    const apply = () => {
+      frame = 0;
+      el.style.setProperty('--ev', rubber(want).toFixed(1));
+      el.classList.toggle('endpulling', want > 0);
+      el.classList.toggle('endsettle', wantSettle);
       el.dataset.endAxis = horizontal ? 'x' : 'y';
-      setPull(Math.min(1, raw / NEED));
-      setRaw(raw);
+      put(want);
+    };
+    // one update per screen frame, however many touch events arrive
+    const drive = (raw: number, settle = false) => {
+      want = raw;
+      wantSettle = settle;
+      if (settle || raw === 0) {
+        cancelAnimationFrame(frame);
+        apply();
+      } else if (!frame) frame = requestAnimationFrame(apply);
     };
     const measure = () => {
       const left = paged ? el.scrollWidth - el.clientWidth - el.scrollLeft : el.scrollHeight - el.clientHeight - el.scrollTop;
       const now = left <= 4;
       if (now !== end) {
         end = now;
-        setAtEnd(now);
         if (!now) {
           origin = null;
           amount = 0;
@@ -112,6 +134,8 @@ export function useEndPull(scroller: HTMLElement | null, opts: { paged: boolean;
     el.addEventListener('wheel', onWheel, { passive: true });
     window.addEventListener('resize', onScroll);
     return () => {
+      cancelAnimationFrame(frame);
+      put(0);
       el.style.removeProperty('--ev');
       el.classList.remove('endpulling', 'endsettle');
       clearTimeout(t0);
@@ -126,11 +150,11 @@ export function useEndPull(scroller: HTMLElement | null, opts: { paged: boolean;
     };
   }, [scroller, paged, enabled]);
 
-  return { atEnd, pull, raw };
 }
 
 /** The small message in the space the pulled page leaves behind. It is only there while the page is being pulled. */
-export function EndNote({ pull, raw, uri }: { pull: number; raw: number; uri: boolean }) {
+export function EndNote({ uri }: { uri: boolean }) {
+  const { pull, raw } = useSyncExternalStore(sub, getSnap);
   if (raw < SHOW) return null;
   const ready = pull >= 1;
   const k = Math.min(1, (raw - SHOW) / 40);

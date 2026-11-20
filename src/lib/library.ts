@@ -192,7 +192,7 @@ export async function extractMeta(file: Blob, name: string, kind: DocKind, title
 
 export async function importFile(file: Blob, name: string, opts: { kind?: DocKind; title?: string; author?: string; cover?: Blob; open?: boolean } = {}): Promise<DocMeta> {
   // Keep large files as blobs; hash small files to recognize exact duplicate imports.
-  if (file.size > 150_000_000) throw new Error('This file is larger than 150 MB. Choose a smaller file.');
+  if (file.size > 450_000_000) throw new Error('This file is larger than 450 MB. Choose a smaller file.');
   const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
   const kind = opts.kind ?? detectKind(name, file.type, head);
   const fingerprint = file.size <= 10_000_000 ? Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()))).map(n => n.toString(16).padStart(2, '0')).join('') : undefined;
