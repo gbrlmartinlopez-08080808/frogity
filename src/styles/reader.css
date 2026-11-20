@@ -172,6 +172,7 @@
   pointer-events: none;
 }
 .r-dock-row {
+  order: 6;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -193,6 +194,7 @@
   min-width: 76px;
 }
 .r-chev {
+  order: 7;
   margin-top: 6px;
   color: var(--r-muted);
   width: 44px;
@@ -1347,6 +1349,11 @@
   cursor: pointer;
   outline: none;
 }
+.bar-slot {
+  order: 5;
+  width: 100%;
+}
+.r-dock > .bar-slot > .scrub,
 .r-dock > .scrub {
   max-width: 520px;
   margin: 0 auto 6px;
@@ -1527,7 +1534,7 @@
 }
 /* while the position bar is held, the controls step aside so the page can be seen */
 .reader.scrubbing .r-top,
-.reader.scrubbing .r-dock > *:not(.scrub):not(.listen),
+.reader.scrubbing .r-dock > *:not(.bar-slot),
 .reader.scrubbing .listen > *:not(.scrub),
 .reader.scrubbing .r-fade {
   opacity: 0;

@@ -8,7 +8,15 @@ import { tap } from '../lib/native';
 export function Scrub({ value, label, onChange, className = '', ariaLabel }: { value: number; label: (v: number) => string; onChange: (v: number, final: boolean) => void; className?: string; ariaLabel: string }) {
   const track = useRef<HTMLDivElement>(null);
   const [held, setHeld] = useState<number | null>(null);
-  const v = held ?? value;
+  // after the finger lifts the bar stays where it was let go until the book has caught up, so it never snaps back and forth
+  const [rest, setRest] = useState<number | null>(null);
+  const restT = useRef(0);
+  const settle = (x: number) => {
+    setRest(x);
+    clearTimeout(restT.current);
+    restT.current = window.setTimeout(() => setRest(null), 600);
+  };
+  const v = held ?? rest ?? value;
   const at = (x: number) => {
     const r = track.current!.getBoundingClientRect();
     return Math.max(0, Math.min(1, (x - r.left) / r.width));
@@ -30,6 +38,8 @@ export function Scrub({ value, label, onChange, className = '', ariaLabel }: { v
       }}
       onPointerDown={(e) => {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        clearTimeout(restT.current);
+        setRest(null);
         const x = at(e.clientX);
         window.dispatchEvent(new CustomEvent('frogity:scrub', { detail: true }));
         setHeld(x);
@@ -50,6 +60,7 @@ export function Scrub({ value, label, onChange, className = '', ariaLabel }: { v
       onPointerUp={(e) => {
         if (held === null) return;
         const x = at(e.clientX);
+        settle(x);
         setHeld(null);
         window.dispatchEvent(new CustomEvent('frogity:scrub', { detail: false }));
         onChange(x, true);
@@ -63,7 +74,7 @@ export function Scrub({ value, label, onChange, className = '', ariaLabel }: { v
         <i className="scrub-fill" style={{ width: `${v * 100}%` }} />
         <i className="scrub-thumb" style={{ left: `${v * 100}%` }} />
         {held !== null && (
-          <span className="scrub-tip mono" style={{ left: `${Math.max(8, Math.min(92, v * 100))}%` }}>
+          <span className="scrub-tip mono" style={{ left: `clamp(76px, ${v * 100}%, calc(100% - 76px))` }}>
             {label(v)}
           </span>
         )}

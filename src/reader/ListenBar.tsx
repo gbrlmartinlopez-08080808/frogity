@@ -1,5 +1,6 @@
 import { tr } from '../lib/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { bestVoice, detectLanguage, LANG_NAME, listVoices, openVoiceInstall, queueSpeak, speak, speechText, stopSpeaking, ttsAvailable, type Voice } from '../lib/tts';
 import { NEURAL_PREFIX, NEURAL_VOICES, NeuralPlayer, sharedEngine, isNeural, lighterThan, neuralId, neuralStored, neuralSupported } from '../lib/neural';
 import { VoiceSheet } from './VoiceSheet';
@@ -22,6 +23,8 @@ interface Props {
   docId: string;
   title?: string;
   coverId?: string;
+  /** where the position bar goes: the reader keeps it in one place, right above its main controls */
+  barSlot?: HTMLElement | null;
 }
 
 const SLEEP = [0, 10, 20, 30, 60];
@@ -29,7 +32,7 @@ const SLEEP = [0, 10, 20, 30, 60];
 const LANG_CYCLE = ['auto', 'en', 'es', 'fr', 'de', 'it', 'pt'];
 const LANG_CODES: Record<string, string> = { en: 'en-US', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', pt: 'pt-PT' };
 
-export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = 'Frogity', coverId }: Props) {
+export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = 'Frogity', coverId, barSlot }: Props) {
   const settings = useStore((s) => s.settings);
   const [idx, setIdx] = useState(0);
   const [total, setTotal] = useState(0);
@@ -774,6 +777,30 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
   const pct = total > 1 ? Math.round((idx / (total - 1)) * 100) : 0;
   const status = note || (busy ? 'getting ready…' : playing ? 'reading aloud' : 'paused');
 
+  const scrubEl = (
+      <Scrub
+        className="listen-scrub2 dockbar"
+        ariaLabel="Position in the track"
+        value={total > 1 ? idx / (total - 1) : 0}
+        label={(v) => {
+          const i = Math.round(v * Math.max(0, total - 1));
+          return `${Math.round(v * 100)}% · ${Math.max(0, Math.round(((total - i) / Math.max(1, total)) * leftAll))} min left`;
+        }}
+        onChange={(v, final) => {
+          const i = Math.round(v * Math.max(0, total - 1));
+          if (!root) return;
+          if (!final) {
+            follow(markSaying(root, i));
+            return;
+          }
+          setIdx(i);
+          localStorage.setItem('listen:' + docId, String(i));
+          if (playing) run(i);
+          else follow(markSaying(root, i));
+        }}
+      />
+  );
+
   return (
     <div className="listen" style={{ position: 'relative' }}>
       {pop === 'speed' && (
@@ -804,27 +831,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
         <span className="grow">{status}</span>
         <span className="mono">{leftMin}{tr(" min left")}</span>
       </div>
-      <Scrub
-        className="listen-scrub2"
-        ariaLabel="Position in the track"
-        value={total > 1 ? idx / (total - 1) : 0}
-        label={(v) => {
-          const i = Math.round(v * Math.max(0, total - 1));
-          return `${Math.round(v * 100)}% · ${Math.max(0, Math.round(((total - i) / Math.max(1, total)) * leftAll))} min left`;
-        }}
-        onChange={(v, final) => {
-          const i = Math.round(v * Math.max(0, total - 1));
-          if (!root) return;
-          if (!final) {
-            follow(markSaying(root, i));
-            return;
-          }
-          setIdx(i);
-          localStorage.setItem('listen:' + docId, String(i));
-          if (playing) run(i);
-          else follow(markSaying(root, i));
-        }}
-      />
+      {barSlot ? createPortal(scrubEl, barSlot) : scrubEl}
       <div className="listen-times mono" aria-hidden>
         <span>{pct}{tr("%")}</span>
         <span>

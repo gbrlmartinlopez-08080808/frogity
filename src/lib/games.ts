@@ -6,13 +6,13 @@
 // Only reaching the top counts: that is the block. Unlimited tries (a block is still earned once a day). Everything is made on the phone.
 import * as db from './db';
 
-export type Variant = 'sling' | 'deep' | 'pond';
+export type Variant = 'sling' | 'deep';
 export type Levels = Record<Variant, number>;
 
 export async function getLevels(): Promise<Levels> {
   const l = await db.get<Partial<Levels>>('kv', 'games2').catch(() => undefined);
   const level = (n: unknown) => typeof n === 'number' && Number.isFinite(n) ? Math.max(1, Math.min(1000, Math.floor(n))) : 1;
-  return { sling: level(l?.sling), deep: level(l?.deep), pond: level(l?.pond) };
+  return { sling: level(l?.sling), deep: level(l?.deep) };
 }
 export const setLevels = (l: Levels) => db.put('kv', 'games2', l);
 

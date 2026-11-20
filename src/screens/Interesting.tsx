@@ -462,20 +462,25 @@ const REGION_CC: Record<string, string> = { USA: 'us', UK: 'gb', Spain: 'es', Fr
  * The day's stories with the reader's own country mixed in: about one card in four is local (the country's own outlets, plus the
  * stories the world list already has from outlets of that country). Without any local story the list is simply the world's.
  */
-function withLocal(d: Daily, list: Story[], home: string, topic: 'all' | Topic): Story[] {
-  // a story counts as local when it was led by an outlet of the country (so a world story El PAÍS also covered does not)
+/** a story counts as local when it was led by an outlet of the country (so a world story El PAÍS also covered does not) */
+function localsOf(d: Daily, home: string): Story[] {
   const isHome = (s: Story) => REGION_CC[d.sources?.[s.sources[0]?.id ?? '']?.region ?? ''] === home;
-  const own = (d.local?.[home] ?? []).filter((s) => topic === 'all' || topic === 'world');
   const ids = new Set<string>();
-  const locals: Story[] = [];
-  for (const s of [...own, ...list.filter(isHome)]) if (!ids.has(s.id)) (ids.add(s.id), locals.push({ ...s, local: true }));
-  if (!locals.length) return list;
+  const out: Story[] = [];
+  for (const s of [...(d.local?.[home] ?? []), ...d.news.filter(isHome)]) if (!ids.has(s.id)) (ids.add(s.id), out.push({ ...s, local: true }));
+  return out;
+}
+function withLocal(d: Daily, list: Story[], home: string, topic: 'all' | Topic | 'local'): Story[] {
+  const locals = localsOf(d, home);
+  if (topic === 'local') return locals;
+  if (!locals.length || topic !== 'all') return list;
+  const ids = new Set(locals.map((s) => s.id));
   const rest = list.filter((s) => !ids.has(s.id));
   const out: Story[] = [];
   let li = 0;
+  // one of the country's own after every three others: a quarter of the cards, and never under a fifth while it has stories to give
   rest.forEach((s, i) => {
     out.push(s);
-    // after every three world stories, one of the country's own
     if (i % 3 === 2 && li < locals.length) out.push(locals[li++]);
   });
   while (li < locals.length && out.length < 4) out.push(locals[li++]);
@@ -483,10 +488,11 @@ function withLocal(d: Daily, list: Story[], home: string, topic: 'all' | Topic):
 }
 
 function News({ d, setDetail, mode }: { d: Daily; setDetail: (x: Detail) => void; mode: ReactNode }) {
-  const [topic, setTopic] = useState<'all' | Topic>('all');
+  const [topic, setTopic] = useState<'all' | Topic | 'local'>('all');
   const [home] = useHome();
-  const topics = useMemo(() => [...new Set(d.news.map((s) => s.topic).filter((x): x is Topic => !!x))], [d]);
-  const list = useMemo(() => withLocal(d, topic === 'all' ? d.news : d.news.filter((s) => s.topic === topic), home, topic), [d, topic, home]);
+  const hasLocal = useMemo(() => localsOf(d, home).length > 0, [d, home]);
+  const topics = useMemo(() => [...(hasLocal ? (['local'] as const) : []), ...new Set(d.news.map((s) => s.topic).filter((x): x is Topic => !!x))], [d, hasLocal]);
+  const list = useMemo(() => withLocal(d, topic === 'all' || topic === 'local' ? d.news : d.news.filter((s) => s.topic === topic), home, topic), [d, topic, home]);
   return (
     <div className="news">
       {mode}
@@ -494,7 +500,7 @@ function News({ d, setDetail, mode }: { d: Daily; setDetail: (x: Detail) => void
         <div className="topics" role="tablist">
           {(['all', ...topics] as const).map((t) => (
             <button key={t} role="tab" aria-selected={topic === t} className={topic === t ? 'on' : ''} onClick={() => (tap('select'), setTopic(t))}>
-              {t === 'all' ? 'All' : TOPIC_LABEL[t]}
+              {t === 'all' ? 'All' : t === 'local' ? 'Local' : TOPIC_LABEL[t]}
             </button>
           ))}
         </div>

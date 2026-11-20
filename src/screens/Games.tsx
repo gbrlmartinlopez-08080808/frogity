@@ -1,4 +1,3 @@
-import { PondPairs } from './PondPairs';
 import { tr } from '../lib/i18n';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { dayKey, earnBlock, freezeStatus, useStore } from '../lib/store';
@@ -34,7 +33,7 @@ export function Blocks({ n, big = false, fresh = -1 }: { n: number; big?: boolea
 export function Play() {
   const freeze = useStore((s) => s.freeze);
   const fz = freezeStatus(freeze);
-  const [levels, setLv] = useState({ sling: 1, deep: 1, pond: 1 });
+  const [levels, setLv] = useState({ sling: 1, deep: 1 });
   const [run, setRun] = useState<Variant | null>(null);
   useEffect(() => {
     getLevels().then(setLv);
@@ -62,7 +61,6 @@ export function Play() {
         </div>
       </div>
 
-      <button className="pill pond-start" onClick={() => setRun('pond')}>{tr('Pond pairs · a quiet memory game')}</button>
       <Pick key={run ? 1 : 0} inline levels={levels} onPick={setRun} />
       <p className="int-foot mono">{tr("· · ·")}{'\n'}{tr("unlimited tries · the top is the only way to a block, one a day")}</p>
       {run && <Run variant={run} onClose={() => setRun(null)} />}
@@ -71,7 +69,6 @@ export function Play() {
 }
 
 const INTRO: Record<Variant, { title: string; art: string; steps: string[] }> = {
-  pond: { title: 'Pond pairs', art: '(@) ~ [ ? ] [ ? ]', steps: ['Turn two cards and find the matching plant names.', 'Take your time; use a peek if you need a hand.', 'Find all six pairs to finish the pond. Practice does not earn a daily reward.'] },
   sling: {
     title: 'Sling',
     art: '   \\x/        /x\\\n     (@) ~~~~~> \\x/\n     (  v  )',
@@ -167,7 +164,7 @@ function Run({ variant, onClose }: { variant: Variant; onClose: () => void }) {
         <button className="game-x" onClick={onClose} aria-label={tr("Close the game")}>
           <Icon name="back" size={22} />
         </button>
-        <b>{variant === 'sling' ? 'Sling' : variant === 'deep' ? 'Word climb' : 'Pond pairs'}</b>
+        <b>{variant === 'sling' ? 'Sling' : 'Word climb'}</b>
         <span className="mono">{tr("level ")}{lv ?? 1}</span>
       </header>
       <div className="game-controls">
@@ -191,7 +188,7 @@ function Run({ variant, onClose }: { variant: Variant; onClose: () => void }) {
         />
       )}
       </div>
-      {!intro && lv !== null && !result && (variant === 'sling' ? <Sling key={round} practice={practice} level={lv} onEnd={finish} /> : variant === 'deep' ? <Word key={round} practice={practice} level={lv} onEnd={finish} /> : <PondPairs key={round} paused={paused} level={lv} onEnd={finish} />)}
+      {!intro && lv !== null && !result && (variant === 'sling' ? <Sling key={round} practice={practice} level={lv} onEnd={finish} /> : <Word key={round} practice={practice} level={lv} onEnd={finish} />)}
       {result && (
         <div className="game-end">
           <Froggy mood={result.win ? 'bigSmile' : 'sad'} size="lg" />

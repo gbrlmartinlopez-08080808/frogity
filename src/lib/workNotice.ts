@@ -4,6 +4,7 @@ import { registerPlugin } from '@capacitor/core';
 import { isNative } from './native';
 import { notifyPermission } from './reminders';
 import { runningJobs, subscribeJobs, type ScanJob } from './scan';
+import { toast } from '../ui/kit';
 
 interface WorkPlugin {
   show(o: { title: string; text: string; progress: number; max: number; idle?: boolean }): Promise<void>;
@@ -65,4 +66,11 @@ export function initWorkNotice() {
     clearTimeout(t);
     t = window.setTimeout(sync, 900);
   });
+}
+
+/** Liquid mode has just become ready after a long wait: say so in the app, and in the notification shade when the app is not on screen. */
+export function liquidReady(title: string) {
+  const name = title.length > 34 ? title.slice(0, 34) + '…' : title;
+  if (!isNative || !document.hidden) toast(`Liquid mode is ready · ${name}`);
+  if (isNative && document.hidden) Work.done({ title: `Liquid mode is ready · ${name}`, text: 'Open it to read with text that reflows.' }).catch(() => {});
 }

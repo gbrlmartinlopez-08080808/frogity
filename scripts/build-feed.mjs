@@ -428,7 +428,7 @@ async function news() {
   return mixed;
 }
 
-// ------------------------------------------------------------------ local news: the reader's own country (the app mixes about a quarter of it in)
+// ------------------------------------------------------------------ local news: the reader's own country (the app mixes in about a quarter, never under a fifth when the country has that much; and shows it all under “Local”)
 // National outlets by country (ISO code, lower case), in the country's own language. Each is optional: a feed that is down is skipped.
 const LOCAL = [
   { cc: 'es', region: 'Spain', id: 'rtv', name: 'RTVE', domain: 'rtve.es', kind: 'public', about: 'Spain’s public broadcaster.', feeds: ['https://www.rtve.es/api/noticias.rss'] },
@@ -491,10 +491,10 @@ async function localNews() {
       );
       // the outlets take turns, so one does not fill the list; each story needs a good picture
       const picked = [];
-      for (let i = 0; picked.length < 8 && i < 14; i++) {
+      for (let i = 0; picked.length < 24 && i < 14; i++) {
         for (const l of lists) {
           const it = l[i];
-          if (!it || picked.length >= 8 || it.summary.length < 40) continue;
+          if (!it || picked.length >= 24 || it.summary.length < 40) continue;
           let photo = await bestPhoto(it.image ? [{ image: it.image, from: it.src.name }] : []);
           if (!photo) {
             const og = await ogImage(it.link);

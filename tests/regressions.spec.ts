@@ -211,35 +211,6 @@ test('Word climb: type a word, pause and resume keep the board', async ({ page }
   await page.getByRole('button', { name: 'Resume climb' }).click();
   await expect(page.locator('.wd-row').first().locator('.wd-t.on')).toHaveCount(5);
 });
-test('Pond pairs practice completes without granting a reward', async ({
-  page,
-}) => {
-  await page.goto('/tests/games.html');
-  await page.getByRole('button', { name: /Pond pairs ·/ }).click();
-  await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Let’s climb' }).click();
-  await page.getByRole('button', { name: /Peek at the pond/ }).click();
-  const cards = page.locator('.pair-card');
-  const values = await cards.allTextContents();
-  await expect(cards.first()).toHaveText('?');
-  const pairs = new Map<string, number[]>();
-  values.forEach((v, i) => pairs.set(v, [...(pairs.get(v) ?? []), i]));
-  for (const [word, indices] of pairs) {
-    await cards.nth(indices[0]).click();
-    await cards.nth(indices[1]).click();
-    await expect(cards.nth(indices[0])).toHaveText(word);
-    if (word !== [...pairs.keys()].at(-1))
-      await expect
-        .poll(() => page.locator('.pair-card:disabled').count())
-        .not.toBe(12);
-  }
-  await expect(page.getByRole('heading', { name: 'At the top' })).toBeVisible();
-  expect(
-    await page.evaluate(
-      async () => (await import('/src/lib/store.ts')).freezeStatus().blocks,
-    ),
-  ).toBe(0);
-});
 test('spreadsheet worker parses CSV and rejects oversized input', async ({
   page,
 }) => {

@@ -122,6 +122,8 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   const pdfRef = useRef<PdfViewHandle>(null);
   const urls = useRef<string[]>([]);
   const listeningRef = useRef(false);
+  const scrubbingRef = useRef(false);
+  const [barSlot, setBarSlot] = useState<HTMLElement | null>(null);
   listeningRef.current = listening;
   const [flowReady, setFlowReady] = useState(0);
 
@@ -637,7 +639,10 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       const dy = y - lastY.current;
       lastY.current = y;
       if (!flip) {
-        if (y > 120 && dy > 10 && !listeningRef.current) setChrome(false);
+        // the controls never leave while the position bar is under a finger: it moves the page, and the bar must stay where it is held
+        if (scrubbingRef.current) {
+          /* stay */
+        } else if (y > 120 && dy > 10 && !listeningRef.current) setChrome(false);
         else if (dy < -14) setChrome(true);
       }
       if (!st.liquid) return;
@@ -1224,7 +1229,10 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   };
   // while the position bar is held, the controls step aside (see reader.css)
   useEffect(() => {
-    const on = (e: Event) => document.querySelector('.reader')?.classList.toggle('scrubbing', !!(e as CustomEvent<boolean>).detail);
+    const on = (e: Event) => {
+      scrubbingRef.current = !!(e as CustomEvent<boolean>).detail;
+      document.querySelector('.reader')?.classList.toggle('scrubbing', scrubbingRef.current);
+    };
     window.addEventListener('frogity:scrub', on);
     return () => {
       window.removeEventListener('frogity:scrub', on);
@@ -1504,10 +1512,12 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         )}
         {listen && (
           <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-            <ListenBar root={flowRef.current} scroller={scroller} startAt={listenFrom} onPlaying={setListening} docId={id} title={doc.name} coverId={doc.coverId} key={flowReady} />
+            <ListenBar root={flowRef.current} scroller={scroller} startAt={listenFrom} onPlaying={setListening} docId={id} title={doc.name} coverId={doc.coverId} barSlot={barSlot} key={flowReady} />
           </div>
         )}
-        {!listen && barOk && <Scrub ariaLabel="Position in the book" value={barValue} label={barLabel} onChange={barChange} />}
+        <div className="bar-slot" ref={setBarSlot}>
+          {!listen && barOk && <Scrub ariaLabel="Position in the book" value={barValue} label={barLabel} onChange={barChange} />}
+        </div>
         <div className="r-dock-row compact">
           <button className="timechip" onClick={() => setClockMode((m) => (m === 'time' ? 'left' : 'time'))} aria-label={tr("Clock / time left")}>
             <Icon name="clock" size={15} />

@@ -543,7 +543,6 @@ textarea {
 .pairs-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:20px 0; }
 .pair-card { min-height:76px; border-radius:18px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:16px; font-family:var(--mono); }
 .pair-card.revealed { background:#dce9dc; color:#183524; }
-.pond-start { margin:8px 16px; align-self:center; }
 
 .game-controls .mono { font-size:12px; }
 .game-controls .pill { min-height:40px; }

@@ -24,7 +24,7 @@ const About = lazy(() => import('./screens/About').then(m => ({ default: m.About
 import { RateSheet } from './screens/RateSheet';
 
 import { Tour } from './screens/Tour';
-import { initWorkNotice } from './lib/workNotice';
+import { initWorkNotice, liquidReady } from './lib/workNotice';
 import { ensureNaturalVoice, resumeVoice } from './lib/voices';
 import { Onboarding, type Finish } from './screens/Onboarding';
 const ConvertSheet = lazy(() => import('./screens/Convert').then(m => ({ default: m.ConvertSheet })));
@@ -49,6 +49,15 @@ async function thumbB64(b: Blob, side: number): Promise<string | undefined> {
 }
 
 export default function App() {
+  // a Liquid view that took a long time to make says so when it is ready: a message here, and a notification if the app is in the background
+  useEffect(() => {
+    const on = (e: Event) => {
+      const d = (e as CustomEvent<{ id: string; title: string; ms: number }>).detail;
+      if (d.ms >= 15_000) liquidReady(d.title);
+    };
+    window.addEventListener('frogity:ready', on);
+    return () => window.removeEventListener('frogity:ready', on);
+  }, []);
   useLang();
   const [startupError, setStartupError] = useState('');
   const boot = () => { setStartupError(''); void init().catch(e => setStartupError(e.message || 'Storage unavailable')); };

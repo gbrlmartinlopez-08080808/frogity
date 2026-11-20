@@ -109,8 +109,10 @@ export interface Prep {
 }
 const IDLE: Prep = { known: false, ready: false, none: false, progress: 0, busy: false, info: '', eta: null, error: '' };
 let preps = new Map<string, Prep>();
+const busySince = new Map<string, number>();
 const setPrep = (id: string, patch: Partial<Prep>) => {
   const was = preps.get(id) ?? IDLE;
+  if (patch.busy && !was.busy) busySince.set(id, Date.now());
   preps = new Map(preps).set(id, { ...was, ...patch });
   if (patch.progress !== undefined && patch.progress !== was.progress) moved.set(id, Date.now());
   // a bar moving on is shown a few times a second, not on every page: each showing redraws the reader, and the
@@ -660,7 +662,10 @@ async function prepareDoc(doc: DocMeta, p: Plan) {
   retried.delete(doc.id);
   setPrep(doc.id, { known: true, ready: true, busy: false, progress: 1, eta: null, info: '', error: '' });
   finish(doc);
-  window.dispatchEvent(new CustomEvent('frogity:ready', { detail: { id: doc.id } }));
+  // `ms`: how long the Liquid view took to make (a long wait is worth a notification)
+  const since = busySince.get(doc.id);
+  busySince.delete(doc.id);
+  window.dispatchEvent(new CustomEvent('frogity:ready', { detail: { id: doc.id, title: doc.name, ms: since ? Date.now() - since : 0 } }));
   queueFigures(doc);
 }
 
