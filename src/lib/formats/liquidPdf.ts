@@ -179,6 +179,7 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
   for (const raw of tc.items) {
     if (!('str' in raw)) continue;
     if (!raw.str || !raw.str.trim()) continue;
+    if (/^!+$/.test(raw.str.trim()) && raw.str.length <= 3) continue; // a lone "!" is how some PDF makers store a blank
     const tx = pdfjs.Util.transform(viewport.transform, raw.transform) as number[];
     const fh = Math.hypot(tx[2], tx[3]);
     if (fh < 1) continue;
@@ -267,8 +268,10 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
   }
 
   await slice(); // the page was a long stretch of work: a turn for the screen
-  // Scanned page: lots of ink but (almost) no text.
-  if (totalChars < 25 && inkCells > gw * gh * 0.02) {
+  // Scanned page: lots of ink but (almost) no text. Also a page whose "text" is not text: a font with a private encoding makes
+  // every letter come out as a symbol (!"#$%&…), and then the only way to read the page is to look at it (OCR).
+  if ((totalChars < 25 && inkCells > gw * gh * 0.02) || (inkCells > gw * gh * 0.01 && garbledText(items))) {
+    if (totalChars >= 25) console.debug(`[lq] page ${pageNo}: the text layer is not readable text (private font encoding): the page is read by sight`);
     const blob = await cropBlob(canvas, 0, 0, W, H, false);
     return {
       blocks: [{ t: 'img', blob, w: W, h: H, em: 0, mask: false, kind: 'scan', page: pageNo, alt: `Scanned page ${pageNo}` }],
@@ -287,13 +290,24 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
   for (const r of rotated) markText(r.x0, r.top, r.x1, r.bot, 2);
 
   // Connected components of leftover ink, merging cells within a small gap.
-  const comps = components(ink, gw, gh, Math.max(2, Math.round((body * 0.6) / C))).map((c) => ({
-    x0: c.x0 * C,
-    x1: (c.x1 + 1) * C,
-    top: c.y0 * C,
-    bot: (c.y1 + 1) * C,
-    cells: c.n,
-  }));
+  const comps = components(ink, gw, gh, Math.max(2, Math.round((body * 0.6) / C)))
+    .map((c) => ({
+      x0: c.x0 * C,
+      x1: (c.x1 + 1) * C,
+      top: c.y0 * C,
+      bot: (c.y1 + 1) * C,
+      cells: c.n,
+    }))
+    // A border drawn round the page, or an outline round a block of text, is a few thin lines: decoration. Taken as a picture it
+    // would swallow every line of text inside it (a whole page, turned into one image).
+    .filter((c) => {
+      const w = c.x1 - c.x0;
+      const h = c.bot - c.top;
+      const sparse = c.cells * C * C < w * h * 0.06;
+      if (!sparse || w * h < W * H * 0.35) return true; // (only a big outline: the chart frame of a plot is a picture, a frame round the page is not)
+      const inside = items.filter((it) => it.x0 >= c.x0 - C && it.x1 <= c.x1 + C && it.top >= c.top - C && it.bot <= c.bot + C).length;
+      return inside < 4;
+    });
 
   await slice();
   // Classify components.
@@ -920,6 +934,21 @@ function mergeOverlapping(bs: Box[]): Box[] {
         }
   }
   return out;
+}
+
+/** Is this page's text layer gibberish (letters stored as symbols by a font with its own encoding)? */
+function garbledText(items: Item[]): boolean {
+  const s = items.filter((i) => !i.math).map((i) => i.str).join('');
+  const chars = s.replace(/\s/g, '').length;
+  if (chars < 60) return false;
+  const letters = (s.match(/\p{L}/gu) ?? []).length;
+  if (letters / chars < 0.3) return true; // nearly all symbols
+  const latin = (s.match(/[A-Za-z\u00C0-\u024F]/g) ?? []).length;
+  if (latin > 40 && latin / letters > 0.8) {
+    const vowels = (s.match(/[aeiouyáéíóúàèìòùâêîôûäëïöüåæœ]/giu) ?? []).length;
+    if (vowels / latin < 0.12) return true; // letters, but not a language
+  }
+  return false;
 }
 
 function components(grid: Uint8Array, gw: number, gh: number, gap: number) {

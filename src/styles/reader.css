@@ -800,7 +800,7 @@
   backdrop-filter: blur(14px);
   box-shadow: inset 0 0 0 1px var(--glass-edge), var(--shadow);
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 9px;
   color: var(--r-ink, var(--ink));
   white-space: nowrap;
   animation: fade 0.3s;
@@ -1160,7 +1160,7 @@
 }
 .flow details.lq-sources > summary span {
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 9px;
   color: color-mix(in srgb, var(--r-ink) 60%, transparent);
 }
 .flow details.lq-sources[open] {
@@ -1257,7 +1257,7 @@
   font-variant-numeric: tabular-nums;
 }
 .lq-status small {
-  font-size: 11.5px;
+  font-size: 9px;
   line-height: 1.4;
   color: color-mix(in srgb, var(--r-ink, var(--ink)) 66%, transparent);
 }
@@ -1841,4 +1841,46 @@
 /* the light copy of the pages carried while pinching: the same dark treatment as the real ones, and no big shadows to redraw */
 .reader[data-dark='1'] .pdf-snap canvas {
   filter: invert(0.9) hue-rotate(180deg) contrast(1.05);
+}
+
+/* the finish: ASCII "THE END", confetti and Froggy */
+.finale {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  background: var(--r-bg, var(--bg));
+  color: var(--r-ink, var(--ink));
+  animation: finale-in 0.5s ease both;
+}
+.finale-art {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.12;
+  letter-spacing: 0;
+  white-space: pre;
+}
+.finale-text {
+  display: grid;
+  gap: 3px;
+  text-align: center;
+  max-width: 280px;
+  transition: opacity 0.6s ease;
+}
+.finale-text b {
+  font: 600 17px var(--serif);
+}
+.finale-text small {
+  font-size: 12.5px;
+  color: var(--r-muted, var(--muted));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@keyframes finale-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

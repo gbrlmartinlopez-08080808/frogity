@@ -25,6 +25,7 @@ import { BinaryView, CodeView, ImageView, MediaView, SheetView } from './OtherVi
 import { anchorFromSelection, applyHighlights, clearMarks, findAll, wordAt, wrapSentences } from './dom';
 import { AskSheet } from './Ask';
 import { EndNote, useEndPull } from './EndPull';
+import { Finale } from './Finale';
 import { FormSheet } from './FormSheet';
 import { detectForm, type FormModel } from '../lib/forms';
 import { LQ_VERSION, focusDoc, liquidPageStore, pageStore, prepareNow, queueScan, rebuildLiquid, useLiquid, type Prep } from '../lib/scan';
@@ -833,9 +834,14 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
 
   // ---------------------------------------------------------------- the end of the book: pull past it to finish and remove
   const endable = !error && !!content && !growing && (isPdf ? (liquid ? content.type === 'flow' && !!flowReady : !!pdf) : isDocx && !liquid ? !!docxBlob : content.type === 'flow' && !!flowReady);
-  const finishAndRemove = async () => {
+  const [finale, setFinale] = useState(false);
+  const finishAndRemove = () => {
     tap('medium');
     clearTimeout(saveT.current);
+    setFinale(true); // the celebration plays first; the book leaves the shelf when it is over
+  };
+  const finishNow = async () => {
+    tap('light');
     const linked = !!doc.uri;
     if (doc.uri) (await import('../lib/linked')).ignoreUri(doc.uri);
     await patchDoc(id, { finished: true, progress: 1 });
@@ -1455,6 +1461,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       )}
 
       <EndNote uri={!!doc.uri} />
+      {finale && <Finale title={doc.name} onDone={() => void finishNow()} />}
 
       {liquid && <div className="r-fade" style={{ opacity: chrome || listen ? 1 : 0.55 }} />}
 

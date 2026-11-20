@@ -358,6 +358,23 @@ async function markFigures(b: Bin): Promise<void> {
       }
   }
   figs = figs.filter((f) => (f.x1 - f.x0) * (f.y1 - f.y0) > w * h * 0.004);
+  // A border drawn round the page (or most of it) is a few thin lines, not a picture: filled in, it would hide every word inside
+  // it. Such an outline is told by being big, nearly empty, and holding many letter-sized marks.
+  const frame = (f: Box) => {
+    const area = (f.x1 - f.x0) * (f.y1 - f.y0);
+    if (area < w * h * 0.45) return false;
+    const inside = (c: (typeof comps)[number]) => c.x0 >= f.x0 - 2 && c.x1 <= f.x1 + 2 && c.y0 >= f.y0 - 2 && c.y1 <= f.y1 + 2;
+    const outer = comps.filter(inside).sort((a, c) => c.n - a.n)[0];
+    if (!outer || outer.n > area * 0.05) return false; // thin lines, a few percent of their box at most
+    const yes = comps.filter((c) => c !== outer && inside(c) && c.y1 - c.y0 + 1 <= h0 * 3 && c.x1 - c.x0 + 1 <= h0 * 3).length >= 20;
+    // the border itself must go too, or its edges keep every row of the page "inked" and the lines can no longer be told apart
+    if (yes) {
+      const id = comps.indexOf(outer);
+      for (let i = 0; i < label.length; i++) if (label[i] === id) ink[i] = 0;
+    }
+    return yes;
+  };
+  figs = figs.filter((f) => !frame(f));
   for (const f of figs) for (let y = f.y0; y < f.y1; y++) ink.fill(1, y * w + f.x0, y * w + f.x1);
 }
 

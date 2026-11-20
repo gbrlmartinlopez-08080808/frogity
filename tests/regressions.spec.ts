@@ -361,7 +361,8 @@ test('pulling past the end of a book finishes it and takes it off the shelf, wit
   await expect(page.locator('.endpull')).toHaveCount(0); // reaching the end shows nothing: only pulling past it does
   await page.waitForTimeout(1300);
   await reader.hover();
-  await page.mouse.wheel(0, 500);
-  await expect(page.locator('.frogity-toast')).toContainText('Undo');
+  await page.mouse.wheel(0, 800);
+  await expect(page.locator('.finale-art')).toBeVisible(); // the ASCII celebration plays first
+  await expect(page.locator('.frogity-toast')).toContainText('Undo', { timeout: 8000 });
   await expect(page.locator('.reader')).toHaveCount(0);
 });
