@@ -358,7 +358,7 @@ test('pulling past the end of a book finishes it and takes it off the shelf, wit
     await reader.evaluate((el) => (el.scrollTop = el.scrollHeight));
     await page.waitForTimeout(250);
   }
-  await expect(page.locator('.endpull')).toBeVisible();
+  await expect(page.locator('.endpull')).toHaveCount(0); // reaching the end shows nothing: only pulling past it does
   await page.waitForTimeout(1300);
   await reader.hover();
   await page.mouse.wheel(0, 500);

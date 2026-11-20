@@ -97,7 +97,8 @@ export function AskSheet({
     }
   }, [open, selection, docId]);
   useEffect(() => {
-    end.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const box = end.current?.parentElement;
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
   }, [msgs, busy]);
   useEffect(() => () => abort.current?.abort(), []);
   // the conversation is kept for the next visit (never more than the last twelve turns)

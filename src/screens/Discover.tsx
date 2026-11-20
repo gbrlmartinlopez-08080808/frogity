@@ -79,7 +79,7 @@ export function Discover({ onClose, onOpen, initial }: { onClose: () => void; on
       setAdded((a) => ({ ...a, [it.id]: meta.id }));
       toast('Added to your shelf');
     } catch (e) {
-      toast((e as Error).message || 'Couldn’t download that');
+      toast(`Couldn’t download that — ${(e as Error).message || 'no answer'}`);
     } finally {
       setAdding((a) => {
         const n = new Set(a);
@@ -227,21 +227,37 @@ const hue = (s: string) => {
 /** The cover from the catalogue when there is a real one; otherwise a clean cover made from the title. */
 function ItemCover({ item }: { item: Item }) {
   const [bad, setBad] = useState(!item.cover);
-  useEffect(() => setBad(!item.cover), [item.cover]);
+  const [src, setSrc] = useState(item.cover);
+  const rescued = useRef(false);
+  useEffect(() => {
+    setBad(!item.cover);
+    setSrc(item.cover);
+    rescued.current = false;
+  }, [item.cover]);
+  // the page could not show it: ask the phone's own network stack, which is not bound by the page's rules
+  const rescue = async () => {
+    if (rescued.current || !item.cover) return setBad(true);
+    rescued.current = true;
+    const b = await fetchThumb(item.cover);
+    if (b) {
+      setSrc(URL.createObjectURL(b));
+      setBad(false);
+    } else setBad(true);
+  };
   return (
     <div className={`disc-cover${bad ? ' gen' : ''}${item.source === 'papers' ? ' paper' : ''}`} style={bad ? ({ ['--h' as string]: hue(item.title) } as React.CSSProperties) : undefined}>
-      {item.cover && !bad && (
+      {src && !bad && (
         <img
-          src={item.cover}
+          src={src}
           alt=""
           loading="lazy"
           referrerPolicy="no-referrer"
           onLoad={(e) => {
             const i = e.currentTarget;
             // catalogues sometimes answer with a blank or tiny placeholder: that is not a cover
-            if (i.naturalWidth < 60 || i.naturalHeight < 80 || i.naturalWidth / i.naturalHeight > 1.4) setBad(true);
+            if (i.naturalWidth < 60 || i.naturalHeight < 80 || i.naturalWidth / i.naturalHeight > 1.4) void rescue();
           }}
-          onError={() => setBad(true)}
+          onError={() => void rescue()}
         />
       )}
       {bad && (item.source === 'papers' ? (

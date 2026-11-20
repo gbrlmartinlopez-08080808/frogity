@@ -232,7 +232,7 @@
   width: 100%;
   display: grid;
   place-items: center;
-  transition: transform 0.05s linear;
+  will-change: transform;
 }
 .zoomer-inner img {
   max-width: 100%;
@@ -1767,4 +1767,22 @@
 }
 .ask-chips.follow {
   margin-top: 2px;
+}
+
+/* the chips under the player: a long name is cut with an ellipsis inside its own chip, never drawn over the next one */
+.listen-chips button {
+  overflow: hidden;
+  isolation: isolate;
+}
+.listen-chips button svg {
+  flex: none;
+}
+.listen-chips button .lbl {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.listen-chips button small {
+  flex: none;
 }

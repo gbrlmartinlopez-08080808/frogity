@@ -130,7 +130,14 @@ const pgCover = (id: number | string) => `https://www.gutenberg.org/cache/epub/$
 const pgGet = (id: number | string, title: string) => ({
   url: `https://www.gutenberg.org/ebooks/${id}.epub3.images`,
   name: safeName(title, 'epub'),
-  alt: [`https://www.gutenberg.org/ebooks/${id}.epub.images`, `https://www.gutenberg.org/ebooks/${id}.epub.noimages`],
+  // the redirecting addresses first, then the files themselves (some networks and apps are answered differently by the redirect)
+  alt: [
+    `https://www.gutenberg.org/cache/epub/${id}/pg${id}-images-3.epub`,
+    `https://www.gutenberg.org/ebooks/${id}.epub.images`,
+    `https://www.gutenberg.org/cache/epub/${id}/pg${id}-images.epub`,
+    `https://www.gutenberg.org/ebooks/${id}.epub.noimages`,
+    `https://www.gutenberg.org/cache/epub/${id}/pg${id}.epub`,
+  ],
 });
 
 export function featuredNow(): Page {
@@ -162,7 +169,10 @@ async function gutenberg(q: string, page: number): Promise<Page> {
     if (!id) continue;
     const title = clean(decode(e.querySelector('title')?.textContent ?? '')).split(':')[0];
     const author = clean(decode(e.querySelector('content')?.textContent ?? ''));
-    items.push({ id: `g${id}`, source: 'books', title, author: author || undefined, cover: pgCover(id), get: pgGet(id, title), web: `https://www.gutenberg.org/ebooks/${id}`, tag: 'epub' });
+    // the catalogue names the cover itself; the usual address is the fallback
+    const img = Array.from(e.querySelectorAll('link')).find((l) => /image/.test(l.getAttribute('rel') ?? '') && l.getAttribute('href'))?.getAttribute('href');
+    const cover = img ? new URL(img, 'https://www.gutenberg.org/').href : pgCover(id);
+    items.push({ id: `g${id}`, source: 'books', title, author: author || undefined, cover, get: pgGet(id, title), web: `https://www.gutenberg.org/ebooks/${id}`, tag: 'epub' });
   }
   return { items, next: items.length >= per ? page + 1 : undefined };
 }
@@ -447,6 +457,40 @@ export function prefetch() {
   );
 }
 
+// A browser-like identity: some of these sites turn away the bare "okhttp" / "Dalvik" one the phone's own network stack sends.
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+  Accept: 'application/epub+zip,application/pdf,application/xml,image/*,*/*;q=0.8',
+};
+
+/** Is this really the book (a PDF or an EPUB), not a web page that says "blocked" or "not found"? */
+async function looksRight(b: Blob, g: NonNullable<Item['get']>): Promise<boolean> {
+  if (b.size < 800) return false;
+  if (g.as === 'jats') return true;
+  const h = new Uint8Array(await b.slice(0, 8).arrayBuffer());
+  const text = String.fromCharCode(...h);
+  if (/\.pdf$/i.test(g.name)) return text.startsWith('%PDF');
+  if (/\.epub$/i.test(g.name)) return text.startsWith('PK');
+  return !/^\s*</.test(text); // anything else: at least not HTML
+}
+
+const b64Blob = (data: string, type: string) => {
+  const bin = atob(data);
+  const u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return new Blob([u], { type });
+};
+
+/** The phone's own HTTP stack (no browser rules, a browser identity, redirects followed): a file, or why not. */
+async function nativeGet(url: string, ms = 45000): Promise<{ blob?: Blob; status: number }> {
+  const { Capacitor, CapacitorHttp } = await import('@capacitor/core');
+  if (!Capacitor.isNativePlatform()) return { status: 0 };
+  const r = await CapacitorHttp.get({ url, headers: BROWSER_HEADERS, responseType: 'blob', connectTimeout: 15000, readTimeout: ms });
+  if (r.status < 200 || r.status >= 300) return { status: r.status };
+  const type = String(r.headers?.['Content-Type'] ?? r.headers?.['content-type'] ?? '').split(';')[0];
+  return { status: r.status, blob: typeof r.data === 'string' ? b64Blob(r.data, type) : undefined };
+}
+
 /**
  * Download a file (free). On the phone the download is done by Android itself, straight to a temporary file, and then
  * read back through the WebView: much faster for big PDFs than carrying the whole file across the JavaScript bridge.
@@ -457,7 +501,7 @@ async function nativeDownload(url: string): Promise<Blob | null> {
   const { Filesystem, Directory } = await import('@capacitor/filesystem');
   const path = `dl/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   try {
-    const r = await Filesystem.downloadFile({ url, path, directory: Directory.Cache, recursive: true });
+    const r = await Filesystem.downloadFile({ url, path, directory: Directory.Cache, recursive: true, headers: BROWSER_HEADERS, connectTimeout: 15000, readTimeout: 120000 } as never);
     const res = await fetch(Capacitor.convertFileSrc(r.path ?? ''));
     return res.ok ? await res.blob() : null;
   } catch {
@@ -467,41 +511,73 @@ async function nativeDownload(url: string): Promise<Blob | null> {
   }
 }
 
-export async function fetchFile(g: NonNullable<Item['get']>): Promise<Blob> {
+export async function fetchFile(g: NonNullable<Item['get']>, onStep?: (label: string) => void): Promise<Blob> {
   const urls = [g.url, ...(g.alt ?? [])];
-  let last: Error | null = null;
+  let why = 'Download failed.';
   for (const url of urls) {
-    try {
-      if (g.as !== 'jats') {
-        const b = await nativeDownload(url);
-        if (b && b.size >= 800) return b;
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    // three ways, quickest first; each one is checked to be the book itself before it is accepted
+    const ways: [string, () => Promise<Blob | null>][] = [
+      ['phone', async () => {
+        const r = await nativeGet(url).catch((e) => (why = `${host}: ${(e as Error).message}`, { status: -1 } as { blob?: Blob; status: number }));
+        if (r.status > 0 && !r.blob) why = `${host} answered ${r.status}.`;
+        return r.blob ?? null;
+      }],
+      ['download', () => (g.as === 'jats' ? Promise.resolve(null) : nativeDownload(url))],
+      ['web', async () => {
+        const r = await fetch(url, { redirect: 'follow' });
+        if (!r.ok) {
+          why = `${host} answered ${r.status}.`;
+          return null;
+        }
+        if (g.as === 'jats') {
+          const html = jatsToHtml(await r.text());
+          if (html.length < 600) {
+            why = 'This article has no readable full text.';
+            return null;
+          }
+          return new Blob([html], { type: 'text/html' });
+        }
+        return r.blob();
+      }],
+    ];
+    for (const [label, run] of ways) {
+      try {
+        onStep?.(label);
+        const b = await run();
+        if (b && (await looksRight(b, g))) return b;
+        if (b) why = `${host} sent something that is not the book.`;
+      } catch (e) {
+        why = `${host}: ${(e as Error).message || 'no answer'}`;
       }
-      const r = await fetch(url, { redirect: 'follow' });
-      if (!r.ok) throw new Error(`Download failed (${r.status}).`);
-      if (g.as === 'jats') {
-        const html = jatsToHtml(await r.text());
-        if (html.length < 600) throw new Error('This article has no readable full text.');
-        return new Blob([html], { type: 'text/html' });
-      }
-      const b = await r.blob();
-      if (b.size < 800) throw new Error('That download looks empty.');
-      return b;
-    } catch (e) {
-      last = e as Error;
     }
   }
-  throw last ?? new Error('Download failed.');
+  throw new Error(why);
 }
 
-/** A small copy of the catalogue's own thumbnail, used as the cover right away (the browser has usually shown it already). */
-export async function fetchThumb(url?: string): Promise<Blob | undefined> {
-  if (!url) return undefined;
-  try {
-    const r = await fetch(url);
-    if (!r.ok) return undefined;
-    const b = await r.blob();
-    return b.size > 1500 && b.size < 1_500_000 && /^image\//.test(b.type) ? b : undefined;
-  } catch {
-    return undefined;
+const thumbs = new Map<string, Promise<Blob | undefined>>();
+/** A small copy of the catalogue's own thumbnail (the phone's own network stack first: pictures blocked in the page often load there). */
+export function fetchThumb(url?: string): Promise<Blob | undefined> {
+  if (!url) return Promise.resolve(undefined);
+  let p = thumbs.get(url);
+  if (!p) {
+    p = (async () => {
+      const ok = (b?: Blob) => (b && b.size > 1500 && b.size < 1_500_000 && /^image\//.test(b.type) ? b : undefined);
+      try {
+        const r = await nativeGet(url, 15000);
+        if (ok(r.blob)) return r.blob;
+      } catch {
+        /* try the page's own way */
+      }
+      try {
+        const r = await fetch(url);
+        return r.ok ? ok(await r.blob()) : undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    thumbs.set(url, p);
+    if (thumbs.size > 400) thumbs.delete(thumbs.keys().next().value as string);
   }
+  return p;
 }

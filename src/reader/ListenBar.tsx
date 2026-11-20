@@ -858,9 +858,12 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
       </div>
       <div className="listen-chips">
         <button className={pop === 'speed' ? 'on' : ''} onClick={() => setPop(pop === 'speed' ? null : 'speed')}>
-          <Icon name="speed" size={15} /> {settings.ttsRate.toFixed(1)}{tr("×")}</button>
+          <Icon name="speed" size={15} />
+          <span className="lbl">{settings.ttsRate.toFixed(1)}{tr("×")}</span>
+        </button>
         <button onClick={() => setVoiceSheet(true)}>
-          <Icon name="voice" size={15} /> {nv ? nv.label : voice ? (/^[a-z]{2,3}[-_]/i.test(voice.name) ? `Phone · ${voice.lang.slice(0, 2).toUpperCase()}` : voice.name.replace(/^(Google|Microsoft)\s*/, '').slice(0, 12)) : 'Voice'}
+          <Icon name="voice" size={15} />
+          <span className="lbl">{nv ? nv.label : voice ? (/^[a-z]{2,3}[-_]/i.test(voice.name) ? `Phone · ${voice.lang.slice(0, 2).toUpperCase()}` : voice.name.replace(/^(Google|Microsoft)\s*/, '').replace(/\s+(Online|Natural|Desktop|Mobile)\b.*$/i, '')) : 'Voice'}</span>
         </button>
         <button
           className={langAuto ? '' : 'on'}
@@ -878,7 +881,8 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
           }}
           aria-label={`Reading language: ${LANG_NAME[docLang] ?? docLang}${langAuto ? ' (automatic)' : ''}`}
         >
-          <Icon name="globe" size={15} /> {docLang.toUpperCase()}
+          <Icon name="globe" size={15} />
+          <span className="lbl">{docLang.toUpperCase()}</span>
           {langAuto && <small>{tr("auto")}</small>}
         </button>
         <button
@@ -891,7 +895,8 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
           }}
           aria-label={tr("Sleep timer")}
         >
-          <Icon name="timer" size={15} /> {sleep ? `${sleep}m` : 'Sleep'}
+          <Icon name="timer" size={15} />
+          <span className="lbl">{sleep ? `${sleep}m` : tr('Sleep')}</span>
         </button>
         <button className={settings.focusListen ? 'on' : ''} onClick={() => updateSettings({ focusListen: !settings.focusListen })} aria-label={tr("Focus on the sentence being read")}>
           <Icon name="ear" size={15} />

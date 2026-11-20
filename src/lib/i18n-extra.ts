@@ -254,4 +254,8 @@ export const EXTRA: P[] = [
   ["offline", "sin conexión", "hors ligne"],
   ["refreshes through the day", "se renueva durante el día", "se renouvelle dans la journée"],
   ["The wildlife and history photographs on the Interesting tab come from free public-domain or openly licensed libraries (Wikimedia Commons, The Met Open Access, the Library of Congress). Each picture names its library and licence and links back to it.", "Las fotografías de fauna e historia de la pestaña Interesante proceden de bibliotecas libres de dominio público o con licencia abierta (Wikimedia Commons, The Met Open Access, la Biblioteca del Congreso). Cada imagen indica su biblioteca y su licencia y enlaza con ella.", "Les photographies de faune et d’histoire de l’onglet Intéressant viennent de bibliothèques libres du domaine public ou sous licence ouverte (Wikimedia Commons, The Met Open Access, Bibliothèque du Congrès). Chaque image indique sa bibliothèque et sa licence et y renvoie."],
+  ["keep pulling to finish and take it off your shelf", "sigue tirando para terminar y quitarlo de tu estantería", "continuez de tirer pour terminer et le retirer de votre étagère"],
+  ["keep pulling to finish and remove it", "sigue tirando para terminar y quitarlo", "continuez de tirer pour terminer et le retirer"],
+  ["it leaves your shelf", "sale de tu estantería", "il quitte votre étagère"],
+  ["it is removed, with an Undo", "se quita, con opción de deshacer", "il est retiré, avec Annuler"],
 ];

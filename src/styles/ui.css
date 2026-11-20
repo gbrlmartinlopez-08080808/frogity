@@ -395,7 +395,7 @@
   position: relative;
 }
 .shelf-row:active {
-  background: var(--surface-2);
+  background: none;
 }
 .shelf-row + .shelf-row::before {
   content: '';
@@ -1428,7 +1428,7 @@
   display: none;
 }
 .shelf-row.picked {
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  background: none;
 }
 .chip.on {
   background: var(--ink);
@@ -2460,4 +2460,134 @@
 .empty-actions .pill {
   width: 100%;
   justify-content: center;
+}
+
+/* a shelf row that is pressed or chosen: a rounded tint inset from the card's edges (it follows the card's own corners, never a bare rectangle) */
+.shelf-row::after {
+  content: '';
+  position: absolute;
+  inset: 1px 8px;
+  border-radius: 20px;
+  background: transparent;
+  pointer-events: none;
+  transition: background 0.15s;
+  z-index: 0;
+}
+.shelf-row > * {
+  position: relative;
+  z-index: 1;
+}
+.shelf-row:active::after {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.shelf-row.picked::after {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+/* Froggy is alive: it breathes, hops when it is pleased, trembles when worried, wobbles while it thinks, and nods off when sleepy.
+   (Two hop animations take turns so that a new mood restarts the hop even if the last one has not finished.) */
+.froggy {
+  transform-origin: 50% 100%;
+  animation: frogBreathe 3.6s ease-in-out infinite;
+}
+@keyframes frogBreathe {
+  50% {
+    transform: scaleY(1.025) translateY(-0.5px);
+  }
+}
+.froggy.hopA {
+  animation: frogHopA 0.62s cubic-bezier(0.3, 0.9, 0.3, 1), frogBreathe 3.6s ease-in-out 0.62s infinite;
+}
+.froggy.hopB {
+  animation: frogHopB 0.62s cubic-bezier(0.3, 0.9, 0.3, 1), frogBreathe 3.6s ease-in-out 0.62s infinite;
+}
+@keyframes frogHopA {
+  0% {
+    transform: scale(1.06, 0.88);
+  }
+  35% {
+    transform: translateY(-14%) scale(0.96, 1.08);
+  }
+  70% {
+    transform: translateY(0) scale(1.05, 0.93);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes frogHopB {
+  0% {
+    transform: scale(1.06, 0.88);
+  }
+  35% {
+    transform: translateY(-14%) scale(0.96, 1.08);
+  }
+  70% {
+    transform: translateY(0) scale(1.05, 0.93);
+  }
+  100% {
+    transform: none;
+  }
+}
+.froggy.m-worried,
+.froggy.m-angry {
+  animation: frogTremble 0.18s linear infinite;
+}
+@keyframes frogTremble {
+  25% {
+    transform: translateX(-0.6px);
+  }
+  75% {
+    transform: translateX(0.6px);
+  }
+}
+.froggy.m-dizzy {
+  animation: frogWobble 1.1s ease-in-out infinite;
+}
+@keyframes frogWobble {
+  25% {
+    transform: rotate(-3deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
+}
+.froggy.m-sleepy {
+  animation: frogSleep 4.2s ease-in-out infinite;
+}
+@keyframes frogSleep {
+  50% {
+    transform: translateY(2.5%) scaleY(0.97);
+  }
+}
+.froggy.m-sad {
+  transform: translateY(2%) scaleY(0.97);
+  animation: none;
+}
+.froggy.m-smug,
+.froggy.m-wink {
+  animation: frogTilt 3.2s ease-in-out infinite;
+}
+@keyframes frogTilt {
+  50% {
+    transform: rotate(-2deg);
+  }
+}
+.froggy.m-surprised {
+  animation: frogHopA 0.4s cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+.froggy.talking {
+  animation: frogTalk 0.34s ease-in-out infinite;
+}
+@keyframes frogTalk {
+  50% {
+    transform: translateY(-2%) scaleY(1.03);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .froggy,
+  .froggy[class] {
+    animation: none !important;
+  }
 }

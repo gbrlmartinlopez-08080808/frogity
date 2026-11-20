@@ -1103,16 +1103,35 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     if (docText.current) return docText.current;
     let text = '';
     const root = flowRef.current;
-    if (liquid && root && (root.textContent ?? '').length > 200) {
-      text = Array.from(root.querySelectorAll('h1,h2,h3,h4,p,li,td,figcaption,blockquote'))
+    const fromHtml = (html: string) => {
+      const d = new DOMParser().parseFromString(html, 'text/html');
+      d.querySelectorAll('script,style,.lq-sources,sup').forEach((x) => x.remove());
+      return Array.from(d.querySelectorAll('h1,h2,h3,h4,p,li,td,figcaption,blockquote'))
+        .filter((el) => !el.querySelector('p,li,td,blockquote'))
         .map((el) => (el.textContent ?? '').replace(/\s+/g, ' ').trim())
         .filter(Boolean)
         .join('\n\n');
+    };
+    if (liquid && root && (root.textContent ?? '').length > 200) {
+      text = Array.from(root.querySelectorAll('h1,h2,h3,h4,p,li,td,figcaption,blockquote'))
+        .filter((el) => !el.querySelector('p,li,td,blockquote'))
+        .map((el) => (el.textContent ?? '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .join('\n\n');
+    } else if (content?.type === 'flow') {
+      // books and Word files read in pages: their text is in the file, not on the screen
+      text = fromHtml(content.liquid.html);
     } else if (pdf) {
-      const parts: string[] = [];
-      for (let i = 1; i <= Math.min(pdf.numPages, 400); i++) {
-        const tc = await (await pdf.getPage(i)).getTextContent();
-        parts.push(tc.items.map((it) => ('str' in it ? it.str + (it.hasEOL ? '\n' : ' ') : '')).join('').replace(/[ \t]+/g, ' '));
+      // pages are read in groups, so a big book is not one long wait; headers, footers and page numbers are left out
+      const parts: string[] = new Array(Math.min(pdf.numPages, 400)).fill('');
+      for (let from = 1; from <= parts.length; from += 8) {
+        await Promise.all(
+          Array.from({ length: Math.min(8, parts.length - from + 1) }, async (_, k) => {
+            const i = from + k;
+            const tc = await (await pdf.getPage(i)).getTextContent();
+            parts[i - 1] = tc.items.map((it) => ('str' in it ? it.str + (it.hasEOL ? '\n' : ' ') : '')).join('').replace(/-\n(?=\p{Ll})/gu, '').replace(/[ \t]+/g, ' ').replace(/^\s*\d{1,4}\s*$/gm, '');
+          }),
+        );
       }
       text = parts.join('\n\n');
     } else if (content?.type === 'code') text = content.text;
@@ -1120,7 +1139,8 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     else if (ocrText?.text) text = ocrText.text;
     text = text.slice(0, 600_000);
     if (text.trim().length < 40) throw new Error('There is no readable text to ask about yet. For photos, run OCR first.');
-    docText.current = text;
+    // a view that is still being made is not remembered (it would answer from half a book); a finished one is
+    if (!growing) docText.current = text;
     return text;
   };
 
@@ -1434,7 +1454,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         </div>
       )}
 
-      <EndNote atEnd={endPull.atEnd} pull={endPull.pull} uri={!!doc.uri} />
+      <EndNote pull={endPull.pull} raw={endPull.raw} uri={!!doc.uri} />
 
       {liquid && <div className="r-fade" style={{ opacity: chrome || listen ? 1 : 0.55 }} />}
 

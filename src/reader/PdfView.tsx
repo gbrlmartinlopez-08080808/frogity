@@ -414,6 +414,7 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
     });
     const wr = wrap.current;
     if (wr) {
+      wr.classList.remove('gesturing');
       wr.style.transition = '';
       wr.style.transform = '';
       wr.style.willChange = '';
@@ -534,7 +535,8 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
     const inner = wrap.current;
     if (!el || !inner) return;
     const MIN = 0.6;
-    const MAX = 5;
+    const MAX = 4;
+    const wrapEl = inner;
     let gen = 0;
     let start: { d: number; cx: number; cy: number; sl: number; st: number } | null = null;
     let live = { scale: 1, dx: 0, dy: 0 };
@@ -555,7 +557,29 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
       if (Math.abs(z - 1) < 0.07) z = 1;
       return z / zoomRef.current;
     };
+    /** The column of text under a point (screen coordinates): where it begins and ends, so a double tap can zoom to exactly its width. */
+    const columnAt = (x: number, y: number): { left: number; right: number } | null => {
+      const page = document.elementsFromPoint(x, y).find((n) => (n as HTMLElement).classList?.contains('pdf-page')) as HTMLElement | undefined;
+      const spans = page?.querySelectorAll<HTMLElement>(':scope > .textLayer span');
+      if (!spans?.length) return null;
+      const near: { l: number; r: number }[] = [];
+      for (const sp of Array.from(spans)) {
+        const b = sp.getBoundingClientRect();
+        if (b.width > 3 && Math.abs(b.top + b.height / 2 - y) < 280) near.push({ l: b.left, r: b.right });
+      }
+      if (near.length < 4) return null;
+      near.sort((a, b) => a.l - b.l);
+      // columns: runs of text whose horizontal extents touch or overlap (a gap of more than ~28 px starts a new one)
+      const cols: { left: number; right: number }[] = [];
+      for (const n of near) {
+        const c = cols[cols.length - 1];
+        if (c && n.l - c.right < 28) c.right = Math.max(c.right, n.r);
+        else cols.push({ left: n.l, right: n.r });
+      }
+      return cols.find((c) => x >= c.left - 8 && x <= c.right + 8) ?? cols.sort((a, b) => Math.abs((a.left + a.right) / 2 - x) - Math.abs((b.left + b.right) / 2 - x))[0];
+    };
     const clearTransform = () => {
+      wrapEl.classList.remove('gesturing');
       inner.style.transition = '';
       inner.style.transform = '';
       inner.style.willChange = '';
@@ -632,6 +656,7 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
         inner.style.transition = '';
         inner.style.transformOrigin = `${start.cx + start.sl}px ${start.cy + start.st}px`;
         inner.style.willChange = 'transform';
+        inner.classList.add('gesturing'); // the invisible text layers and sharp tiles are left out while fingers move: nothing but the pages to carry
         lastTap = 0;
       } else if (e.touches.length === 1) {
         const now = Date.now();
@@ -644,20 +669,32 @@ export const PdfView = forwardRef<PdfViewHandle, Props>(function PdfView({ pdf, 
           const cy = y - r.top;
           const sl = el.scrollLeft;
           const st = el.scrollTop;
-          const want = zoomRef.current > 1.05 ? 1 / zoomRef.current : 2.2 / zoomRef.current;
+          // a double tap zooms to the column of text under the finger, exactly as wide as the screen (a second one goes back)
+          const col = zoomRef.current > 1.05 ? null : columnAt(x, y);
+          const room = el.clientWidth - 28;
+          let want = zoomRef.current > 1.05 ? 1 / zoomRef.current : 2 / zoomRef.current;
+          let bcx = cx + sl; // where it is centred on, in the page's own coordinates
+          let moveX = 0;
+          if (col && col.right - col.left > 40) {
+            const f = Math.max(1.12, Math.min(3.2, room / (col.right - col.left)));
+            want = f;
+            bcx = (col.left + col.right) / 2 - r.left + sl;
+            moveX = el.clientWidth / 2 - ((col.left + col.right) / 2 - r.left);
+          }
           const real = clampTotal(want);
           const my = ++gen;
           gesturing.current = true;
           tasks.current.forEach((t) => t.cancel());
           tasks.current.clear();
           // glide to the new size, then lay out once
-          inner.style.transformOrigin = `${cx + sl}px ${cy + st}px`;
+          inner.classList.add('gesturing');
+          inner.style.transformOrigin = `${bcx}px ${cy + st}px`;
           inner.style.willChange = 'transform';
           inner.style.transition = 'transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1)';
-          inner.style.transform = `scale(${real})`;
+          inner.style.transform = `translate(${real === 1 ? 0 : moveX}px, 0) scale(${real})`;
           const go = () => {
             finish = null;
-            commit(real, sl + cx, st + cy, cx, cy);
+            commit(real, bcx, st + cy, real === 1 ? cx : el.clientWidth / 2 - (col ? 0 : el.clientWidth / 2 - cx), cy);
           };
           finish = go;
           window.setTimeout(() => my === gen && go(), 270);

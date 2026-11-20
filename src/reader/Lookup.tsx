@@ -249,44 +249,143 @@ export function SelectionMenu({
 }
 
 export function ZoomViewer({ src, mask, ratio, onClose }: { src: string | null; mask?: boolean; ratio?: number; onClose: () => void }) {
-  const [t, setT] = useState({ s: 1, x: 0, y: 0 });
+  const box = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  // the picture's place and size live outside React: moving it is one transform per frame, never a render
+  const T = useRef({ s: 1, x: 0, y: 0 });
+  const raf = useRef(0);
   useEffect(() => {
-    setT({ s: 1, x: 0, y: 0 });
+    T.current = { s: 1, x: 0, y: 0 };
+    if (inner.current) inner.current.style.transform = '';
     if (!src) return;
     return onBack(() => {
       onClose();
       return true;
     });
   }, [src, onClose]);
+  useEffect(() => {
+    const el = box.current;
+    const pic = inner.current;
+    if (!src || !el || !pic) return;
+    const MAX = 6;
+    const ptr = new Map<number, { x: number; y: number }>();
+    let g: { d: number; s: number; x: number; y: number; mx: number; my: number } | null = null;
+    let lastTap = { t: 0, x: 0, y: 0 };
+    let moved = 0;
+    const size = () => {
+      const c = pic.firstElementChild as HTMLElement | null;
+      return { w: c?.offsetWidth ?? el.clientWidth, h: c?.offsetHeight ?? el.clientHeight };
+    };
+    /** keep the picture from being dragged away: its edges stop at the screen's edges (or it stays centred while it is smaller) */
+    const clamp = () => {
+      const t = T.current;
+      const { w, h } = size();
+      const mx = Math.max(0, (w * t.s - el.clientWidth) / 2);
+      const my = Math.max(0, (h * t.s - el.clientHeight) / 2);
+      t.x = Math.max(-mx, Math.min(mx, t.x));
+      t.y = Math.max(-my, Math.min(my, t.y));
+    };
+    const paint = (smooth = false) => {
+      pic.style.transition = smooth ? 'transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none';
+      cancelAnimationFrame(raf.current);
+      raf.current = requestAnimationFrame(() => {
+        const t = T.current;
+        pic.style.transform = `translate3d(${t.x}px, ${t.y}px, 0) scale(${t.s})`;
+      });
+    };
+    const centre = () => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    };
+    const begin = () => {
+      const pts = [...ptr.values()];
+      const t = T.current;
+      g = {
+        d: pts.length > 1 ? Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) : 0,
+        s: t.s,
+        x: t.x,
+        y: t.y,
+        mx: pts.reduce((a, p) => a + p.x, 0) / pts.length,
+        my: pts.reduce((a, p) => a + p.y, 0) / pts.length,
+      };
+    };
+    const down = (e: PointerEvent) => {
+      if ((e.target as HTMLElement).closest('button')) return;
+      el.setPointerCapture?.(e.pointerId);
+      ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (ptr.size === 1) moved = 0;
+      begin();
+    };
+    const move = (e: PointerEvent) => {
+      if (!ptr.has(e.pointerId) || !g) return;
+      ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const pts = [...ptr.values()];
+      const mx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
+      const my = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+      const t = T.current;
+      moved = Math.max(moved, Math.hypot(mx - g.mx, my - g.my));
+      if (pts.length > 1 && g.d) {
+        // pinch: the point of the picture that was between the fingers stays between them
+        const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const s = Math.max(1, Math.min(MAX, (g.s * d) / g.d));
+        const c = centre();
+        const ux = (g.mx - c.x - g.x) / g.s;
+        const uy = (g.my - c.y - g.y) / g.s;
+        t.s = s;
+        t.x = mx - c.x - ux * s;
+        t.y = my - c.y - uy * s;
+      } else if (t.s > 1.01) {
+        t.x = g.x + (mx - g.mx);
+        t.y = g.y + (my - g.my);
+      }
+      clamp();
+      paint();
+    };
+    const up = (e: PointerEvent) => {
+      const wasOne = ptr.size === 1;
+      ptr.delete(e.pointerId);
+      if (ptr.size) return begin();
+      g = null;
+      const t = T.current;
+      if (t.s < 1.04) {
+        T.current = { s: 1, x: 0, y: 0 };
+        paint(true);
+      }
+      // a double tap: close in on the spot (a second one backs out)
+      if (wasOne && moved < 8) {
+        const now = Date.now();
+        if (now - lastTap.t < 300 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) {
+          lastTap.t = 0;
+          if (T.current.s > 1.05) T.current = { s: 1, x: 0, y: 0 };
+          else {
+            const c = centre();
+            const s = 2.5;
+            T.current = { s, x: (c.x - e.clientX) * (s - 1), y: (c.y - e.clientY) * (s - 1) };
+            clamp();
+          }
+          paint(true);
+        } else lastTap = { t: now, x: e.clientX, y: e.clientY };
+      }
+    };
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    return () => {
+      cancelAnimationFrame(raf.current);
+      el.removeEventListener('pointerdown', down);
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up);
+      el.removeEventListener('pointercancel', up);
+    };
+  }, [src]);
   if (!src) return null;
-  const pointers = new Map<number, { x: number; y: number }>();
-  let start: { d: number; s: number; x: number; y: number; px: number; py: number } | null = null;
-  const onDown = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const pts = [...pointers.values()];
-    const d = pts.length > 1 ? Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) : 0;
-    start = { d, s: t.s, x: t.x, y: t.y, px: e.clientX, py: e.clientY };
-  };
-  const onMove = (e: React.PointerEvent) => {
-    if (!pointers.has(e.pointerId) || !start) return;
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const pts = [...pointers.values()];
-    if (pts.length > 1 && start.d) {
-      const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      setT((p) => ({ ...p, s: Math.max(1, Math.min(8, (start!.s * d) / start!.d)) }));
-    } else setT((p) => ({ ...p, x: start!.x + (e.clientX - start!.px), y: start!.y + (e.clientY - start!.py) }));
-  };
-  const onUp = (e: React.PointerEvent) => {
-    pointers.delete(e.pointerId);
-    start = null;
-  };
   return createPortal(
-    <div className="zoomer" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onDoubleClick={() => setT((p) => (p.s > 1 ? { s: 1, x: 0, y: 0 } : { ...p, s: 2.5 }))}>
-      <div style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${t.s})` }} className="zoomer-inner">
+    <div className="zoomer" ref={box}>
+      <div ref={inner} className="zoomer-inner">
         {mask ? <span className="mask" style={{ ['--m' as string]: `url(${src})`, aspectRatio: String(ratio ?? 1) }} /> : <img src={src} alt="" draggable={false} />}
       </div>
-      <button className="pill round zoomer-close" onClick={onClose} onPointerDown={(e) => e.stopPropagation()} aria-label={tr("Close")}>
+      <button className="pill round zoomer-close" onClick={onClose} aria-label={tr("Close")}>
         <Icon name="close" size={18} />
       </button>
       <div className="zoomer-hint mono">{tr("pinch to zoom · double-tap")}</div>

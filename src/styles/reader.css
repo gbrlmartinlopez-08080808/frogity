@@ -1773,54 +1773,56 @@
   text-align: left;
 }
 
-/* the end of a book: a quiet note that grows into a "let go" as the page is pulled past the end */
+/* the end of a book: the whole page follows the pull (with resistance) and a small message shows in the space it leaves */
+.reader-scroll.endpulling > *,
+.reader-scroll.endsettle > * {
+  will-change: transform;
+}
+.reader-scroll.endpulling > * {
+  transform: translateY(calc(var(--ev, 0) * -1px));
+}
+.reader-scroll.endpulling[data-end-axis='x'] > * {
+  transform: translateX(calc(var(--ev, 0) * -1px));
+}
+.reader-scroll.endsettle > * {
+  transform: none;
+  transition: transform 0.38s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
 .endpull {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--safe-b) + 22px);
+  bottom: calc(var(--safe-b) + 18px);
   z-index: 9;
-  width: min(300px, calc(100% - 48px));
+  width: min(260px, calc(100% - 48px));
   display: grid;
   justify-items: center;
-  gap: 4px;
-  padding: 14px 18px 16px;
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--r-bg) 88%, transparent);
-  color: var(--r-ink, var(--ink));
-  box-shadow: inset 0 0 0 1px var(--line-2), var(--shadow);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  gap: 2px;
   text-align: center;
+  color: var(--r-ink, var(--ink));
   pointer-events: none;
-  transform: translate(-50%, calc(var(--pull, 0) * -34px));
-  animation: epIn 0.35s var(--ease) backwards;
+  transform: translateX(-50%);
 }
 .endpull b {
-  font: 600 17px var(--serif);
+  font: 600 13.5px var(--serif);
 }
 .endpull small {
-  font-size: 11.5px;
-  color: var(--muted);
-}
-.endpull .ep-dots {
-  font-size: 13px;
-  letter-spacing: 0.2em;
-  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--r-muted, var(--muted));
 }
 .endpull .ep-bar {
   display: block;
-  width: 100%;
-  height: 3px;
-  margin-top: 8px;
+  width: 64px;
+  height: 2px;
+  margin-top: 6px;
   border-radius: 2px;
-  background: var(--line-2);
+  background: var(--r-line, var(--line-2));
   overflow: hidden;
 }
 .endpull .ep-bar u {
   display: block;
   height: 100%;
   width: 100%;
-  border-radius: 2px;
   background: currentColor;
   transform-origin: 0 50%;
   transform: scaleX(var(--pull, 0));
@@ -1830,29 +1832,11 @@
   background: #6aa56a;
 }
 .endpull.ready small {
-  color: var(--ink);
-}
-@keyframes epIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 14px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .endpull {
-    animation: none;
-  }
+  color: var(--r-ink, var(--ink));
 }
 
-/* the title is centred on the screen itself, whatever number of buttons sit on its right (the back button is alone on the left) */
-.r-top:not(.finding) .title {
-  position: absolute;
-  left: 50%;
-  top: calc(var(--safe-t) + 6px);
-  transform: translateX(-50%);
-  flex: none;
-  width: calc(100% - 2 * (var(--n, 3) * 46px + 14px));
-}
-.r-top:not(.finding) .title + .r-ibtn {
-  margin-left: auto;
+/* while fingers pinch or a double tap glides, only the pages themselves are carried: the invisible text and the sharp tiles come back after */
+.pages.gesturing .textLayer,
+.pages.gesturing canvas.hi {
+  visibility: hidden;
 }
