@@ -439,6 +439,12 @@ const LOCAL = [
   { cc: 'mx', region: 'Mexico', id: 'meu', name: 'El Universal', domain: 'eluniversal.com.mx', kind: 'commercial', about: 'Mexico City daily.', feeds: ['https://www.eluniversal.com.mx/rss.xml'] },
   { cc: 'mx', region: 'Mexico', id: 'mil', name: 'Milenio', domain: 'milenio.com', kind: 'commercial', about: 'Mexican news group.', feeds: ['https://www.milenio.com/rss'] },
   { cc: 'mx', region: 'Mexico', id: 'jor', name: 'La Jornada', domain: 'jornada.com.mx', kind: 'commercial', about: 'Mexican daily, left of centre.', feeds: ['https://www.jornada.com.mx/rss/edicion.xml'] },
+  { cc: 'mx', region: 'Mexico', id: 'exc', name: 'Excélsior', domain: 'excelsior.com.mx', kind: 'commercial', about: 'Mexico City daily.', feeds: ['https://www.excelsior.com.mx/rss.xml'] },
+  { cc: 'mx', region: 'Mexico', id: 'exp', name: 'Expansión', domain: 'expansion.mx', kind: 'commercial', about: 'Mexican business and news magazine.', feeds: ['https://expansion.mx/rss'] },
+  { cc: 'mx', region: 'Mexico', id: 'pro', name: 'Proceso', domain: 'proceso.com.mx', kind: 'commercial', about: 'Mexican news weekly.', feeds: ['https://www.proceso.com.mx/rss/'] },
+  { cc: 'cl', region: 'Chile', id: 'coo', name: 'Cooperativa', domain: 'cooperativa.cl', kind: 'commercial', about: 'Chilean radio and news site.', feeds: ['https://www.cooperativa.cl/noticias/rss/'] },
+  { cc: 'cl', region: 'Chile', id: 't13', name: 'T13', domain: 't13.cl', kind: 'commercial', about: 'Chilean television news.', feeds: ['https://www.t13.cl/rss.xml'] },
+  { cc: 'cl', region: 'Chile', id: 'emo', name: 'Emol', domain: 'emol.com', kind: 'commercial', about: 'Chilean news site of El Mercurio.', feeds: ['https://www.emol.com/rss/rss.asp'] },
   { cc: 'ar', region: 'Argentina', id: 'cla', name: 'Clarín', domain: 'clarin.com', kind: 'commercial', about: 'Argentina’s largest daily.', feeds: ['https://www.clarin.com/rss/lo-ultimo/'] },
   { cc: 'ar', region: 'Argentina', id: 'lna', name: 'La Nación', domain: 'lanacion.com.ar', kind: 'commercial', about: 'Buenos Aires daily.', feeds: ['https://www.lanacion.com.ar/arc/outboundfeeds/rss/'] },
   { cc: 'ar', region: 'Argentina', id: 'ibf', name: 'Infobae', domain: 'infobae.com', kind: 'commercial', about: 'Argentine news site.', feeds: ['https://www.infobae.com/arc/outboundfeeds/rss/'] },
@@ -532,7 +538,7 @@ async function commonsWildlife(d) {
     try {
       const qs = new URLSearchParams({ action: 'query', format: 'json', formatversion: '2', generator: 'categorymembers', gcmtitle: `Category:${cat}`, gcmtype: 'file', gcmlimit: '60', prop: 'imageinfo', iiprop: 'url|size|extmetadata', iiurlwidth: '1080' });
       const j = await (await get(`https://commons.wikimedia.org/w/api.php?${qs}`, 3)).json();
-      const pages = (j.query?.pages ?? []).filter((p) => p.imageinfo?.[0]?.thumburl && (p.imageinfo[0].width ?? 0) >= 1200 && /\.(jpe?g|png|webp)$/i.test(p.title));
+      const pages = (j.query?.pages ?? []).filter((p) => p.imageinfo?.[0]?.thumburl && (p.imageinfo[0].width ?? 0) >= 1200 && /\.(jpe?g|png|webp)$/i.test(p.title) && !/dinosaur|illustration|drawing|painting|skeleton|fossil|diagram|map|restoration/i.test(p.title));
       if (!pages.length) continue;
       const p = pages[(seed * 7 + k * 13) % pages.length];
       const ii = p.imageinfo[0];
@@ -550,6 +556,27 @@ async function commonsWildlife(d) {
       });
     } catch (e) {
       console.warn(`  Commons ${cat}: skipped (${e.message})`);
+    }
+  }
+  return out;
+}
+async function commonsHistory(d) {
+  const terms = ['castle', 'cathedral', 'ruins', 'temple', 'fortress', 'abbey', 'palace', 'aqueduct', 'monastery', 'mosque', 'pyramid', 'amphitheatre'];
+  const seed = seedOf(d);
+  const out = [];
+  for (let k = 0; k < 4 && out.length < 4; k++) {
+    try {
+      const term = terms[(seed + k * 5) % terms.length];
+      const qs = new URLSearchParams({ action: 'query', format: 'json', formatversion: '2', generator: 'search', gsrnamespace: '6', gsrlimit: '40', gsrsearch: `incategory:"Featured pictures on Wikimedia Commons" ${term} historic`, prop: 'imageinfo', iiprop: 'url|size|extmetadata', iiurlwidth: '1080' });
+      const j = await (await get(`https://commons.wikimedia.org/w/api.php?${qs}`, 3)).json();
+      const pages = (j.query?.pages ?? []).filter((p) => p.imageinfo?.[0]?.thumburl && (p.imageinfo[0].width ?? 0) >= 1200 && /\.(jpe?g|png|webp)$/i.test(p.title));
+      if (!pages.length) continue;
+      const p = pages[(seed * 3 + k) % pages.length];
+      const ii = p.imageinfo[0];
+      const m = ii.extmetadata ?? {};
+      out.push({ title: p.title.replace(/^File:/, '').replace(/\.[a-z]+$/i, '').replace(/_/g, ' '), description: strip(m.ImageDescription?.value).slice(0, 200), image: ii.thumburl, iw: ii.thumbwidth, ih: ii.thumbheight, credit: strip(m.Artist?.value).slice(0, 80), library: 'Wikimedia Commons', license: strip(m.LicenseShortName?.value) || 'open licence', url: ii.descriptionurl });
+    } catch (e) {
+      console.warn(`  Commons history: skipped (${e.message})`);
     }
   }
   return out;
@@ -609,7 +636,8 @@ async function locHistory(d) {
   }
 }
 async function gallery(d) {
-  const [wildlife, met, loc] = await Promise.all([commonsWildlife(d), metHistory(d), locHistory(d)]);
+  const [wildlife, met0, loc, com] = await Promise.all([commonsWildlife(d), metHistory(d), locHistory(d), commonsHistory(d)]);
+  const met = [...met0, ...com];
   const history = [];
   for (let i = 0; i < Math.max(met.length, loc.length); i++) { if (met[i]) history.push(met[i]); if (loc[i]) history.push(loc[i]); }
   console.log(`  photos: ${wildlife.length} wildlife, ${history.length} history`);
