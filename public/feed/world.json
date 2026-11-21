@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-20T17:04:42.167Z",
+ "built": "2026-11-21T01:39:09.527Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -2060,21 +2060,6 @@
   },
   {
    "k": "election",
-   "t": "first round of Brazilian presidential election, 2026",
-   "w": "Brazil",
-   "a": "2026-10-04",
-   "cc": [
-    "br"
-   ],
-   "icon": {
-    "cc": "br"
-   },
-   "level": "national",
-   "wiki": "first round of Brazilian presidential election, 2026",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Brazilian general election",
    "w": "Brazil",
    "a": "2026-10-04",
@@ -2102,6 +2087,21 @@
    },
    "level": "national",
    "wiki": "2026 Bosnian general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "first round of Brazilian presidential election, 2026",
+   "w": "Brazil",
+   "a": "2026-10-04",
+   "cc": [
+    "br"
+   ],
+   "icon": {
+    "cc": "br"
+   },
+   "level": "national",
+   "wiki": "first round of Brazilian presidential election, 2026",
    "auto": true
   },
   {
@@ -2377,6 +2377,22 @@
   },
   {
    "k": "election",
+   "t": "Serbian presidential election",
+   "w": "Serbia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "rs"
+   ],
+   "icon": {
+    "cc": "rs"
+   },
+   "level": "national",
+   "wiki": "2027 Serbian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Slovenian presidential election",
    "w": "Slovenia",
    "a": "2027-01-01",
@@ -2421,22 +2437,6 @@
    },
    "level": "national",
    "wiki": "Slovak parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Serbian presidential election",
-   "w": "Serbia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "rs"
-   ],
-   "icon": {
-    "cc": "rs"
-   },
-   "level": "national",
-   "wiki": "2027 Serbian presidential election",
    "auto": true
   },
   {
