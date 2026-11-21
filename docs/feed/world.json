@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-21T01:39:09.527Z",
+ "built": "2026-11-21T12:51:19.570Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -2015,6 +2015,21 @@
   },
   {
    "k": "election",
+   "t": "Bosnian presidential election",
+   "w": "Bosnia and Herzegovina",
+   "a": "2026-10-04",
+   "cc": [
+    "ba"
+   ],
+   "icon": {
+    "cc": "ba"
+   },
+   "level": "national",
+   "wiki": "2022 Bosnian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Republika Srpska general election",
    "w": "Bosnia and Herzegovina",
    "a": "2026-10-04",
@@ -2041,21 +2056,6 @@
    },
    "level": "national",
    "wiki": "2026 Federation of Bosnia and Herzegovina general election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Bosnian presidential election",
-   "w": "Bosnia and Herzegovina",
-   "a": "2026-10-04",
-   "cc": [
-    "ba"
-   ],
-   "icon": {
-    "cc": "ba"
-   },
-   "level": "national",
-   "wiki": "2022 Bosnian presidential election",
    "auto": true
   },
   {
@@ -2393,6 +2393,38 @@
   },
   {
    "k": "election",
+   "t": "Albanian presidential election",
+   "w": "Albania",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "al"
+   ],
+   "icon": {
+    "cc": "al"
+   },
+   "level": "national",
+   "wiki": "2027 Albanian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Kenyan presidential election",
+   "w": "Kenya",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "ke"
+   ],
+   "icon": {
+    "cc": "ke"
+   },
+   "level": "national",
+   "wiki": "2027 Kenyan presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Slovenian presidential election",
    "w": "Slovenia",
    "a": "2027-01-01",
@@ -2453,38 +2485,6 @@
    },
    "level": "national",
    "wiki": "2027 Gambian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Albanian presidential election",
-   "w": "Albania",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "al"
-   ],
-   "icon": {
-    "cc": "al"
-   },
-   "level": "national",
-   "wiki": "2027 Albanian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Kenyan presidential election",
-   "w": "Kenya",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "ke"
-   ],
-   "icon": {
-    "cc": "ke"
-   },
-   "level": "national",
-   "wiki": "2027 Kenyan presidential election",
    "auto": true
   },
   {
