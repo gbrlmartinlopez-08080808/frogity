@@ -1,4 +1,4 @@
-import { tr } from '../lib/i18n';
+import { tr, loc } from '../lib/i18n';
 import { Art } from '../ui/Art';
 import { useEffect, useRef, useState } from 'react';
 import * as db from '../lib/db';
@@ -20,7 +20,7 @@ export function ScanSheet({ files, onClose, onDone }: { files: File[] | null; on
   useEffect(() => {
     if (!files) return;
     setPages(files.map((f) => ({ blob: f, url: URL.createObjectURL(f) })));
-    setTitle(`Scan ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`);
+    setTitle(`Scan ${new Date().toLocaleDateString(loc(), { month: 'short', day: 'numeric' })}`);
     setBusy(null);
   }, [files]);
 

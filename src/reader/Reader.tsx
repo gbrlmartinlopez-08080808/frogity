@@ -1,4 +1,4 @@
-import { tr } from '../lib/i18n';
+import { tr, loc } from '../lib/i18n';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as db from '../lib/db';
 import { addReading, patchDoc, removeDoc, useStore, updateSettings } from '../lib/store';
@@ -1566,7 +1566,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         <div className="r-dock-row compact">
           <button className="timechip" onClick={() => setClockMode((m) => (m === 'time' ? 'left' : 'time'))} aria-label={tr("Clock / time left")}>
             <Icon name="clock" size={15} />
-            <span>{clockMode === 'time' ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : `${minutesLeft}m left`}</span>
+            <span>{clockMode === 'time' ? now.toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit', hour12: false }) : `${minutesLeft}m left`}</span>
           </button>
           {textual ? (
             <Segmented

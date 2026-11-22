@@ -1,3 +1,4 @@
+import { loc } from './i18n';
 // World info: a short list of what is happening in the world that people follow — elections, summits, big matches and
 // tournaments, the sky, the year's festivals. It is a small file kept by hand next to the daily feed, so it can be updated
 // without a new version of the app; a copy ships inside the app.
@@ -97,7 +98,7 @@ export const isOver = (e: WorldEvent) => today() > at(e.b ?? e.a);
 
 export function dateLabel(e: WorldEvent): string {
   if (e.when) return e.when;
-  const f = (s: string) => new Date(`${s}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  const f = (s: string) => new Date(`${s}T12:00:00`).toLocaleDateString(loc(), { day: 'numeric', month: 'short', year: 'numeric' });
   return e.b && e.b !== e.a ? `${f(e.a)} – ${f(e.b)}` : f(e.a);
 }
 export function countdown(e: WorldEvent): string {

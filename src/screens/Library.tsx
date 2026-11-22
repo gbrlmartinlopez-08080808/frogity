@@ -140,6 +140,7 @@ export function Library({
   const settings = useStore((s) => s.settings);
   const days = useStore((s) => s.days);
   const readCount = useStore((s) => s.readIds.length);
+  const [burn, setBurn] = useState(0);
   const [searchText, setSearchText] = useState<Record<string, string>>({});
   useEffect(() => {
     let alive = true;
@@ -328,8 +329,19 @@ export function Library({
       </div>
 
       {!empty && (
-        <button className="streak-strip" onClick={onStats}>
-          <Pixel name="flame" size={22} />
+        <button
+          className="streak-strip"
+          onClick={() => {
+            // the flame flares up first; the page of numbers opens a moment later
+            tap('light');
+            setBurn((n) => n + 1);
+            window.setTimeout(onStats, streak.current > 0 ? 380 : 120);
+          }}
+        >
+          <span key={burn} className={`flame${burn ? ' lit' : ''}${streak.current > 0 ? ' on' : ''}`}>
+            <Pixel name="flame" size={22} />
+            <i /><i /><i />
+          </span>
           <div className="t">
             <b>{streak.current}{tr(" day")}{streak.current === 1 ? '' : 's'}</b>
             <span>{todayMs >= goal ? 'today’s page is turned.' : `${Math.max(1, Math.ceil((goal - todayMs) / 60000))} min to today’s goal`}</span>

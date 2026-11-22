@@ -1,3 +1,4 @@
+import { loc } from './i18n';
 import * as db from './db';
 import { detectKind, titleFromFile } from './formats/detect';
 import { drawPixel, KIND_PIXEL } from './pixels';
@@ -424,5 +425,5 @@ export function ago(t: number) {
   const d = Math.floor(s / 86400);
   if (d < 7) return `${d}d ago`;
   if (d < 60) return `${Math.floor(d / 7)}w ago`;
-  return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return new Date(t).toLocaleDateString(loc(), { month: 'short', day: 'numeric' });
 }

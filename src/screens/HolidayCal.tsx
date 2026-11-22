@@ -1,6 +1,6 @@
 // A month calendar of a country's public holidays: the days that have one are marked, and tapping a day says what it is.
 import { useEffect, useMemo, useState } from 'react';
-import { tr } from '../lib/i18n';
+import { tr, loc } from '../lib/i18n';
 import { emojiFor, holidaysYear, type Holiday } from '../lib/worldx';
 import { tap } from '../lib/native';
 import { Icon } from '../ui/Icon';
@@ -46,8 +46,8 @@ export function HolidayCalendar({ cc }: { cc: string }) {
     setCur({ y: dt.getFullYear(), m: dt.getMonth() });
     setPick(null);
   };
-  const monthName = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-  const wk = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(undefined, { weekday: 'narrow' }));
+  const monthName = first.toLocaleDateString(loc(), { month: 'long', year: 'numeric' });
+  const wk = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(loc(), { weekday: 'narrow' }));
   const inMonth = [...byDay.entries()].filter(([d]) => d.startsWith(`${cur.y}-${String(cur.m + 1).padStart(2, '0')}`)).sort((a, b) => a[0].localeCompare(b[0]));
   const shown = pick ? byDay.get(pick) ?? [] : [];
   return (
@@ -90,7 +90,7 @@ export function HolidayCalendar({ cc }: { cc: string }) {
         <div className="hcal-list">
           {pick && (
             <div className="hcal-day">
-              <small className="mono">{new Date(`${pick}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</small>
+              <small className="mono">{new Date(`${pick}T12:00:00`).toLocaleDateString(loc(), { weekday: 'long', day: 'numeric', month: 'long' })}</small>
               {shown.length ? (
                 shown.map((h) => (
                   <b key={h.name}>

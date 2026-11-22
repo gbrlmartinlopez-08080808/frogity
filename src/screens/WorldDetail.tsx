@@ -1,4 +1,4 @@
-import { tr } from '../lib/i18n';
+import { tr, loc } from '../lib/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { countdown, dateLabel, daysTo, isOn, isOver, type CurveChart, type SeatsChart, type WorldEvent } from '../lib/world';
 import { loadLive, type Live, type Match } from '../lib/sports';
@@ -76,16 +76,16 @@ function Timeline({ e }: { e: WorldEvent }) {
         {now >= a && now <= b && <span className="today" style={{ left: `${pos * 100}%` }} />}
       </div>
       <div className="wd-bar-l mono">
-        <span>{new Date(a).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
+        <span>{new Date(a).toLocaleDateString(loc(), { day: 'numeric', month: 'short' })}</span>
         <span>{now > b ? 'over' : now < a ? `${daysTo(e)} days to go` : `${done}% · ${left} days left`}</span>
-        <span>{new Date(b).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: '2-digit' })}</span>
+        <span>{new Date(b).toLocaleDateString(loc(), { day: 'numeric', month: 'short', year: '2-digit' })}</span>
       </div>
       {show !== null && ph[show] && (
         <div className="wd-phase">
           <b>{ph[show].n}</b>
           <span className="mono">
-            {new Date(at(ph[show].a)).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
-            {ph[show].b !== ph[show].a ? ` – ${new Date(at(ph[show].b)).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}` : ''}
+            {new Date(at(ph[show].a)).toLocaleDateString(loc(), { day: 'numeric', month: 'short' })}
+            {ph[show].b !== ph[show].a ? ` – ${new Date(at(ph[show].b)).toLocaleDateString(loc(), { day: 'numeric', month: 'short' })}` : ''}
             {ph[show].t ? ` · ${ph[show].t}` : ''}
           </span>
         </div>
@@ -94,7 +94,7 @@ function Timeline({ e }: { e: WorldEvent }) {
   );
 }
 
-const fmtTime = (ms: number) => new Date(ms).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const fmtTime = (ms: number) => new Date(ms).toLocaleString(loc(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 export function MatchRow({ m }: { m: Match }) {
   const played = m.hs !== null && m.as !== null;
   if (!m.home && !m.away)
@@ -110,12 +110,12 @@ export function MatchRow({ m }: { m: Match }) {
         {m.home}
         <Emblem badge={m.hb} size={22} glyph="•" />
       </span>
-      <b className="mono sc">{played ? `${m.hs} – ${m.as}` : new Date(m.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</b>
+      <b className="mono sc">{played ? `${m.hs} – ${m.as}` : new Date(m.at).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })}</b>
       <span className="mt">
         <Emblem badge={m.ab} size={22} glyph="•" />
         {m.away}
       </span>
-      <small className="mono md">{played ? new Date(m.at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : fmtTime(m.at)}</small>
+      <small className="mono md">{played ? new Date(m.at).toLocaleDateString(loc(), { day: 'numeric', month: 'short' }) : fmtTime(m.at)}</small>
     </li>
   );
 }
@@ -158,7 +158,7 @@ export function LivePanel({ e }: { e: WorldEvent }) {
   return (
     <section className="wd-sec">
       <h5 className="mono">
-        <span className="livedot" />{tr(" Live · ")}{today.length ? `${today.length} on today` : `updated ${new Date(updated).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`}
+        <span className="livedot" />{tr(" Live · ")}{today.length ? `${today.length} on today` : `updated ${new Date(updated).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })}`}
       </h5>
       {!!d.clasico.length && (
         <>
@@ -349,7 +349,7 @@ function Curve({ chart }: { chart: CurveChart }) {
       <input type="range" min={0} max={days - 1} value={i} onChange={(e) => setI(Number(e.target.value))} aria-label={tr("Night")} className="wd-range" />
       <p className="wd-read">
         <b className="mono">{Math.round(rate(i))}</b> {chart.unit}
-        <span className="mono">{tr(" · night of ")}{date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}{i === 5 ? ' · the peak' : ''}</span>
+        <span className="mono">{tr(" · night of ")}{date.toLocaleDateString(loc(), { day: 'numeric', month: 'short' })}{i === 5 ? ' · the peak' : ''}</span>
       </p>
       {chart.note && <p className="wd-src mono">{chart.note}</p>}
     </section>

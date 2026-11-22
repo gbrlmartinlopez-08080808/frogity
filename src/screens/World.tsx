@@ -1,4 +1,4 @@
-import { tr } from '../lib/i18n';
+import { tr, loc } from '../lib/i18n';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { countdown, daysTo, dateLabel, isOn, isOver, loadWorld, type World as WorldData, type WorldEvent } from '../lib/world';
 import { COUNTRIES, SECTIONS, TOP, concerns, country, countryOrder, holidays, isRecent, relevant, sectionOf, useHome, emojiFor, type Holiday, type Section } from '../lib/worldx';
@@ -309,13 +309,13 @@ function NextHolidays({ cc, n }: { cc: string; n: number }) {
           <div key={x.date + x.name} className="hol">
             <span className="hol-d mono">
               <b>{dt.getDate()}</b>
-              {dt.toLocaleDateString(undefined, { month: 'short' })}
+              {dt.toLocaleDateString(loc(), { month: 'short' })}
             </span>
             <span className="hol-n">
               <b>{emojiFor(x.name)} {x.local !== x.name ? x.local : x.name}</b>
               <small className="mono">
                 {x.local !== x.name ? `${x.name} · ` : ''}
-                {dt.toLocaleDateString(undefined, { weekday: 'long' })}
+                {dt.toLocaleDateString(loc(), { weekday: 'long' })}
                 {!x.global ? ' · some regions' : ''}
               </small>
             </span>

@@ -1,4 +1,4 @@
-import { tr } from '../lib/i18n';
+import { tr, loc } from '../lib/i18n';
 import { Fragment, useCallback, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { readArticle, type Article } from '../lib/article';
 import { wikiArticle, type WikiDoc } from '../lib/wikiarticle';
@@ -250,7 +250,7 @@ export function Interesting({ docs, onSwitch, onFindBooks }: { docs: DocMeta[]; 
 /** how old the copy on screen is, in words: honest when the feed has not been refreshed */
 function ageLine(generated: string, offline: boolean) {
   const h = (Date.now() - new Date(generated).getTime()) / 36e5;
-  const when = new Date(generated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const when = new Date(generated).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' });
   if (h < 0 || Number.isNaN(h)) return offline ? 'offline · showing the last copy' : 'free for everyone';
   if (h < 8) return `${offline ? 'offline · ' : ''}updated today ${when}`;
   if (h < 30) return `${offline ? 'offline · ' : ''}updated ${h < 24 ? 'today' : 'yesterday'} ${when} · refreshes through the day`;
@@ -258,7 +258,7 @@ function ageLine(generated: string, offline: boolean) {
 }
 function Today({ d, offline, mood, setDetail, wiki, onRefresh }: { d: Daily; offline: boolean; mood: Mood; setDetail: (x: Detail) => void; wiki: (t: string, note?: string) => void; onRefresh: () => void }) {
   const fact = factOfDay();
-  const date = new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
+  const date = new Date().toLocaleDateString(loc(), { weekday: 'long', day: 'numeric', month: 'long' });
   // worth your time: two curious things (one about wildlife, one about history, when the feed has them), then a long read and an article
   const reads = d.reads ?? [];
   const curious = [reads.find((r) => r.kind === 'curious' && r.subject === 'wildlife'), reads.find((r) => r.kind === 'curious' && r.subject === 'history')].filter((x): x is Read => !!x);

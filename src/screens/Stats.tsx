@@ -1,4 +1,4 @@
-import { tr } from '../lib/i18n';
+import { tr, loc } from '../lib/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore, streakInfo, dayKey, updateSettings, freezeStatus, COUNT_MS } from '../lib/store';
 import { fmtMs, glyphFor, legendFor } from '../lib/glyphs';
@@ -92,7 +92,7 @@ function DayChart({ date, ms, hours, ice }: { date: Date; ms: number; hours?: nu
   return (
     <div className="daychart" aria-live="polite">
       <div className="daychart-head">
-        <b className="mono">{date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</b>
+        <b className="mono">{date.toLocaleDateString(loc(), { weekday: 'short', day: 'numeric', month: 'short' })}</b>
         <span className="mono">{ms >= 1000 ? fmtMs(ms) : ice ? '~ freeze day' : 'rest day'}</span>
       </div>
       {hours && ms >= 1000 ? (
@@ -240,7 +240,7 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
         <div className="bubble-drag" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
           <div className="sheet-grip" />
           <div className="bubble-head">
-            <span className="bubble-date">{today.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+            <span className="bubble-date">{today.toLocaleDateString(loc(), { weekday: 'long', day: 'numeric', month: 'long' })}</span>
             <div className="mini-icons" onPointerDown={(e) => e.stopPropagation()}>
               <button onClick={() => setGoalOpen(true)} aria-label={`Daily goal: ${Math.round(info.today / 60000)} of ${settings.dailyGoal} minutes`}>
                 <Ring value={info.today / goal} size={20} stroke={2.4} />

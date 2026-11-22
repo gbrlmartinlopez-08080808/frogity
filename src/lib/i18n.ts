@@ -3,6 +3,8 @@
 // English — never a blank or a key. Books, news and anything the reader or an outlet wrote are never touched.
 import { useEffect, useState } from 'react';
 import { EXTRA } from './i18n-extra';
+import { MORE } from './i18n-more';
+import { NEW } from './i18n-new';
 import { ES } from './i18n-es';
 import { FR } from './i18n-fr';
 
@@ -37,6 +39,8 @@ export function setPref(p: LangPref) {
   bus.dispatchEvent(new Event('lang'));
   retranslate();
 }
+/** the locale for dates and times: the app's language if the reader picked one, otherwise the phone's own */
+export const loc = (): string | undefined => (getPref() === 'auto' ? undefined : getLang());
 export function useLang(): [Lang, LangPref, (p: LangPref) => void] {
   const [, tick] = useState(0);
   useEffect(() => {
@@ -49,8 +53,8 @@ export function useLang(): [Lang, LangPref, (p: LangPref) => void] {
 
 const TABLES: Record<Lang, Map<string, string>> = {
   en: new Map(),
-  es: new Map([...ES, ...EXTRA.map((e): [string, string] => [e[0], e[1]])]),
-  fr: new Map([...FR, ...EXTRA.map((e): [string, string] => [e[0], e[2]])]),
+  es: new Map([...ES, ...[...EXTRA, ...MORE, ...NEW].map((e): [string, string] => [e[0], e[1]])]),
+  fr: new Map([...FR, ...[...EXTRA, ...MORE, ...NEW].map((e): [string, string] => [e[0], e[2]])]),
 };
 /** phrases with a number or a name in them: "12 min left", "level 3" */
 const PATTERNS: { re: RegExp; es: string; fr: string }[] = [
@@ -86,6 +90,25 @@ const PATTERNS: { re: RegExp; es: string; fr: string }[] = [
   { re: /^in (\d+) weeks$/, es: 'en $1 semanas', fr: 'dans $1 semaines' },
   { re: /^in (\d+) months$/, es: 'en $1 meses', fr: 'dans $1 mois' },
   { re: /^tomorrow$/, es: 'mañana', fr: 'demain' },
+  { re: /^Welcome, step (\d+) of (\d+)$/, es: 'Bienvenida, paso $1 de $2', fr: 'Bienvenue, étape $1 sur $2' },
+  { re: /^Daily goal: (\d+) of (\d+) minutes$/, es: 'Meta diaria: $1 de $2 minutos', fr: 'Objectif du jour : $1 sur $2 minutes' },
+  { re: /^Books finished: (\d+)$/, es: 'Libros terminados: $1', fr: 'Livres terminés : $1' },
+  { re: /^Froggy, looking (\w+)$/, es: 'Froggy, con cara de $1', fr: 'Froggy, l’air $1' },
+  { re: /^today$/, es: 'hoy', fr: 'aujourd’hui' },
+  { re: /^now$/, es: 'ahora', fr: 'maintenant' },
+  { re: /^yesterday$/, es: 'ayer', fr: 'hier' },
+  { re: /^on now · (\d+) days? left$/, es: 'en curso · quedan $1 d', fr: 'en cours · encore $1 j' },
+  { re: /^ended (\d+) days ago$/, es: 'terminó hace $1 días', fr: 'terminé il y a $1 jours' },
+  { re: /^in ([\d.]+) years$/, es: 'en $1 años', fr: 'dans $1 ans' },
+  { re: /^(\d+)\s?m ago$/, es: 'hace $1 min', fr: 'il y a $1 min' },
+  { re: /^(\d+)\s?min ago$/, es: 'hace $1 min', fr: 'il y a $1 min' },
+  { re: /^(\d+)\s?h ago$/, es: 'hace $1 h', fr: 'il y a $1 h' },
+  { re: /^(\d+)\s?d ago$/, es: 'hace $1 d', fr: 'il y a $1 j' },
+  { re: /^(\d+)\s?w ago$/, es: 'hace $1 sem', fr: 'il y a $1 sem' },
+  { re: /^(\d+) fields filled$/, es: '$1 campos rellenados', fr: '$1 champs remplis' },
+  { re: /^(\d+) on today$/, es: '$1 hoy', fr: '$1 aujourd’hui' },
+  { re: /^updated (\d{1,2}:\d{2})$/, es: 'actualizado $1', fr: 'mis à jour $1' },
+  { re: /^Show all (\d+)$/, es: 'Ver los $1', fr: 'Afficher les $1' },
   { re: /^nothing on your shelf matches “(.+)”$/, es: 'nada en tu estantería coincide con “$1”', fr: 'rien sur votre étagère ne correspond à « $1 »' },
 ];
 
@@ -98,7 +121,68 @@ export function tr(s: string, lang: Lang = getLang()): string {
   const hit = TABLES[lang].get(core);
   if (hit) return lead + hit + trail;
   for (const p of PATTERNS) if (p.re.test(core)) return lead + core.replace(p.re, p[lang]) + trail;
+  const place = countryName(core, lang);
+  if (place) return lead + place + trail;
+  const dated = monthWords(core, lang);
+  if (dated !== core) return lead + dated + trail;
   return s;
+}
+
+// ------------------------------------------------------------------ names of countries and months, from the phone's own locale data
+let byName: Map<string, string> | null = null;
+const regionNames = (lang: Lang) => {
+  try {
+    return new Intl.DisplayNames([lang], { type: 'region' });
+  } catch {
+    return null;
+  }
+};
+/** "Spain" → "España" / "Espagne": any country the phone knows, with no list to keep */
+function countryName(core: string, lang: Lang): string | null {
+  if (core.length < 4 || core.length > 40 || !/^[A-ZÀ-Ý]/.test(core)) return null;
+  if (!byName) {
+    byName = new Map([
+      ['The Gambia', 'GM'],
+      ['Czech Republic', 'CZ'],
+      ['Ivory Coast', 'CI'],
+      ['Turkey', 'TR'],
+      ['Eswatini', 'SZ'],
+    ]);
+    const en = regionNames('en');
+    if (en) for (let a = 65; a <= 90; a++) for (let b = 65; b <= 90; b++) {
+      const cc = String.fromCharCode(a, b);
+      const n = en.of(cc);
+      if (n && n !== cc) byName.set(n, cc);
+    }
+  }
+  const cc = byName.get(core);
+  if (!cc) return null;
+  const out = regionNames(lang)?.of(cc);
+  return out && out !== cc ? out : null;
+}
+const MONTHS: Record<'es' | 'fr', { long: string[]; short: string[] }> = {
+  es: { long: ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'], short: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'] },
+  fr: { long: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'], short: ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] },
+};
+const EN_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const EN_SHORT: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Sept: 8, Oct: 9, Nov: 10, Dec: 11 };
+const MONTH_RE = new RegExp(`\\b(${[...EN_LONG, ...Object.keys(EN_SHORT)].join('|')})\\b`, 'g');
+/** a short date or range ("13 Dec 2026 – 14 Dec 2026", "August–May", "around 8 February 2027") in the app's language */
+function monthWords(core: string, lang: Lang): string {
+  if (lang === 'en' || core.length > 48 || !/^[\d\sA-Za-z–\-.,·]+$/.test(core)) return core;
+  const names = core.match(MONTH_RE);
+  if (!names) return core;
+  // a date has a number in it; otherwise only month names and the signs between them ("August–May")
+  if (!/\d/.test(core) && core.replace(MONTH_RE, '').replace(/[\s–\-.,·]|to|and/g, '').length) return core;
+  const t = MONTHS[lang];
+  let out = core.replace(MONTH_RE, (m) => {
+    const i = EN_LONG.indexOf(m);
+    return i >= 0 ? t.long[i] : t.short[EN_SHORT[m]];
+  });
+  out = out.replace(/^around /, lang === 'es' ? 'hacia el ' : 'vers le ').replace(/^from /, lang === 'es' ? 'desde ' : 'à partir de ');
+  // Spanish writes "8 de febrero de 2027"
+  if (lang === 'es') out = out.replace(new RegExp(`(\\d+) (${t.long.join('|')})`, 'g'), '$1 de $2').replace(new RegExp(`(${t.long.join('|')}) (\\d{4})`, 'g'), '$1 de $2');
+  return out;
 }
 /** for code that builds a string itself */
 export const t = (s: string) => tr(s);
