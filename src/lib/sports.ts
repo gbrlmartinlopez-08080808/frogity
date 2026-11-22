@@ -1,17 +1,41 @@
 // Live standings and fixtures from TheSportsDB (a free, open sports database; the public test key). Everything is optional: if the
 // phone is offline or the service is busy, the panel simply says so. Answers are kept for a few minutes.
 import type { WorldEvent } from './world';
+import * as db from './db';
 
 const BASE = 'https://www.thesportsdb.com/api/v1/json/123';
 const cache = new Map<string, { at: number; v: unknown }>();
+const flying = new Map<string, Promise<unknown>>();
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** one request at a time per address, a second try if the first fails, and the last good answer (however old) if both do */
 async function get<T>(path: string, ttl = 5 * 60e3): Promise<T> {
   const hit = cache.get(path);
   if (hit && Date.now() - hit.at < ttl) return hit.v as T;
-  const r = await fetch(`${BASE}/${path}`, { signal: AbortSignal.timeout(9000) });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const v = (await r.json()) as T;
-  cache.set(path, { at: Date.now(), v });
-  return v;
+  const again = flying.get(path);
+  if (again) return again as Promise<T>;
+  const run = (async () => {
+    let last: unknown;
+    for (let i = 0; i < 2; i++) {
+      try {
+        const r = await fetch(`${BASE}/${path}`, { signal: AbortSignal.timeout(9000) });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const v = (await r.json()) as T;
+        cache.set(path, { at: Date.now(), v });
+        return v;
+      } catch (e) {
+        last = e;
+        await wait(700);
+      }
+    }
+    if (hit) return hit.v as T;
+    throw last;
+  })();
+  flying.set(path, run);
+  try {
+    return await run;
+  } finally {
+    flying.delete(path);
+  }
 }
 
 export interface Row {
@@ -108,8 +132,36 @@ export interface LeagueInfo {
   badge: string;
   name: string;
 }
-export async function leagueInfo(id: number): Promise<LeagueInfo> {
-  const r = await get<{ leagues?: Raw[] }>(`lookupleague.php?id=${id}`, 24 * 3600e3);
-  const l = r.leagues?.[0];
-  return { badge: l?.strBadge ? `${l.strBadge}/small` : '', name: l?.strLeague ?? '' };
+const infoMem = new Map<number, LeagueInfo>();
+/** a league's logo, if it is already known (so a card can draw it on its first frame) */
+export const peekLeague = (id: number) => infoMem.get(id);
+const infoFlying = new Map<number, Promise<LeagueInfo>>();
+/** a league's logo and name: kept on the phone for a month, so the cards show their logos at once from the second visit on */
+export function leagueInfo(id: number): Promise<LeagueInfo> {
+  const mem = infoMem.get(id);
+  if (mem) return Promise.resolve(mem);
+  const going = infoFlying.get(id);
+  if (going) return going;
+  const p = (async () => {
+    const key = `lgi:${id}`;
+    const saved = await db.get<{ at: number; v: LeagueInfo }>('kv', key).catch(() => undefined);
+    if (saved?.v?.badge) infoMem.set(id, saved.v);
+    if (saved && Date.now() - saved.at < 30 * 864e5 && saved.v.badge) return saved.v;
+    try {
+      const r = await get<{ leagues?: Raw[] }>(`lookupleague.php?id=${id}`, 24 * 3600e3);
+      const l = r.leagues?.[0];
+      const v = { badge: l?.strBadge ? `${l.strBadge}/small` : '', name: l?.strLeague ?? '' };
+      if (v.badge) {
+        infoMem.set(id, v);
+        db.put('kv', key, { at: Date.now(), v }).catch(() => {});
+      }
+      return v;
+    } catch (e) {
+      if (saved) return saved.v;
+      throw e;
+    }
+  })();
+  infoFlying.set(id, p);
+  p.finally(() => infoFlying.delete(id)).catch(() => {});
+  return p;
 }

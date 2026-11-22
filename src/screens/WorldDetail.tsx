@@ -141,8 +141,19 @@ export function LivePanel({ e }: { e: WorldEvent }) {
     const t = setInterval(() => setTick((x) => x + 1), 90_000);
     return () => clearInterval(t);
   }, []);
-  if (err && !d) return <p className="wd-empty mono">{tr("live numbers need a connection")}</p>;
-  if (!d) return <PixelLoader size={4} gap={2} label="live" />;
+  if (err && !d)
+    return (
+      <div className="wd-load">
+        <p className="wd-empty mono">{tr("live numbers need a connection")}</p>
+        <button className="wd-more" onClick={() => (setErr(false), setTick((x) => x + 1))}>{tr("Try again")}</button>
+      </div>
+    );
+  if (!d)
+    return (
+      <div className="wd-load">
+        <PixelLoader size={4} gap={2} label="live" />
+      </div>
+    );
   const today = d.next.filter((m) => new Date(m.at).toDateString() === new Date().toDateString());
   return (
     <section className="wd-sec">

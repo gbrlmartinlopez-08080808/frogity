@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { WorldEvent } from './world';
 import { FEED_URLS } from './config';
+import * as db from './db';
 import { isOn, isOver } from './world';
 
 export interface Country {
@@ -116,15 +117,80 @@ async function json<T>(url: string, ttl = 6 * 3600e3): Promise<T> {
   mem.set(url, { at: Date.now(), v });
   return v;
 }
+type Raw = { date: string; name: string; localName: string; global: boolean; types: string[] };
+const toHoliday = (h: Raw): Holiday => ({ date: h.date, name: h.name, local: h.localName, global: h.global, types: h.types });
+
+/** every public holiday of a country in a year. Several sources are tried (the file saved beside the daily feed, Nager.Date, OpenHolidays),
+ *  the first answer wins, and every good answer is kept on the phone: so holidays that have been seen once are there without a connection. */
+const yearFlying = new Map<string, Promise<Holiday[]>>();
+export function holidaysYear(cc: string, year: number): Promise<Holiday[]> {
+  const key = `${cc}:${year}`;
+  const going = yearFlying.get(key);
+  if (going) return going;
+  const p = (async () => {
+    const saved = await db.get<{ at: number; v: Holiday[] }>('kv', `hol:${key}`).catch(() => undefined);
+    // a copy less than two weeks old is enough (holidays are fixed far ahead)
+    if (saved?.v?.length && Date.now() - saved.at < 14 * 864e5) return saved.v;
+    const fromFeed = async (): Promise<Holiday[]> => {
+      const got = await Promise.any(
+        FEED_URLS.map(async (u) => {
+          const r = await fetch(u.replace('daily.json', 'holidays.json'), { signal: AbortSignal.timeout(8000) });
+          if (!r.ok) throw new Error(String(r.status));
+          return (await r.json()) as { data: Record<string, Record<string, Holiday[]>> };
+        }),
+      );
+      const rows = got.data?.[cc]?.[year];
+      if (!rows?.length) throw new Error('not in the feed');
+      return rows;
+    };
+    const fromNager = async (): Promise<Holiday[]> => {
+      let last: unknown;
+      for (let i = 0; i < 2; i++) {
+        try {
+          const r = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${cc.toUpperCase()}`, { signal: AbortSignal.timeout(10000) });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const rows = ((await r.json()) as Raw[]).map(toHoliday);
+          if (!rows.length) throw new Error('empty');
+          return rows;
+        } catch (e) {
+          last = e;
+          await new Promise((res) => setTimeout(res, 600));
+        }
+      }
+      throw last;
+    };
+    const fromOpen = async (): Promise<Holiday[]> => {
+      const r = await fetch(`https://openholidaysapi.org/PublicHolidays?countryIsoCode=${cc.toUpperCase()}&languageIsoCode=EN&validFrom=${year}-01-01&validTo=${year}-12-31`, { signal: AbortSignal.timeout(10000) });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const rows = ((await r.json()) as { startDate: string; name?: { text: string }[]; nationwide?: boolean; type?: string }[]).map((h) => ({ date: h.startDate, name: h.name?.[0]?.text ?? '', local: h.name?.[0]?.text ?? '', global: !!h.nationwide, types: [h.type ?? 'Public'] }));
+      if (!rows.length) throw new Error('empty');
+      return rows;
+    };
+    try {
+      // the feed file and Nager.Date are asked together (whichever answers first), OpenHolidays after both
+      const rows = await Promise.any([fromFeed(), fromNager()]).catch(() => fromOpen());
+      db.put('kv', `hol:${key}`, { at: Date.now(), v: rows }).catch(() => {});
+      return rows;
+    } catch (e) {
+      if (saved?.v?.length) return saved.v; // an old copy is better than none
+      throw e;
+    }
+  })();
+  yearFlying.set(key, p);
+  p.then(
+    () => yearFlying.delete(key),
+    () => yearFlying.delete(key),
+  );
+  return p;
+}
+/** the next public holidays of a country (this year, then next) */
 export async function holidays(cc: string): Promise<Holiday[]> {
   const y = new Date().getFullYear();
-  const rows = await Promise.all([y, y + 1].map((yy) => json<{ date: string; name: string; localName: string; global: boolean; types: string[] }[]>(`https://date.nager.at/api/v3/PublicHolidays/${yy}/${cc.toUpperCase()}`).catch(() => [])));
   const today = new Date().toISOString().slice(0, 10);
-  return rows
-    .flat()
-    .filter((h) => h.date >= today)
-    .map((h) => ({ date: h.date, name: h.name, local: h.localName, global: h.global, types: h.types }))
-    .slice(0, 14);
+  const rows = await Promise.allSettled([holidaysYear(cc, y), holidaysYear(cc, y + 1)]);
+  const ok = rows.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+  if (!ok.length) throw new Error('no holidays');
+  return ok.filter((h) => h.date >= today).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 14);
 }
 
 // ------------------------------------------------------------------ the numbers behind an economy (World Bank) and exchange rates

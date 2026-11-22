@@ -8,6 +8,7 @@ import { Emblem, Flag } from '../ui/WikiIcon';
 import { WorldDetail } from './WorldDetail';
 import { UsHub } from './UsHub';
 import { SportsHub } from './SportsHub';
+import { HolidayCalendar } from './HolidayCal';
 import { EconomyCard } from './Economy';
 import type { Daily, Story } from '../lib/interesting';
 import { tap } from '../lib/native';
@@ -48,7 +49,7 @@ function CountryGroup({ cc, count, open: init, children, note }: { cc: string; c
       <button className="cg-h" onClick={() => (tap('select'), setOpen(!open))} aria-expanded={open}>
         {cc === 'world' ? <span className="ico ph mono" style={{ width: 28, height: 20 }}>{tr("●")}</span> : <Flag cc={cc} size={28} />}
         <b>{cc === 'world' ? 'Elsewhere and everywhere' : c?.name ?? cc.toUpperCase()}</b>
-        <small className="mono">{count}</small>
+        {count > 0 && <small className="mono">{count}</small>}
         <Icon name={open ? 'up' : 'down'} size={16} />
       </button>
       {open && <div className="cg-b">{note && <p className="cg-note mono">{note}</p>}{children}</div>}
@@ -62,6 +63,8 @@ export function WorldInfo({ wiki, d, openStory, mode }: { wiki: (title: string) 
   const [picker, setPicker] = useState(false);
   const [sel, setSel] = useState<WorldEvent | null>(null);
   const [us, setUs] = useState(false);
+  const [holView, setHolView] = useState<'list' | 'calendar'>('list');
+  const [calCc, setCalCc] = useState<string | null>(null);
   const [data, setData] = useState<WorldData | null>(null);
   const [err, setErr] = useState('');
   useEffect(() => {
@@ -208,12 +211,33 @@ export function WorldInfo({ wiki, d, openStory, mode }: { wiki: (title: string) 
       {section === 'events' && groups('events')}
       {section === 'holidays' && (
         <>
-          {order.map((c, i) => (
-            <CountryGroup key={c.cc} cc={c.cc} count={0} open={i === 0}>
-              <NextHolidays cc={c.cc} n={12} />
-            </CountryGroup>
-          ))}
-          {!!(forCountry('', 'holidays').length + global('holidays').length) && (
+          <div className="wsec hol-view" role="tablist">
+            {(['list', 'calendar'] as const).map((v) => (
+              <button key={v} role="tab" aria-selected={holView === v} className={holView === v ? 'on' : ''} onClick={() => (tap('select'), setHolView(v))}>
+                {v === 'list' ? 'List' : 'Calendar'}
+              </button>
+            ))}
+          </div>
+          {holView === 'calendar' && (
+            <>
+              <div className="hcal-pick" role="tablist">
+                {order.slice(0, 8).map((c) => (
+                  <button key={c.cc} role="tab" aria-selected={(calCc ?? home) === c.cc} className={(calCc ?? home) === c.cc ? 'on' : ''} onClick={() => (tap('select'), setCalCc(c.cc))}>
+                    <Flag cc={c.cc} size={18} />
+                    <span>{c.name}</span>
+                  </button>
+                ))}
+              </div>
+              <HolidayCalendar cc={calCc ?? home} />
+            </>
+          )}
+          {holView === 'list' &&
+            order.map((c, i) => (
+              <CountryGroup key={c.cc} cc={c.cc} count={0} open={i === 0}>
+                <NextHolidays cc={c.cc} n={12} />
+              </CountryGroup>
+            ))}
+          {holView === 'list' && !!(forCountry('', 'holidays').length + global('holidays').length) && (
             <CountryGroup cc="world" count={global('holidays').length} open={false}>
               {list(global('holidays'))}
             </CountryGroup>
@@ -259,15 +283,23 @@ export function WorldInfo({ wiki, d, openStory, mode }: { wiki: (title: string) 
 /** the public holidays of a country, read live */
 function NextHolidays({ cc, n }: { cc: string; n: number }) {
   const [h, setH] = useState<Holiday[] | null>(null);
+  const [again, setAgain] = useState(0);
   useEffect(() => {
     let live = true;
+    setH(null);
     holidays(cc).then((r) => live && setH(r), () => live && setH([]));
     return () => {
       live = false;
     };
-  }, [cc]);
+  }, [cc, again]);
   if (!h) return <p className="cg-note mono">{tr("loading holidays…")}</p>;
-  if (!h.length) return <p className="cg-note mono">{tr("holidays need a connection")}</p>;
+  if (!h.length)
+    return (
+      <div className="cg-note">
+        <p className="mono">{tr("holidays need a connection")}</p>
+        <button className="wd-more" onClick={() => setAgain((x) => x + 1)}>{tr("Try again")}</button>
+      </div>
+    );
   return (
     <>
       {h.slice(0, n).map((x) => {

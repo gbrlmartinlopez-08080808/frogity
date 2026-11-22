@@ -76,7 +76,7 @@ export function WikiLogo({ title, size = 30, glyph = '·', emoji }: { title?: st
 /** the picture for a team, party, country or event: a flag, a logo, or a plain mark */
 export function Emblem({ cc, wiki, badge, size = 30, glyph, emoji }: { cc?: string; wiki?: string; badge?: string; size?: number; glyph?: string; emoji?: string }) {
   const [bad, setBad] = useState(false);
-  if (badge && !bad) return <img className="ico logo2" src={badge} alt="" style={{ width: size, height: size }} onError={() => setBad(true)} draggable={false} />;
+  if (badge && !bad) return <img className="ico logo2" src={badge} alt="" loading="lazy" decoding="async" style={{ width: size, height: size }} onError={() => setBad(true)} draggable={false} />;
   if (cc) return <Flag cc={cc} size={size} />;
   return <WikiLogo title={wiki} size={size} glyph={glyph} emoji={emoji} />;
 }

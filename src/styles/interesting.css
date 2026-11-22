@@ -3833,3 +3833,162 @@ button.tcard:active {
   font-size: 10.5px;
   color: var(--muted);
 }
+
+/* a live panel keeps its height while it loads, so the sheet does not jump when the table arrives */
+.wd-load {
+  min-height: 320px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+}
+.ico.logo2 {
+  background: #fff;
+}
+
+/* ---- holidays: the calendar view */
+.hol-view {
+  margin-bottom: 6px;
+}
+.hcal-pick {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 0 8px;
+}
+.hcal-pick button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px 6px 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+.hcal-pick button.on {
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: none;
+}
+.hcal {
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line), var(--shadow);
+  padding: 12px 12px 14px;
+}
+.hcal > header {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.hcal > header b {
+  font-size: 16px;
+  text-transform: capitalize;
+}
+.hcal > header button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--ink-2);
+}
+.hcal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px 0;
+  justify-items: center;
+}
+.hcal-grid .wd {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 0 6px;
+}
+.hcal-grid .blank {
+  height: 40px;
+}
+.hcal-grid .d {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+}
+.hcal-grid .d i {
+  position: absolute;
+  bottom: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #e5484d;
+}
+.hcal-grid .d.has {
+  font-weight: 700;
+}
+.hcal-grid .d.today {
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+.hcal-grid .d.sel {
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: none;
+}
+.hcal-grid .d.sel i {
+  background: var(--bg);
+}
+.hcal-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+.hcal-day {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface-2, var(--bg));
+}
+.hcal-day b {
+  font-size: 15px;
+  font-weight: 600;
+}
+.hcal-day .dim {
+  color: var(--muted);
+  font-size: 12px;
+}
+.hcal-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.hcal-list li button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  text-align: left;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.hcal-list li button.on {
+  font-weight: 650;
+}
+.hcal-note {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 10px 0 2px;
+}
+.cg-note .wd-more {
+  margin-top: 6px;
+}
