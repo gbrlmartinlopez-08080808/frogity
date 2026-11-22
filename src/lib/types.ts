@@ -28,7 +28,7 @@ export interface DocMeta {
   openedAt: number;
   progress: number; // 0..1
   /** scroll anchor; `pick` = the reader chose this way of viewing the document (otherwise the default one is used) */
-  position?: { mode: ReadMode; value: number; pick?: boolean };
+  position?: { mode: ReadMode; value: number; pick?: boolean; /** a long Liquid book: the block at the top of the screen (exact, where the fraction only estimates) */ at?: number };
   pages?: number;
   author?: string;
   coverId?: string; // key in blobs store

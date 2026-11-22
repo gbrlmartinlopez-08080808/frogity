@@ -228,6 +228,32 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 90px;
 }
+.flow.win p,
+.flow.win li,
+.flow.win h1,
+.flow.win h2,
+.flow.win h3,
+.flow.win h4,
+.flow.win blockquote,
+.flow.win pre,
+.flow.win table,
+.flow.win figure {
+  content-visibility: visible;
+}
+/* the book cut into pieces (see windowing.ts): the pieces far from the screen keep their place by an estimated height and are never laid out or painted */
+.flow.win > .chunk {
+  display: flow-root;
+}
+.flow.win > .chunk > :first-child {
+  margin-top: 0;
+}
+.flow.win > .chunk[data-off] {
+  content-visibility: hidden;
+  contain-intrinsic-block-size: auto var(--h, calc(var(--n, 3000) * var(--ppc, 0.62px)));
+}
+.flow.win > .chunk[data-off]:has(.s.say) {
+  content-visibility: visible;
+}
 .flow figure.lq-math {
   contain-intrinsic-size: auto 48px;
 }

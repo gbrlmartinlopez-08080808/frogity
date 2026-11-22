@@ -25,6 +25,7 @@ import { BinaryView, CodeView, ImageView, MediaView, SheetView } from './OtherVi
 import { anchorFromSelection, applyHighlights, clearMarks, findAll, wordAt, wrapSentences } from './dom';
 import { AskSheet } from './Ask';
 import { EndNote, useEndPull } from './EndPull';
+import { flowKids, windowFlow, windowMoved, type Windowed } from './windowing';
 import { Finale } from './Finale';
 import { FormSheet } from './FormSheet';
 import { detectForm, type FormModel } from '../lib/forms';
@@ -268,7 +269,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     const root = flowRef.current;
     if (!root || !scroller || !root.childElementCount || !scroller.scrollTop) return null;
     const top = scroller.getBoundingClientRect().top;
-    const kids = Array.from(root.children) as HTMLElement[];
+    const kids = flowKids(root);
     const i = kids.findIndex((el) => el.getBoundingClientRect().bottom > top + 1);
     if (i < 0) return null;
     let page = 0;
@@ -291,7 +292,10 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     restoredLiquid.current = true;
     const pin = (n: number) => {
       let el = flowRef.current?.querySelector<HTMLElement>(`.pg[data-page="${at.page}"]`) ?? null;
-      for (let j = 0; el && j < at.k; j++) el = el.nextElementSibling as HTMLElement | null;
+      if (el && at.k) {
+        const flat = flowKids(flowRef.current!);
+        el = flat[flat.indexOf(el) + at.k] ?? null;
+      }
       if (!el) return;
       const off = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top - at.dy;
       if (Math.abs(off) > 1) scroller.scrollTop += off;
@@ -427,6 +431,19 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     return () => window.removeEventListener('frogity:figures', on);
   }, [id, liquid, listen, scroller]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // a long book keeps only the paragraphs around the screen switched on (see windowing.ts): scrolling and jumping stay light
+  const windowed = useRef<Windowed | null>(null);
+  useEffect(() => {
+    const root = flowRef.current;
+    if (!root || !scroller || !flowReady || !liquid || paged || growing) return;
+    const w = windowFlow(root, scroller, id);
+    windowed.current = w;
+    return () => {
+      w?.destroy();
+      windowed.current = null;
+    };
+  }, [flowReady, scroller, liquid, paged, growing]);
+
   // does this PDF look like a form? If so, offer to fill it in
   useEffect(() => {
     if (!pdf) return;
@@ -507,6 +524,8 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     if (v > 0.001)
       requestAnimationFrame(() => {
         if (live.current.paged) goPage(scroller, Math.round(v * (pageCount(scroller) - 1)), false);
+        // a long book remembers the block itself (the fraction of a layout that is partly estimated would land somewhere else)
+        else if (doc.position?.at != null && windowed.current) windowed.current.goTo(doc.position.at);
         else scroller.scrollTop = v * (scroller.scrollHeight - scroller.clientHeight);
       });
   }, [flowReady, scroller]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -633,6 +652,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     let markersAt = 0;
     const frame = () => {
       raf = 0;
+      if (windowMoved()) return; // the long book corrected its own layout, keeping the reader's place: nothing to follow
       const st = live.current;
       const flip = st.paged;
       const y = flip ? el.scrollLeft : el.scrollTop;
@@ -684,7 +704,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         const s2 = live.current;
         patchDoc(id, {
           progress: s2.isPdf ? (doc.pages ? p / doc.pages : prog) : prog,
-          position: s2.isPdf ? { mode: 'liquid', value: p, pick: pickRef.current } : { mode: 'liquid', value: prog, pick: pickRef.current },
+          position: s2.isPdf ? { mode: 'liquid', value: p, pick: pickRef.current } : { mode: 'liquid', value: prog, pick: pickRef.current, ...(windowed.current ? { at: windowed.current.topIndex() } : {}) },
           // the end of a view that is still growing is not the end of the book
           ...(!s2.growing && prog > 0.985 && !s2.finished ? { finished: true } : {}),
         });
@@ -820,7 +840,10 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   const showEl = (el: Element | null | undefined, block: ScrollLogicalPosition = 'start', smooth = false) => {
     if (!el || !scroller) return;
     if (live.current.paged) goPage(scroller, pageOf(scroller, el), false);
-    else el.scrollIntoView({ block, behavior: smooth ? 'smooth' : 'auto' });
+    else {
+      windowed.current?.reveal(el);
+      el.scrollIntoView({ block, behavior: smooth ? 'smooth' : 'auto' });
+    }
   };
 
   const close = () => {
@@ -830,7 +853,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       // only once the text is on screen and back at its place: a book closed while it is still opening keeps the place it had
       if (flowReady && restoredLiquid.current && content?.type === 'flow') {
         const prog = placeNow();
-        patchDoc(id, { progress: prog, position: { mode: 'liquid', value: prog, pick: pickRef.current } });
+        patchDoc(id, { progress: prog, position: { mode: 'liquid', value: prog, pick: pickRef.current, ...(windowed.current ? { at: windowed.current.topIndex() } : {}) } });
       }
     } else if (isPdf) patchDoc(id, { position: { mode, value: page, pick: pickRef.current } });
     else if (isDocx && !liquid) patchDoc(id, { progress: progRef.current, position: { mode: 'page', value: progRef.current, pick: pickRef.current } });
@@ -1276,7 +1299,17 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       if (final) setProgress(v);
     } else if (scroller) {
       scroller.scrollTop = v * (scroller.scrollHeight - scroller.clientHeight);
-      if (final) setProgress(v);
+      if (final) {
+        setProgress(v);
+        // far parts of a long book are only estimated until they are drawn: land again on the same fraction as the sizes come true
+        let n = 6;
+        const again = () => {
+          if (!scroller || n-- <= 0 || scrubbingRef.current) return;
+          scroller.scrollTop = v * (scroller.scrollHeight - scroller.clientHeight);
+          requestAnimationFrame(again);
+        };
+        requestAnimationFrame(again);
+      }
     }
   };
   /** something with running text in it (what Listen, the position bar and page turning are for) */
