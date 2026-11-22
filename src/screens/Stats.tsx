@@ -5,6 +5,7 @@ import { fmtMs, glyphFor, legendFor } from '../lib/glyphs';
 import { plantStage } from '../lib/ascii';
 import { lightsFor, renderGlobe } from '../lib/globe';
 import { Icon } from '../ui/Icon';
+import { FlapCount } from '../ui/Flap';
 import { Pixel, Ruler, Sheet, toast } from '../ui/kit';
 import { Ring } from './Library';
 import { cheer, displayName } from '../lib/cheer';
@@ -119,6 +120,7 @@ function DayChart({ date, ms, hours, ice }: { date: Date; ms: number; hours?: nu
 
 export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boolean; onClose: () => void; reward?: string | null; onRewardDone?: () => void }) {
   const days = useStore((s) => s.days);
+  const readCount = useStore((s) => s.readIds.length);
   const hours = useStore((s) => s.hours);
   const frozen = useStore((s) => s.freeze);
   const fz = freezeStatus(frozen);
@@ -360,10 +362,10 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
                   </div>
                 </div>
                 <div className="tile">
-                  <div className="k">{tr("finished")}</div>
+                  <div className="k">{tr("books read")}</div>
                   <div className="v">
-                    {finished}
-                    <small>{tr("of ")}{docs.length}</small>
+                    <FlapCount id="stats" value={readCount} label="Books finished" />
+                    <small>{docs.length ? `${finished} of ${docs.length} on the shelf` : tr("finished so far")}</small>
                   </div>
                 </div>
                 <div className="tile freeze" data-ready={fz.available > 0 || undefined}>

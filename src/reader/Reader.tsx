@@ -122,6 +122,13 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   const flowRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PdfViewHandle>(null);
   const urls = useRef<string[]>([]);
+  // tells the screens underneath (the flapping counters) that a book is open on top of them
+  useEffect(() => {
+    document.body.dataset.reading = '1';
+    return () => {
+      delete document.body.dataset.reading;
+    };
+  }, []);
   const listeningRef = useRef(false);
   const scrubbingRef = useRef(false);
   const [barSlot, setBarSlot] = useState<HTMLElement | null>(null);
@@ -861,7 +868,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   };
 
   // ---------------------------------------------------------------- the end of the book: pull past it to finish and remove
-  const endable = !error && !!content && !growing && (isPdf ? (liquid ? content.type === 'flow' && !!flowReady : !!pdf) : isDocx && !liquid ? !!docxBlob : content.type === 'flow' && !!flowReady);
+  const endable = !error && !!content && !growing && (isPdf ? (liquid ? content.type === 'flow' && !!flowReady : !!pdf) : isDocx && !liquid ? !!docxBlob : content.type === 'code' || (content.type === 'flow' && !!flowReady));
   const [finale, setFinale] = useState(false);
   const finishAndRemove = () => {
     tap('medium');
@@ -874,10 +881,15 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     if (doc.uri) (await import('../lib/linked')).ignoreUri(doc.uri);
     await patchDoc(id, { finished: true, progress: 1 });
     await removeDoc(id);
-    toast(linked ? 'Finished · taken off your shelf · Undo' : 'Finished · removed · Undo', undefined, () => {
-      void import('../lib/store').then((m) => m.undoRemoval());
-    });
     onClose();
+    // the counter on the shelf flips first; the message (and its Undo) comes in once it has
+    setTimeout(
+      () =>
+        toast(linked ? 'Finished · taken off your shelf · Undo' : 'Finished · removed · Undo', undefined, () => {
+          void import('../lib/store').then((m) => m.undoRemoval());
+        }),
+      1700,
+    );
   };
   useEndPull(scroller, { paged, enabled: endable, onTrigger: finishAndRemove });
 

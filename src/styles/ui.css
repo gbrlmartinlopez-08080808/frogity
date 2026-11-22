@@ -2591,3 +2591,96 @@
     animation: none !important;
   }
 }
+
+/* the flapping counter (ui/Flap.tsx): each digit is a card that folds over when it changes */
+.flap {
+  display: inline-flex;
+  gap: 2px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.flap-d {
+  position: relative;
+  display: inline-block;
+  min-width: 0.78em;
+  padding: 0.16em 0.12em;
+  border-radius: 0.22em;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  text-align: center;
+  perspective: 120px;
+  overflow: hidden;
+}
+.flap-d i {
+  display: block;
+  font-style: normal;
+}
+.flap-d .fl-back {
+  visibility: hidden;
+}
+.flap-d .fl-new,
+.flap-d .fl-old {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  backface-visibility: hidden;
+}
+.flap-d .fl-old {
+  display: none;
+}
+.flap-d .fl-new {
+  background: transparent;
+}
+.flap-d.go {
+  animation: flap-pop 0.6s ease-out both;
+  animation-delay: calc(var(--d, 0ms) + 0.4s);
+}
+.flap-d.go .fl-old {
+  display: grid;
+  transform-origin: 50% 100%;
+  animation: flap-out 0.28s cubic-bezier(0.5, 0, 0.9, 0.6) both;
+  animation-delay: var(--d, 0ms);
+}
+.flap-d.go .fl-new {
+  transform-origin: 50% 0;
+  animation: flap-in 0.3s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  /* starts when the old card is gone */
+  animation-delay: calc(var(--d, 0ms) + 0.22s);
+}
+@keyframes flap-out {
+  to {
+    transform: rotateX(-92deg);
+    opacity: 0.2;
+  }
+}
+@keyframes flap-in {
+  from {
+    transform: rotateX(92deg);
+  }
+  to {
+    transform: rotateX(0);
+  }
+}
+@keyframes flap-pop {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, #2e9e5b 0%, transparent); }
+  60% { box-shadow: 0 0 0 4px color-mix(in srgb, #2e9e5b 40%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.lib-meta .read {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.lib-meta .read b {
+  font-weight: 600;
+  color: #2e9e5b;
+}
+.lib-meta .who {
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

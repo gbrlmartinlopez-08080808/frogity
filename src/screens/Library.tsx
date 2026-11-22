@@ -8,6 +8,7 @@ import type { DocMeta } from '../lib/types';
 import { ConfirmSheet, Tick } from '../ui/Confirm';
 import { JobMark } from './ScanBadge';
 import { Icon } from '../ui/Icon';
+import { FlapCount } from '../ui/Flap';
 import { Pixel, Screws, Sheet, toast } from '../ui/kit';
 import { ASCII } from '../lib/ascii';
 import { HomeTabs } from './HomeTabs';
@@ -138,6 +139,7 @@ export function Library({
   const docs = useStore((s) => s.docs);
   const settings = useStore((s) => s.settings);
   const days = useStore((s) => s.days);
+  const readCount = useStore((s) => s.readIds.length);
   const [searchText, setSearchText] = useState<Record<string, string>>({});
   useEffect(() => {
     let alive = true;
@@ -266,10 +268,11 @@ export function Library({
             <HomeTabs active="library" onPick={(t) => t === 'interesting' && onInteresting()} />
           </h1>
           <div className="lib-meta">
-            <span>{tr("@")}{settings.name}</span>
-            <span>
-              <span className="hash">{tr("#")}</span> {docs.length}
-            </span>
+            {settings.name && <span className="who">{tr("@")}{settings.name}</span>}
+            <button className="read" onClick={onStats} aria-label={tr("Books finished")}>
+              <b>{tr("✓")}</b>
+              <FlapCount id="lib" value={readCount} label="Books finished" />
+            </button>
             <span className="sep" />
             <button className="ring-btn" onClick={onStats} aria-label={tr("Reading goal and streak")}>
               <Ring value={todayMs / goal} size={22} stroke={2} />

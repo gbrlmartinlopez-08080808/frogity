@@ -628,11 +628,12 @@ button.tcard:active {
 
 /* the library's own header gets crowded with two titles: its small facts step aside on a phone */
 @media (max-width: 440px) {
-  .lib-meta > span:not(.sep) {
-    display: none;
+  .lib-meta {
+    gap: 8px;
   }
-  .lib-meta .sep {
-    display: none;
+  .lib-meta .who {
+    max-width: 78px;
+    font-size: 14px;
   }
 }
 

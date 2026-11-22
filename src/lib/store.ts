@@ -10,6 +10,8 @@ interface State {
   days: Record<string, number>; // yyyy-mm-dd -> ms read
   hours: Record<string, number[]>; // yyyy-mm-dd -> ms read in each hour of that day
   freeze: FreezeState;
+  /** every book finished so far (a finished book may leave the shelf; it still counts) */
+  readIds: string[];
 }
 
 /** One free "freeze day" (it comes back 15 days after it is used) keeps a streak alive over a missed day; more are won in the games: five blocks make one. */
@@ -22,7 +24,7 @@ export interface FreezeState {
   pending?: string[]; // freeze days spent that the reader has not been told about yet (said the next time the app is open)
 }
 
-let state: State = { ready: false, docs: [], settings: DEFAULT_SETTINGS, days: {}, hours: {}, freeze: { used: [], bonus: 0 } };
+let state: State = { ready: false, docs: [], settings: DEFAULT_SETTINGS, days: {}, hours: {}, freeze: { used: [], bonus: 0 }, readIds: [] };
 const listeners = new Set<() => void>();
 
 function set(patch: Partial<State>) {
@@ -45,12 +47,13 @@ export const getState = () => state;
 export const subscribe = (f: () => void) => (listeners.add(f), () => void listeners.delete(f));
 
 export async function init() {
-  const [docs, settings, dayEntries, hours, freeze] = await Promise.all([
+  const [docs, settings, dayEntries, hours, freeze, readIds] = await Promise.all([
     db.all<DocMeta>('docs'),
     db.get<Settings>('kv', 'settings'),
     db.entries<number>('days'),
     db.get<Record<string, number[]>>('kv', 'hours'),
     db.get<FreezeState>('kv', 'freeze'),
+    db.get<string[]>('kv', 'readIds'),
   ]);
   const merged: Settings = { ...DEFAULT_SETTINGS, ...settings };
   merged.font = migrateFontId(merged.font);
@@ -73,6 +76,7 @@ export async function init() {
     settings: merged,
     days: Object.fromEntries(dayEntries),
     hours: hours ?? {},
+    readIds: [...new Set([...(readIds ?? []), ...docs.filter((d) => d.finished).map((d) => d.id)])],
     freeze: { used: freeze?.used ?? [], paid: freeze?.paid ?? [], bonus: freeze?.bonus ?? 0, blocks: freeze?.blocks ?? 0, blockDay: freeze?.blockDay, pending: freeze?.pending ?? [] },
   });
   applyFreeze();
@@ -89,9 +93,19 @@ export async function saveDoc(doc: DocMeta) {
   if (isNew && ['pdf', 'image', 'scan'].includes(doc.kind)) import('./scan').then((m) => m.queueScan(doc));
 }
 
+/** a book counts as read once, however many times it is finished and un-finished */
+function noteRead(id: string, finished: boolean) {
+  const has = state.readIds.includes(id);
+  if (finished === has) return;
+  const readIds = finished ? [...state.readIds, id] : state.readIds.filter((x) => x !== id);
+  set({ readIds });
+  void db.put('kv', 'readIds', readIds);
+}
+
 export async function patchDoc(id: string, patch: Partial<DocMeta>, resort = false) {
   const next = await db.patch<DocMeta>('docs', id, patch);
   if (!next) return;
+  if (patch.finished !== undefined) noteRead(id, !!patch.finished);
   const docs = state.docs.map((d) => (d.id === id ? next : d));
   set({ docs: resort ? sortDocs(docs) : docs });
 }
