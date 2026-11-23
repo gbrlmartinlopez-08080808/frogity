@@ -390,7 +390,7 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
                 go(1);
               }}
             >
-              <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value.slice(0, 24))} placeholder={tr("your first name")} maxLength={24} aria-label={tr("Your name")} enterKeyHint="next" />
+              <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value.slice(0, 16))} placeholder={tr("your first name")} maxLength={16} aria-label={tr("Your name")} enterKeyHint="next" />
             </form>
           )}
           {step.id === 'name' && (

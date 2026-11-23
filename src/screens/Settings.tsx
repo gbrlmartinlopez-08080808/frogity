@@ -68,12 +68,12 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
           <input
             value={name}
             onChange={(e) => {
-              const v = e.target.value.replace(/^@+/, '').slice(0, 24);
+              const v = e.target.value.replace(/^@+/, '').slice(0, 16);
               setName(v);
               updateSettings({ name: v.trim() || 'reader' });
             }}
             placeholder={tr("your name")}
-            maxLength={24}
+            maxLength={16}
             style={{ flex: 1, border: 0, outline: 0, background: 'transparent', fontSize: 16, fontWeight: 600, height: 44 }}
             aria-label={tr("Your name")}
           />

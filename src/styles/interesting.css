@@ -632,7 +632,6 @@ button.tcard:active {
     gap: 8px;
   }
   .lib-meta .who {
-    max-width: 78px;
     font-size: 14px;
   }
 }

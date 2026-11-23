@@ -1889,14 +1889,12 @@
   color: var(--r-ink, var(--ink));
   animation: finale-in 0.5s ease both;
   /* the confetti colours: strong enough for the light pages and the dark ones */
-  --fc0: #2e9e5b;
-  --fc1: #e0a100;
-  --fc2: #e5484d;
-  --fc3: #3b82f6;
-  --fc4: #a855f7;
-  --fc5: #14a3a3;
-  --fc6: #ec4899;
-  --fc7: var(--r-ink, var(--ink));
+  --fc0: var(--r-ink, var(--ink));
+  --fc1: color-mix(in srgb, var(--r-ink, var(--ink)) 45%, transparent);
+  --fc2: #d9a21b;
+  --fc3: #e0605a;
+  --fc4: #4f86e0;
+  --fc5: #3f9d6c;
 }
 .fc0 { color: var(--fc0); }
 .fc1 { color: var(--fc1); }
@@ -1904,14 +1902,12 @@
 .fc3 { color: var(--fc3); }
 .fc4 { color: var(--fc4); }
 .fc5 { color: var(--fc5); }
-.fc6 { color: var(--fc6); }
-.fc7 { color: var(--fc7); }
 .fl-row {
   height: 1.12em;
 }
 .finale-art {
   margin: 0;
-  font-size: clamp(8px, calc((100vw - 36px) / 26.5), 13px);
+  font-size: clamp(9px, calc((100vw - 40px) / 24.2), 14px);
   line-height: 1.12;
   letter-spacing: 0;
   white-space: pre;

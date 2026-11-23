@@ -1,6 +1,8 @@
 // Phrases for what was added most recently: [English, Spanish, French]
 export const NEW: [string, string, string][] = [
   ["Calendar", "Calendario", "Calendrier"],
+  ["Streak", "Racha", "Série"],
+  ["gulp!", "¡glup!", "glou !"],
   ["Local", "Local", "Local"],
   ["local", "local", "local"],
   ["Science", "Ciencia", "Sciences"],

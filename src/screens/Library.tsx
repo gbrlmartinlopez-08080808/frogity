@@ -270,11 +270,6 @@ export function Library({
           </h1>
           <div className="lib-meta">
             {settings.name && <span className="who">{tr("@")}{settings.name}</span>}
-            <button className="read" onClick={onStats} aria-label={tr("Books finished")}>
-              <b>{tr("✓")}</b>
-              <FlapCount id="lib" value={readCount} label="Books finished" />
-            </button>
-            <span className="sep" />
             <button className="ring-btn" onClick={onStats} aria-label={tr("Reading goal and streak")}>
               <Ring value={todayMs / goal} size={22} stroke={2} />
             </button>
@@ -329,19 +324,23 @@ export function Library({
       </div>
 
       {!empty && (
-        <button
-          className="streak-strip"
-          onClick={() => {
-            // the flame flares up first; the page of numbers opens a moment later
-            tap('light');
-            setBurn((n) => n + 1);
-            window.setTimeout(onStats, streak.current > 0 ? 380 : 120);
-          }}
-        >
-          <span key={burn} className={`flame${burn ? ' lit' : ''}${streak.current > 0 ? ' on' : ''}`}>
+        <div className="streak-strip" role="button" tabIndex={0} onClick={onStats} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onStats())}>
+          {/* the flame only flares: it never opens anything */}
+          <button
+            key={burn}
+            className={`flame${burn ? ' lit' : ''}${streak.current > 0 ? ' on' : ''}`}
+            aria-label={tr("Streak")}
+            onClick={(e) => {
+              e.stopPropagation();
+              tap('light');
+              setBurn((n) => n + 1);
+            }}
+          >
             <Pixel name="flame" size={22} />
-            <i /><i /><i />
-          </span>
+            <i />
+            <i />
+            <i />
+          </button>
           <div className="t">
             <b>{streak.current}{tr(" day")}{streak.current === 1 ? '' : 's'}</b>
             <span>{todayMs >= goal ? 'today’s page is turned.' : `${Math.max(1, Math.ceil((goal - todayMs) / 60000))} min to today’s goal`}</span>
@@ -351,7 +350,11 @@ export function Library({
               <i key={i} className={on === 'ice' ? 'ice' : undefined} style={{ opacity: on === 'off' ? 0.12 : 1 }} title={on === 'ice' ? 'freeze day' : undefined} />
             ))}
           </div>
-        </button>
+          <span className="read-chip" aria-label={tr("Books finished")}>
+            <Icon name="book" size={14} stroke={2.2} />
+            <FlapCount id="lib" value={readCount} label="Books finished" />
+          </span>
+        </div>
       )}
 
       {!empty && (

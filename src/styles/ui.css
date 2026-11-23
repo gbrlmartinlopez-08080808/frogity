@@ -2687,6 +2687,10 @@
 
 /* the streak flame: it breathes a little when the streak is alive, and flares with sparks when it is pressed */
 .flame {
+  color: var(--ink);
+  padding: 0;
+  background: none;
+  cursor: pointer;
   position: relative;
   display: inline-grid;
   width: 22px;
@@ -2698,7 +2702,7 @@
   transform-origin: 50% 100%;
 }
 .flame.on svg {
-  color: #e5762a;
+  color: var(--ink);
   animation: flame-breathe 2.4s ease-in-out infinite;
 }
 .flame.lit svg {
@@ -2710,16 +2714,17 @@
   bottom: 60%;
   width: 3px;
   height: 3px;
-  background: #f4b13a;
+  background: var(--ink);
   opacity: 0;
   pointer-events: none;
 }
 .flame.lit i {
   animation: flame-spark 0.7s ease-out both;
 }
-.flame.lit i:nth-of-type(2) { --dx: -9px; animation-delay: 0.05s; background: #e5762a; }
+.flame.lit i:nth-of-type(2) { --dx: -9px; animation-delay: 0.05s; }
 .flame.lit i:nth-of-type(3) { --dx: 9px; animation-delay: 0.1s; }
-.flame.lit i:nth-of-type(4) { --dx: 1px; animation-delay: 0.02s; background: #e5484d; }
+.flame.lit i:nth-of-type(3) { --dx: 9px; animation-delay: 0.1s; }
+.flame.lit i:nth-of-type(1) { --dx: 1px; animation-delay: 0.02s; }
 @keyframes flame-breathe {
   0%, 100% { transform: scale(1, 1) skewX(0deg); }
   35% { transform: scale(1.03, 1.07) skewX(-2deg); }
@@ -2727,7 +2732,7 @@
 }
 @keyframes flame-flare {
   0% { transform: scale(1); filter: none; }
-  25% { transform: scale(1.45, 1.7) skewX(-6deg); color: #f4b13a; }
+  25% { transform: scale(1.45, 1.7) skewX(-6deg); }
   55% { transform: scale(0.95, 1.15) skewX(5deg); }
   100% { transform: scale(1); }
 }
@@ -2737,4 +2742,92 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .flame.on svg, .flame.lit svg, .flame.lit i { animation: none; }
+}
+
+/* the streak strip: a flame that only flares, the days so far, and (top right) the books read so far */
+.streak-strip {
+  position: relative;
+  cursor: pointer;
+}
+.streak-strip .read-chip {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.streak-strip .blocks {
+  margin-top: 14px;
+}
+
+/* nothing may push the screen wider than it is: long names, long translations and long titles are cut short with an ellipsis */
+.lib-top {
+  gap: 10px;
+  min-width: 0;
+}
+.lib-top h1 {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+.home-tabs {
+  min-width: 0;
+  gap: 14px;
+}
+.home-tabs button {
+  min-width: 0;
+  white-space: nowrap;
+}
+.home-tabs button:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lib-meta {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: flex-end;
+}
+.lib-meta .who {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.streak-strip .t {
+  min-width: 0;
+}
+.streak-strip .t b,
+.streak-strip .t span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pill,
+.seg button,
+.topics button,
+.wsec button,
+.chips-row button {
+  max-width: 100%;
+}
+.seg button {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 400px) {
+  .home-tabs {
+    gap: 12px;
+  }
+  .home-tabs .frogmark {
+    display: none;
+  }
+  .lib-top {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
 }
