@@ -290,24 +290,53 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
   for (const r of rotated) markText(r.x0, r.top, r.x1, r.bot, 2);
 
   // Connected components of leftover ink, merging cells within a small gap.
-  const comps = components(ink, gw, gh, Math.max(2, Math.round((body * 0.6) / C)))
-    .map((c) => ({
+  const gapCells = Math.max(2, Math.round((body * 0.6) / C));
+  const mk = () =>
+    components(ink, gw, gh, gapCells).map((c) => ({
       x0: c.x0 * C,
       x1: (c.x1 + 1) * C,
       top: c.y0 * C,
       bot: (c.y1 + 1) * C,
       cells: c.n,
-    }))
-    // A border drawn round the page, or an outline round a block of text, is a few thin lines: decoration. Taken as a picture it
-    // would swallow every line of text inside it (a whole page, turned into one image).
-    .filter((c) => {
-      const w = c.x1 - c.x0;
-      const h = c.bot - c.top;
-      const sparse = c.cells * C * C < w * h * 0.06;
-      if (!sparse || w * h < W * H * 0.35) return true; // (only a big outline: the chart frame of a plot is a picture, a frame round the page is not)
-      const inside = items.filter((it) => it.x0 >= c.x0 - C && it.x1 <= c.x1 + C && it.top >= c.top - C && it.bot <= c.bot + C).length;
-      return inside < 4;
-    });
+    }));
+  type Comp = ReturnType<typeof mk>[number];
+  // A border drawn round the page, or an outline round a block of text, is decoration: taken as a picture it would swallow every
+  // line of text inside it (a whole page, turned into one image). Its ink lies along the edge of its box, in a band.
+  const edge = (c: Comp) => {
+    const band = Math.max(2, Math.round(Math.min(c.x1 - c.x0, c.bot - c.top) / C / 12));
+    return { band, gx0: Math.round(c.x0 / C), gx1: Math.round(c.x1 / C) - 1, gy0: Math.round(c.top / C), gy1: Math.round(c.bot / C) - 1 };
+  };
+  const along = (c: Comp, erase = false) => {
+    const { band, gx0, gx1, gy0, gy1 } = edge(c);
+    let n = 0;
+    for (let y = Math.max(0, gy0); y <= Math.min(gh - 1, gy1); y++)
+      for (let x = Math.max(0, gx0); x <= Math.min(gw - 1, gx1); x++)
+        if (ink[y * gw + x] === 1 && (x - gx0 < band || gx1 - x < band || y - gy0 < band || gy1 - y < band)) {
+          n++;
+          if (erase) ink[y * gw + x] = 0;
+        }
+    return n;
+  };
+  const insideOf = (c: Comp) => items.filter((it) => it.x0 >= c.x0 - C && it.x1 <= c.x1 + C && it.top >= c.top - C && it.bot <= c.bot + C).length;
+  let raw = mk();
+  // a picture that sits close to the frame is joined to it by the gap: take the frame's ink away and look again, so the picture is a
+  // picture on its own and the frame is not
+  for (const c of raw) {
+    if ((c.x1 - c.x0) * (c.bot - c.top) < W * H * 0.35 || insideOf(c) < 4) continue;
+    const a = along(c);
+    if (a >= c.cells * 0.35 && a < c.cells * 0.97) {
+      along(c, true);
+      raw = mk();
+      break;
+    }
+  }
+  const comps = raw.filter((c) => {
+    const w = c.x1 - c.x0;
+    const h = c.bot - c.top;
+    if (w * h < W * H * 0.35) return true; // (only a big outline: the chart frame of a plot is a picture, a frame round the page is not)
+    const outline = c.cells * C * C < w * h * 0.06 || along(c) >= c.cells * 0.85;
+    return !outline || insideOf(c) < 4;
+  });
 
   await slice();
   // Classify components.
