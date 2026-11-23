@@ -337,3 +337,34 @@ test('pulling past the end of a book finishes it and takes it off the shelf, wit
   await expect(page.locator('.frogity-toast')).toContainText('Undo', { timeout: 8000 });
   await expect(page.locator('.reader')).toHaveCount(0);
 });
+
+test('a long book is cut into pieces, jumps land on text, and turning pages and back leaves it whole', async ({ page }) => {
+  await page.goto('/');
+  await page.getByText('skip intro').click().catch(() => {});
+  await page.waitForTimeout(1000);
+  const text = '# Long test\n\n' + Array.from({ length: 700 }, (_, i) => `Paragraph ${i}. ` + 'A sentence that goes on for a while. '.repeat(6)).join('\n\n');
+  await page.locator('input[type=file]:not([capture])').first().setInputFiles({ name: 'long-test.md', mimeType: 'text/markdown', buffer: Buffer.from(text) });
+  await page.waitForTimeout(2500);
+  const reader = page.locator('.reader-scroll');
+  if (!(await reader.count())) await page.getByText('Long test').first().click();
+  await expect(page.locator('.flow .chunk').first()).toBeAttached({ timeout: 15000 });
+  const jump = async (f: number) => {
+    await reader.evaluate((el, k) => (el.scrollTop = k * (el.scrollHeight - el.clientHeight)), f);
+    await page.waitForTimeout(900);
+    return reader.evaluate((el) => {
+      const top = el.getBoundingClientRect().top;
+      const p = [...el.querySelectorAll('.flow p')].find((x) => x.getBoundingClientRect().bottom > top + 1 && x.getBoundingClientRect().height > 0);
+      return p?.textContent?.slice(0, 12) ?? '';
+    });
+  };
+  expect(await jump(0.5)).toContain('Paragraph');
+  expect(await jump(0.9)).toContain('Paragraph');
+  expect(await jump(0.1)).toContain('Paragraph');
+  // pages instead of scrolling: the pieces are taken away (and the page keeps working), then back again
+  await page.mouse.click(206, 450);
+  await page.getByRole('button', { name: /Scrolling — switch to turning pages/ }).click();
+  await expect(page.locator('.flow .chunk')).toHaveCount(0, { timeout: 8000 });
+  await expect(page.locator('.flow p').first()).toBeAttached();
+  await page.getByRole('button', { name: /Turning pages — switch to scrolling/ }).click();
+  await expect(page.locator('.flow .chunk').first()).toBeAttached({ timeout: 8000 });
+});

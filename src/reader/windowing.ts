@@ -314,10 +314,13 @@ export function windowFlow(root: HTMLElement, scroller: HTMLElement, memoKey = '
       scroller.removeEventListener('scroll', kick);
       window.removeEventListener('resize', kick);
       // back to the plain book: every block where it was, the wrappers gone (the block at the top of the screen stays put)
-      const keep = Array.from(root.children).length ? flowKids(root).find((b) => b.getBoundingClientRect().bottom > top() + 1) : null;
+      const intact = pieces.some((p) => p.parentNode === root);
+      const keep = intact ? flowKids(root).find((b) => b.getBoundingClientRect().bottom > top() + 1) : null;
       const dy = keep ? keep.getBoundingClientRect().top - top() : 0;
       for (const p of pieces) {
         p.removeAttribute('data-off');
+        // a piece that is no longer in the book (the book was drawn again from scratch) has nothing to give back
+        if (!p.parentNode) continue;
         while (p.firstChild) p.before(p.firstChild);
         p.remove();
       }

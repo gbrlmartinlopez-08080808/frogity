@@ -13,7 +13,7 @@ import { mapLimit } from './ocrpage';
 import { slice } from './ocr';
 import type { DocMeta } from './types';
 
-export const LQ_VERSION = 'lq10';
+export const LQ_VERSION = 'lq11';
 /** bump to have every document looked at again (the page check changed) */
 const PLAN_V = 4;
 

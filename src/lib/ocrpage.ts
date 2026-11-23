@@ -618,12 +618,20 @@ export async function triageFigures(blocks: LBlock[], onProgress?: (done: number
       const total = leaves.reduce((a, l) => a + area(l), 0) || 1;
       const textArea = leaves.filter((l) => l.kind === 'text').reduce((a, l) => a + area(l), 0);
       const pics = leaves.filter((l) => l.kind !== 'text').reduce((a, l) => a + area(l), 0);
-      // mostly lines of writing and hardly any drawing: worth reading
-      if (textArea / total < 0.6 || pics / total > 0.3) continue;
+      const mostlyWriting = textArea / total >= 0.6 && pics / total <= 0.3;
+      // writing mixed into a picture (a poster, a chart with paragraphs, a page whose text sits on its photos): the picture stays and
+      // the words in it are added below it, so they can be read aloud, searched and looked up
+      const mixed = !mostlyWriting && textArea / total >= 0.08 && leaves.some((l) => l.kind === 'text' && l.lines >= 2);
+      if (!mostlyWriting && !mixed) continue;
       const out = await ocrPage(c, g[0].page);
-      const chars = out.blocks.reduce((a, x) => a + (x.t === 'p' || x.t === 'h' ? x.html.length : 0), 0);
-      if (chars >= 60 && out.blocks.some((x) => x.t === 'p')) {
+      const words = out.blocks.filter((x) => x.t === 'p' || x.t === 'h');
+      const chars = words.reduce((a, x) => a + x.html.length, 0);
+      if (mostlyWriting && chars >= 60 && out.blocks.some((x) => x.t === 'p')) {
         replace.set(g[0], out.blocks);
+        g.slice(1).forEach((x) => drop.add(x));
+        changed++;
+      } else if (mixed && chars >= 120 && words.some((x) => x.t === 'p')) {
+        replace.set(g[0], [...g, ...words]);
         g.slice(1).forEach((x) => drop.add(x));
         changed++;
       }
