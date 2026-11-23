@@ -350,10 +350,6 @@ export function Library({
               <i key={i} className={on === 'ice' ? 'ice' : undefined} style={{ opacity: on === 'off' ? 0.12 : 1 }} title={on === 'ice' ? 'freeze day' : undefined} />
             ))}
           </div>
-          <span className="read-chip" aria-label={tr("Books finished")}>
-            <Icon name="book" size={14} stroke={2.2} />
-            <FlapCount id="lib" value={readCount} label="Books finished" />
-          </span>
         </div>
       )}
 

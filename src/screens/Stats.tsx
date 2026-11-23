@@ -253,6 +253,10 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
                 <Pixel name="crown" size={14} />
                 {info.longest}
               </span>
+              <span aria-label={tr("Books finished")}>
+                <Icon name="book" size={14} stroke={2.2} />
+                <FlapCount id="stats-corner" value={readCount} label="Books finished" />
+              </span>
             </div>
           </div>
         </div>
