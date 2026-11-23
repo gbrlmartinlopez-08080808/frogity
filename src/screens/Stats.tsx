@@ -140,7 +140,13 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
   const [mounted, setMounted] = useState(open);
   const [closing, setClosing] = useState(false);
   const box = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ y: number; dy: number } | null>(null);
+  // the card follows the finger: its height is set directly (never through a CSS transition) and let go with a spring that keeps the finger's speed
+  const drag = useRef<{ y: number; h: number; moved: boolean; pts: { t: number; h: number }[] } | null>(null);
+  const hNow = useRef(0);
+  const raf = useRef(0);
+  const frame = useRef(0);
+  const pendingV = useRef(0);
+  const geom = useRef({ h0: 0, h1: 0 });
   const info = streakInfo(days);
   const goal = settings.dailyGoal * 60_000;
 
@@ -158,6 +164,73 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
       return () => clearTimeout(t);
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** the two resting heights: a half card, and (nearly) the whole screen */
+  const measure = () => {
+    const el = box.current;
+    if (!el) return geom.current;
+    const cur = el.style.height;
+    el.style.height = 'min(66vh, 580px)';
+    const h0 = el.offsetHeight;
+    el.style.height = 'calc(100vh - var(--safe-t) - var(--safe-b) - 20px)';
+    el.style.height = 'calc(100dvh - var(--safe-t) - var(--safe-b) - 20px)';
+    const h1 = el.offsetHeight;
+    el.style.height = cur;
+    geom.current = { h0, h1 };
+    return geom.current;
+  };
+  const setH = (h: number) => {
+    hNow.current = h;
+    if (box.current) box.current.style.height = `${h}px`;
+  };
+  const spring = (to: number, v0 = 0) => {
+    cancelAnimationFrame(raf.current);
+    let x = hNow.current;
+    let v = v0;
+    let last = performance.now();
+    const k = 420;
+    const c = 2 * Math.sqrt(k) * 0.9;
+    const step = (now: number) => {
+      const dt = Math.min(0.032, (now - last) / 1000);
+      last = now;
+      v += (-k * (x - to) - c * v) * dt;
+      x += v * dt;
+      setH(x);
+      if (Math.abs(x - to) < 0.4 && Math.abs(v) < 10) return setH(to);
+      raf.current = requestAnimationFrame(step);
+    };
+    raf.current = requestAnimationFrame(step);
+  };
+  // a half card when it opens; the other buttons that open or close it fully glide there too
+  useEffect(() => {
+    if (!mounted || !box.current || drag.current) return;
+    const g = measure();
+    const to = full ? g.h1 : g.h0;
+    if (!hNow.current) return setH(to);
+    if (Math.abs(hNow.current - to) > 1) {
+      const v = pendingV.current;
+      pendingV.current = 0;
+      spring(to, v);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, full]);
+  useEffect(() => {
+    if (!mounted) return;
+    const on = () => {
+      if (drag.current) return;
+      const g = measure();
+      setH(full ? g.h1 : g.h0);
+    };
+    window.addEventListener('resize', on);
+    return () => {
+      window.removeEventListener('resize', on);
+      cancelAnimationFrame(raf.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, full]);
+  useEffect(() => {
+    if (!mounted) hNow.current = 0;
+  }, [mounted]);
 
   useEffect(() => {
     if (!open) return;
@@ -215,22 +288,51 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
   const today = new Date();
 
   const onDown = (e: React.PointerEvent) => {
-    drag.current = { y: e.clientY, dy: 0 };
+    cancelAnimationFrame(raf.current);
+    measure();
+    drag.current = { y: e.clientY, h: hNow.current, moved: false, pts: [{ t: performance.now(), h: hNow.current }] };
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
   };
   const onMove = (e: React.PointerEvent) => {
-    if (!drag.current) return;
-    drag.current.dy = e.clientY - drag.current.y;
-    if (box.current && !full && drag.current.dy > 0) box.current.style.transform = `translateY(${drag.current.dy}px)`;
+    const d = drag.current;
+    if (!d) return;
+    const dy = e.clientY - d.y;
+    if (Math.abs(dy) > 4) d.moved = true;
+    const { h1 } = geom.current;
+    const raw = d.h - dy;
+    // past the top it gives a little and resists; down it follows all the way
+    const h = raw > h1 ? h1 + (raw - h1) * 0.22 : Math.max(48, raw);
+    hNow.current = h;
+    d.pts.push({ t: performance.now(), h });
+    if (d.pts.length > 8) d.pts.shift();
+    if (!frame.current)
+      frame.current = requestAnimationFrame(() => {
+        frame.current = 0;
+        if (box.current) box.current.style.height = `${hNow.current}px`;
+      });
   };
   const onUp = () => {
     const d = drag.current;
     drag.current = null;
-    if (box.current) box.current.style.transform = '';
+    cancelAnimationFrame(frame.current);
+    frame.current = 0;
     if (!d) return;
-    if (d.dy < -40) setFull(true);
-    else if (d.dy > 70) (full ? setFull(false) : onClose());
-    else if (Math.abs(d.dy) < 6) setFull((f) => !f);
+    const { h0, h1 } = geom.current;
+    if (!d.moved) {
+      setFull((f) => !f);
+      return;
+    }
+    const a = d.pts[0];
+    const b = d.pts[d.pts.length - 1];
+    const v = b.t > a.t ? ((b.h - a.h) / (b.t - a.t)) * 1000 : 0; // px per second, positive = growing
+    const projected = hNow.current + v * 0.16;
+    if (projected < h0 * 0.72) return onClose();
+    const wantFull = projected > (h0 + h1) / 2;
+    if (wantFull === full) spring(wantFull ? h1 : h0, v);
+    else {
+      pendingV.current = v;
+      setFull(wantFull);
+    }
   };
 
   return (

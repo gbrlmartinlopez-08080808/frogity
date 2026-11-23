@@ -714,12 +714,6 @@
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   animation: bubbleIn 0.45s var(--spring);
-  transition: height 0.42s var(--spring), border-radius 0.3s;
-  will-change: height;
-}
-.bubble.full {
-  height: calc(100vh - var(--safe-t) - var(--safe-b) - 20px);
-  height: calc(100dvh - var(--safe-t) - var(--safe-b) - 20px);
 }
 .bubble.out {
   animation: sheetout 0.25s var(--ease) forwards;
@@ -782,6 +776,7 @@
   padding: 4px 12px 14px;
   overscroll-behavior: contain;
   scrollbar-width: none;
+  contain: layout paint;
 }
 .bubble-body::-webkit-scrollbar {
   display: none;
