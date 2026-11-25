@@ -47,23 +47,35 @@ export function CoverPicker({ doc, onClose }: { doc: DocMeta | null; onClose: ()
           <Icon name="image" size={22} />
           <span>{tr('A photo')}</span>
         </button>
-        {shown.map((c) => (
-          <button key={c.url} className={`cp-item${busy === c.url ? ' busy' : ''}`} onClick={() => void pick(c.url, () => useCover(doc, c.url))} disabled={!!busy} aria-label={`${tr('Cover from')} ${c.from}`}>
-            <img
-              src={c.url}
-              alt=""
-              loading="lazy"
-              onLoad={(e) => {
-                const im = e.currentTarget;
-                // a missing cover comes back as a tiny blank picture
-                if (im.naturalWidth < 40 || im.naturalHeight < 40) setBad((b) => new Set(b).add(c.url));
-              }}
-              onError={() => setBad((b) => new Set(b).add(c.url))}
-            />
-            <small className="no-i18n">{c.from}</small>
-          </button>
-        ))}
       </div>
+      {(['edition', 'art'] as const).map((k) => {
+        const group = shown.filter((c) => c.kind === k);
+        if (!group.length) return null;
+        return (
+          <div key={k}>
+            <div className="cp-head">{k === 'edition' ? tr('Covers of this book') : tr('Open pictures that fit — the title is set over them')}</div>
+            <div className="cp-grid">
+              {group.map((c) => (
+                <button key={c.url} className={`cp-item${busy === c.url ? ' busy' : ''}`} onClick={() => void pick(c.url, () => useCover(doc, c))} disabled={!!busy} aria-label={`${tr('Cover from')} ${c.from}`}>
+                  <img
+                    src={c.thumb}
+                    alt=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    onLoad={(e) => {
+                      const im = e.currentTarget;
+                      // a missing cover comes back as a tiny blank picture
+                      if (im.naturalWidth < 40 || im.naturalHeight < 40) setBad((b) => new Set(b).add(c.url));
+                    }}
+                    onError={() => setBad((b) => new Set(b).add(c.url))}
+                  />
+                  <small className="no-i18n">{c.credit ? `${c.from} · ${c.credit}` : c.from}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
       {!list && (
         <div style={{ padding: '18px 0' }}>
           <PixelLoader size={5} label={tr('finding covers')} />

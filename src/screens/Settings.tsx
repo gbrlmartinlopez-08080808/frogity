@@ -66,7 +66,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
 
         <div className="section-label">{tr("you")}</div>
         <div className="row">
-          <span className="row-label" style={{ flex: 'none' }}>{tr("@")}</span>
+          <span className="row-label" style={{ flex: 'none' }}>{tr("Name")}</span>
           <input
             value={name}
             onChange={(e) => {

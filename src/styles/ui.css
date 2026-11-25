@@ -3276,3 +3276,14 @@
   opacity: 0.5;
   text-align: center;
 }
+.cp-head {
+  margin: 10px 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.cp-item small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -273,7 +273,7 @@ export function Library({
             <HomeTabs active="library" onPick={(t) => t === 'interesting' && onInteresting()} />
           </h1>
           <div className="lib-meta">
-            {settings.name && <span className="who">{tr("@")}{settings.name}</span>}
+            {settings.name && <span className="who">{settings.name}</span>}
 
             <button className="ring-btn" onClick={onStats} aria-label={tr("Reading goal and streak")}>
               <Ring value={todayMs / goal} size={22} stroke={2} />
