@@ -90,6 +90,9 @@ export async function generatedCover(title: string, kind: DocKind, author?: stri
   return new Promise((r) => c.toBlob((b) => r(b!), 'image/png'));
 }
 
+/** A picture made into a cover (shrunk to cover size, as JPEG). */
+export const imageCoverOf = (blob: Blob) => imageCover(blob);
+
 async function imageCover(blob: Blob): Promise<Blob | undefined> {
   try {
     const bmp = await createImageBitmap(blob);
@@ -326,7 +329,7 @@ export async function upgradeCovers() {
   if (upgrading) return;
   upgrading = true;
   try {
-    const stale = () => getState().docs.find((d) => (d.coverV ?? 1) < COVER_V && ['pdf', 'docx', 'slides'].includes(d.kind) && d.size < 120_000_000);
+    const stale = () => getState().docs.find((d) => !d.coverPicked && (d.coverV ?? 1) < COVER_V && ['pdf', 'docx', 'slides'].includes(d.kind) && d.size < 120_000_000);
     for (let d = stale(); d; d = stale()) {
       await refreshCover(d).catch(() => patchDocQuiet(d.id));
       await new Promise((r) => setTimeout(r, 400));
@@ -386,10 +389,14 @@ export async function loadContent(meta: DocMeta): Promise<Content> {
     case 'slides':
       return { type: 'flow', liquid: await f.slidesToLiquid(buf, meta.fileName) };
     case 'scan': {
-      const cached = await db.get<string>('cache', meta.id + ':ocr');
+      const blocks = await db.get<import('./formats/liquidPdf').LBlock[]>('cache', meta.id + ':ocrblocks');
       const imgs = await Promise.all((meta.scanPages ?? []).map((p) => db.get<Blob>('blobs', p)));
       const urls = imgs.filter(Boolean).map((b) => URL.createObjectURL(b!));
-      let html = cached ?? '';
+      let html: string;
+      if (blocks?.length) {
+        const { blocksToHtml } = await import('./formats/liquidPdf');
+        html = blocksToHtml(blocks, urls) + `<div class="lq-orig">${(await import('./i18n')).tr('The pages as photographed')}</div>`;
+      } else html = (await db.get<string>('cache', meta.id + ':ocr')) ?? '';
       html += urls.map((u, i) => `<figure class="scanpage"><img src="${u}" alt="Page ${i + 1}"/><figcaption>scan · page ${i + 1}</figcaption></figure>`).join('');
       return { type: 'flow', liquid: f.finalize(html, urls) };
     }

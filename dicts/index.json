@@ -1,0 +1,252 @@
+{
+ "v": 1,
+ "built": "2026-11-25",
+ "packs": [
+  {
+   "id": "en_fr",
+   "from": "en",
+   "to": "fr",
+   "words": 94259,
+   "bytes": 1058259
+  },
+  {
+   "id": "en_de",
+   "from": "en",
+   "to": "de",
+   "words": 90654,
+   "bytes": 1306361
+  },
+  {
+   "id": "en_it",
+   "from": "en",
+   "to": "it",
+   "words": 50738,
+   "bytes": 645792
+  },
+  {
+   "id": "en_pt",
+   "from": "en",
+   "to": "pt",
+   "words": 44963,
+   "bytes": 512183
+  },
+  {
+   "id": "en_es",
+   "from": "en",
+   "to": "es",
+   "words": 47450,
+   "bytes": 641633
+  },
+  {
+   "id": "fr_en",
+   "from": "fr",
+   "to": "en",
+   "words": 92325,
+   "bytes": 1035910
+  },
+  {
+   "id": "fr_es",
+   "from": "fr",
+   "to": "es",
+   "words": 36385,
+   "bytes": 386577
+  },
+  {
+   "id": "fr_de",
+   "from": "fr",
+   "to": "de",
+   "words": 69978,
+   "bytes": 957249
+  },
+  {
+   "id": "fr_it",
+   "from": "fr",
+   "to": "it",
+   "words": 46959,
+   "bytes": 449437
+  },
+  {
+   "id": "fr_pt",
+   "from": "fr",
+   "to": "pt",
+   "words": 26214,
+   "bytes": 281405
+  },
+  {
+   "id": "de_en",
+   "from": "de",
+   "to": "en",
+   "words": 106815,
+   "bytes": 1327268
+  },
+  {
+   "id": "de_es",
+   "from": "de",
+   "to": "es",
+   "words": 38536,
+   "bytes": 487302
+  },
+  {
+   "id": "de_fr",
+   "from": "de",
+   "to": "fr",
+   "words": 76213,
+   "bytes": 964085
+  },
+  {
+   "id": "de_it",
+   "from": "de",
+   "to": "it",
+   "words": 36213,
+   "bytes": 445089
+  },
+  {
+   "id": "de_pt",
+   "from": "de",
+   "to": "pt",
+   "words": 25790,
+   "bytes": 301755
+  },
+  {
+   "id": "it_en",
+   "from": "it",
+   "to": "en",
+   "words": 56487,
+   "bytes": 668207
+  },
+  {
+   "id": "it_es",
+   "from": "it",
+   "to": "es",
+   "words": 12980,
+   "bytes": 122942
+  },
+  {
+   "id": "it_fr",
+   "from": "it",
+   "to": "fr",
+   "words": 49687,
+   "bytes": 457421
+  },
+  {
+   "id": "it_de",
+   "from": "it",
+   "to": "de",
+   "words": 36609,
+   "bytes": 452531
+  },
+  {
+   "id": "it_pt",
+   "from": "it",
+   "to": "pt",
+   "words": 14152,
+   "bytes": 128176
+  },
+  {
+   "id": "pt_en",
+   "from": "pt",
+   "to": "en",
+   "words": 52282,
+   "bytes": 520191
+  },
+  {
+   "id": "pt_es",
+   "from": "pt",
+   "to": "es",
+   "words": 20300,
+   "bytes": 174606
+  },
+  {
+   "id": "pt_fr",
+   "from": "pt",
+   "to": "fr",
+   "words": 29018,
+   "bytes": 286932
+  },
+  {
+   "id": "pt_de",
+   "from": "pt",
+   "to": "de",
+   "words": 25251,
+   "bytes": 301867
+  },
+  {
+   "id": "pt_it",
+   "from": "pt",
+   "to": "it",
+   "words": 14413,
+   "bytes": 128618
+  },
+  {
+   "id": "es_en",
+   "from": "es",
+   "to": "en",
+   "words": 65951,
+   "bytes": 688095
+  },
+  {
+   "id": "es_de",
+   "from": "es",
+   "to": "de",
+   "words": 39075,
+   "bytes": 497190
+  },
+  {
+   "id": "es_fr",
+   "from": "es",
+   "to": "fr",
+   "words": 40357,
+   "bytes": 399036
+  },
+  {
+   "id": "es_it",
+   "from": "es",
+   "to": "it",
+   "words": 13997,
+   "bytes": 126549
+  },
+  {
+   "id": "es_pt",
+   "from": "es",
+   "to": "pt",
+   "words": 20620,
+   "bytes": 176372
+  },
+  {
+   "id": "en",
+   "from": "en",
+   "words": 907083,
+   "bytes": 20819184
+  },
+  {
+   "id": "es",
+   "from": "es",
+   "words": 794577,
+   "bytes": 6041957
+  },
+  {
+   "id": "fr",
+   "from": "fr",
+   "words": 1768777,
+   "bytes": 15239171
+  },
+  {
+   "id": "de",
+   "from": "de",
+   "words": 850557,
+   "bytes": 9059468
+  },
+  {
+   "id": "it",
+   "from": "it",
+   "words": 529108,
+   "bytes": 3875598
+  },
+  {
+   "id": "pt",
+   "from": "pt",
+   "words": 370209,
+   "bytes": 3448589
+  }
+ ]
+}

@@ -1,4 +1,5 @@
 import { tr, loc } from '../lib/i18n';
+import { useWithLocal } from '../lib/localnews';
 import { Fragment, useCallback, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { readArticle, type Article } from '../lib/article';
 import { wikiArticle, type WikiDoc } from '../lib/wikiarticle';
@@ -487,9 +488,11 @@ function withLocal(d: Daily, list: Story[], home: string, topic: 'all' | Topic |
   return out;
 }
 
-function News({ d, setDetail, mode }: { d: Daily; setDetail: (x: Detail) => void; mode: ReactNode }) {
+function News({ d: day, setDetail, mode }: { d: Daily; setDetail: (x: Detail) => void; mode: ReactNode }) {
   const [topic, setTopic] = useState<'all' | Topic | 'local'>('all');
   const [home] = useHome();
+  // the reader's country: from the day's file, or read by the phone from the country's outlets when the file has none
+  const d = useWithLocal(day, home);
   const hasLocal = useMemo(() => localsOf(d, home).length > 0, [d, home]);
   const topics = useMemo(() => [...(hasLocal ? (['local'] as const) : []), ...new Set(d.news.map((s) => s.topic).filter((x): x is Topic => !!x))], [d, hasLocal]);
   const list = useMemo(() => withLocal(d, topic === 'all' || topic === 'local' ? d.news : d.news.filter((s) => s.topic === topic), home, topic), [d, topic, home]);
@@ -500,7 +503,7 @@ function News({ d, setDetail, mode }: { d: Daily; setDetail: (x: Detail) => void
         <div className="topics" role="tablist">
           {(['all', ...topics] as const).map((t) => (
             <button key={t} role="tab" aria-selected={topic === t} className={topic === t ? 'on' : ''} onClick={() => (tap('select'), setTopic(t))}>
-              {t === 'all' ? 'All' : t === 'local' ? 'Local' : TOPIC_LABEL[t]}
+              {t === 'all' ? tr('All') : t === 'local' ? tr('Local') : TOPIC_LABEL[t]}
             </button>
           ))}
         </div>

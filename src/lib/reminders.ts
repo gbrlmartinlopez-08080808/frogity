@@ -50,7 +50,11 @@ export async function refreshReminder() {
     const metToday = (getState().days[dayKey()] ?? 0) >= s.dailyGoal * 60_000;
     if (at.getTime() <= Date.now() + 30_000 || metToday) at.setDate(at.getDate() + 1);
     const w = words();
-    await LocalNotifications.schedule({ notifications: [{ id: ID, title: w.title, body: w.body, schedule: { at, allowWhileIdle: true }, isExactNotification: false, smallIcon: 'ic_stat_frogity', iconColor: '#111111' }] });
+    // the picture beside the reminder: the app's icon as it is on the home screen (the classic one or the gradient one)
+    const { registerPlugin } = await import('@capacitor/core');
+    const icon = await registerPlugin<{ get(): Promise<{ icon: string }> }>('AppIcon').get().catch(() => ({ icon: 'classic' }));
+    const largeIcon = icon.icon === 'gradient' ? 'frog_logo_g' : 'frog_logo';
+    await LocalNotifications.schedule({ notifications: [{ id: ID, title: w.title, body: w.body, schedule: { at, allowWhileIdle: true }, isExactNotification: false, smallIcon: 'ic_stat_frogity', largeIcon, iconColor: '#111111' }] });
   } catch (e) {
     console.warn('reminder not planned', e);
   }

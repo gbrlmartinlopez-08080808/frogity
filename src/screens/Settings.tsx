@@ -17,6 +17,7 @@ import { fontById } from '../lib/fonts';
 import { detectLang, ensureNaturalVoice } from '../lib/voices';
 import { LangChips } from '../ui/LangChips';
 import { askWorkFree, workFree } from '../lib/workNotice';
+import { DictsSheet } from './Dicts';
 
 export function Settings({ open, onClose }: { open: boolean; onClose: () => void }) {
   const s = useStore((x) => x.settings);
@@ -26,6 +27,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
   const [name, setName] = useState(s.name);
   const voiceT = useRef(0);
   const [fonts, setFonts] = useState(false);
+  const [dicts, setDicts] = useState(false);
   const [about, setAbout] = useState(false);
   const [adv, setAdv] = useState(false);
   const [folders, setFolders] = useState<LinkedFolder[]>([]);
@@ -105,6 +107,22 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
             <div className="row-sub">
               {s.fontFaves.map((f) => fontById(f).name).join(' · ')}
             </div>
+          </div>
+          <Icon name="right" size={18} />
+        </button>
+        <button className="row" style={{ width: '100%', textAlign: 'left' }} onClick={() => window.dispatchEvent(new Event('frogity:show-saves'))}>
+          <Icon name="bookmark" />
+          <div className="grow">
+            <div className="row-label">{tr("Saved")}</div>
+            <div className="row-sub">{tr("Your highlights from every book")}</div>
+          </div>
+          <Icon name="right" size={18} />
+        </button>
+        <button className="row" style={{ width: '100%', textAlign: 'left' }} onClick={() => setDicts(true)}>
+          <Icon name="book" />
+          <div className="grow">
+            <div className="row-label">{tr("Dictionaries")}</div>
+            <div className="row-sub">{tr("Look words up offline, in your language too")}</div>
           </div>
           <Icon name="right" size={18} />
         </button>
@@ -333,6 +351,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
         </div>
       </div>
       <FontsSheet open={fonts} onClose={() => setFonts(false)} />
+      <DictsSheet open={dicts} onClose={() => setDicts(false)} />
       <About open={about} onClose={() => setAbout(false)} />
     </Sheet>
   );

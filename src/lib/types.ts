@@ -38,6 +38,8 @@ export interface DocMeta {
   folder?: string; // linked folder this file came from
   modified?: number;
   coverV?: number; // cover algorithm version (older covers are rebuilt in the background)
+  /** the reader chose this cover: never replaced by itself */
+  coverPicked?: boolean;
   enriched?: boolean; // real cover / title read from the file
   finished?: boolean;
   tags?: string[];
@@ -56,6 +58,8 @@ export interface Highlight {
   prefix: string;
   note?: string;
   at: number;
+  /** where in the book (0…1) it was saved */
+  progress?: number;
 }
 
 export interface Bookmark {

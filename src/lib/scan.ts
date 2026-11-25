@@ -323,21 +323,49 @@ async function runImage(doc: DocMeta, touch: Touch) {
   finish(doc);
 }
 
-/** Pages from the camera scanner: the pages are saved at once, the text (and the searchable PDF) follow here. */
+/**
+ * Pages from the camera scanner: the pages are saved at once, the text (and the searchable PDF) follow here. Each page goes through the
+ * same page reader as scanned PDFs: columns, headings, bold, italics and coloured print, paragraphs from where the lines sit, pictures
+ * kept as pictures.
+ */
 async function runScanDoc(doc: DocMeta, touch: Touch) {
   const remembered = await db.get<string>('kv', `scan:${doc.id}`);
-  if (remembered === 'skip' || remembered === 'done' || remembered === 'none' || (await db.get('cache', `${doc.id}:ocr`))) return;
+  if (remembered === 'skip' || (await db.get('cache', `${doc.id}:ocrblocks`))) return;
   const pages = (await Promise.all((doc.scanPages ?? []).map((p) => db.get<Blob>('blobs', p)))).filter(Boolean) as Blob[];
   if (!pages.length) return;
   start(doc.id, doc.name, 'scan', 'running', pages.length);
-  const { readImage, OCR_POOL } = await import('./ocr');
+  const { readImage } = await import('./ocr');
+  const { ocrPage } = await import('./ocrpage');
+  const { escapeHtml } = await import('./sanitize');
   let n = 0;
-  const reads = await mapLimit(pages, OCR_POOL, async (b) => {
-    const r = await readImage(b, touch);
+  const reads: { blocks: LBlock[]; text: string }[] = [];
+  for (let i = 0; i < pages.length; i++) {
+    let blocks: LBlock[] = [];
+    try {
+      const bmp = await createImageBitmap(pages[i]);
+      const c = document.createElement('canvas');
+      c.width = bmp.width;
+      c.height = bmp.height;
+      c.getContext('2d')!.drawImage(bmp, 0, 0);
+      bmp.close();
+      blocks = (await ocrPage(c, i + 1)).blocks;
+      c.width = c.height = 0;
+    } catch (e) {
+      console.warn('scan page: the page reader failed, reading it the plain way', e);
+    }
+    if (!blocks.some((b) => b.t === 'p' || b.t === 'h')) {
+      // the page reader found nothing: the plain way, so a page is never lost
+      const r = await readImage(pages[i], touch).catch(() => null);
+      if (r?.text.trim()) blocks = r.text.split(/\n\s*\n/).map((t) => ({ t: 'p', html: escapeHtml(t), page: i + 1 }) as LBlock);
+    }
+    const text = blocks.map((b) => (b.t === 'p' || b.t === 'h' ? b.html.replace(/<[^>]+>/g, '') : '')).filter(Boolean).join('\n\n');
+    reads.push({ blocks: [{ t: 'page', page: i + 1 }, ...blocks], text });
     set(doc.id, { done: ++n, progress: 0.02 + 0.9 * (n / pages.length) });
-    return r;
-  });
-  const html = reads.map((r, i) => `<section data-page="${i + 1}">${pages.length > 1 ? `<h3>Page ${i + 1}</h3>` : ''}${r.html}</section>`).join('');
+  }
+  const all = reads.flatMap((r) => r.blocks);
+  await db.put('cache', `${doc.id}:ocrblocks`, all);
+  // the plain copy (older versions of the app, and search) keeps the text without pictures
+  const html = all.map((b) => (b.t === 'h' ? `<h${b.level + 1}>${b.html}</h${b.level + 1}>` : b.t === 'p' ? `<p>${b.html}</p>` : '')).join('');
   await db.put('cache', `${doc.id}:ocr`, html || '<p>No text recognised.</p>');
   const { imagesToPdf } = await import('./convert');
   const pdf = await imagesToPdf(pages, reads.map((r) => r.text)).catch(() => null);

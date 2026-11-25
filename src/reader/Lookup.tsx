@@ -1,7 +1,8 @@
 import { tr } from '../lib/i18n';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { define, origin, wiki, normalizeWord, sameSubject, type Definition, type Origin, type WikiCard, type WikiImage } from '../lib/lookup';
+import { define, origin, wiki, normalizeWord, sameSubject, translate, type Definition, type Origin, type WikiCard, type WikiImage } from '../lib/lookup';
+import { LANG_NAME, installPack, installedPacks, isDictLang, onDictChange, packIndex, packsForBook, userLang } from '../lib/dicts';
 import { texToHtml } from '../lib/mathtext';
 import { onBack, openExternal, tap } from '../lib/native';
 import { Icon } from '../ui/Icon';
@@ -104,6 +105,7 @@ export function LookupCard({ word, lang = 'en', onClose }: { word: string | null
           ) : tab === 'define' ? (
             def ? (
               <>
+                <DictExtras word={w} lang={lang} />
                 {def.meanings.slice(0, 3).map((m) => (
                   <div key={m.pos} className="lk-mean">
                     <div className="lk-pos mono">{m.pos}</div>
@@ -120,7 +122,10 @@ export function LookupCard({ word, lang = 'en', onClose }: { word: string | null
                 ))}
               </>
             ) : (
-              <p className="lk-muted">{tr("No dictionary entry for “")}{w}{tr("”.")}</p>
+              <>
+                <DictExtras word={w} lang={lang} />
+                <p className="lk-muted">{tr("No dictionary entry for “")}{w}{tr("”.")}</p>
+              </>
             )
           ) : tab === 'origin' ? (
             ety ? (
@@ -391,5 +396,103 @@ export function ZoomViewer({ src, mask, ratio, onClose }: { src: string | null; 
       <div className="zoomer-hint mono">{tr("pinch to zoom · double-tap")}</div>
     </div>,
     document.body,
+  );
+}
+
+/**
+ * Above the definitions: the word in the reader's own language (from the downloaded translation tables; tap one to read what it means
+ * there), and, for a book in a language whose dictionary isn't on the phone yet, the offer to download it.
+ */
+function DictExtras({ word, lang }: { word: string; lang: string }) {
+  const u = userLang();
+  const [tw, setTw] = useState<{ word: string; words: string[] } | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  const [openDef, setOpenDef] = useState<Definition | null | undefined>();
+  const [missing, setMissing] = useState<{ ids: string[]; mb: number } | null>(null);
+  const [prog, setProg] = useState<number | null>(null);
+  const [err, setErr] = useState('');
+  const [tick, setTick] = useState(0);
+  useEffect(() => onDictChange(() => setTick((n) => n + 1)), []);
+  useEffect(() => {
+    setTw(null);
+    setOpen(null);
+    if (lang !== u) translate(word, lang, u).then(setTw);
+  }, [word, lang, u, tick]);
+  useEffect(() => {
+    if (!isDictLang(lang)) return setMissing(null);
+    let live = true;
+    (async () => {
+      const ins = await installedPacks();
+      const idx = await packIndex();
+      const ids = packsForBook(lang).filter((id) => !ins[id] && idx.some((p) => p.id === id));
+      const mb = ids.reduce((n, id) => n + (idx.find((p) => p.id === id)?.bytes ?? 0), 0) / 1e6;
+      if (live) setMissing(ids.length ? { ids, mb } : null);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [lang, tick]);
+  const download = async () => {
+    if (!missing) return;
+    setErr('');
+    try {
+      for (let i = 0; i < missing.ids.length; i++) await installPack(missing.ids[i], (f) => setProg((i + f) / missing.ids.length));
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+    setProg(null);
+  };
+  const show = async (w2: string) => {
+    if (open === w2) return setOpen(null);
+    setOpen(w2);
+    setOpenDef(undefined);
+    setOpenDef(await define(w2, u).catch(() => null));
+  };
+  return (
+    <>
+      {missing && (
+        <div className="lk-dl">
+          <span>
+            {tr('Offline dictionary for ')}
+            <b>{LANG_NAME[lang] ?? lang}</b>
+            {lang !== u ? <>{tr(', with the words in ')}{LANG_NAME[u]}</> : null}
+            <small className="mono"> · {Math.max(1, Math.round(missing.mb))} MB</small>
+          </span>
+          {prog == null ? (
+            <button onClick={download}>{tr('Download')}</button>
+          ) : (
+            <span className="mono lk-dl-p">{Math.round(prog * 100)}%</span>
+          )}
+          {err && <small className="lk-dl-err">{tr(err)}</small>}
+        </div>
+      )}
+      {tw && tw.words.length > 0 && (
+        <div className="lk-tr">
+          <div className="lk-pos mono">{tr('In ')}{LANG_NAME[u]}</div>
+          <div className="lk-tr-chips">
+            {tw.words.slice(0, 6).map((x) => (
+              <button key={x} className={open === x ? 'on' : ''} onClick={() => (tap('select'), void show(x))}>
+                {x}
+              </button>
+            ))}
+          </div>
+          {open && (
+            <div className="lk-tr-def">
+              {openDef === undefined ? (
+                <span className="lk-muted">…</span>
+              ) : openDef ? (
+                openDef.meanings.slice(0, 2).map((m) => (
+                  <p key={m.pos}>
+                    <i className="mono">{m.pos}</i> {m.defs[0]?.d}
+                  </p>
+                ))
+              ) : (
+                <span className="lk-muted">{tr('No definition on the phone for this one.')}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }

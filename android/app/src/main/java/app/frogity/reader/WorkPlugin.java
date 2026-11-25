@@ -52,17 +52,43 @@ public class WorkPlugin extends Plugin {
             ctx, 78, new Intent(ctx, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP),
             android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         try {
-            NotificationManagerCompat.from(ctx).notify(READY, new NotificationCompat.Builder(ctx, WorkService.CHANNEL)
+            NotificationCompat.Builder nb = new NotificationCompat.Builder(ctx, WorkService.CHANNEL)
                 .setSmallIcon(icon != 0 ? icon : android.R.drawable.stat_notify_sync)
                 .setContentTitle(call.getString("title", "Ready to read"))
                 .setContentText(call.getString("text", ""))
                 .setContentIntent(pi)
-                .setAutoCancel(true)
-                .build());
+                .setAutoCancel(true);
+            // the picture beside it: the book's own cover when there is one, otherwise the app's icon as it is on the home screen
+            android.graphics.Bitmap big = null;
+            String cover = call.getString("cover", null);
+            if (cover != null && !cover.isEmpty()) {
+                try {
+                    byte[] b = android.util.Base64.decode(cover, android.util.Base64.DEFAULT);
+                    big = android.graphics.BitmapFactory.decodeByteArray(b, 0, b.length);
+                } catch (Exception ignored) {
+                    big = null;
+                }
+            }
+            if (big == null) big = appIcon(ctx);
+            if (big != null) nb.setLargeIcon(big);
+            NotificationManagerCompat.from(ctx).notify(READY, nb.build());
         } catch (SecurityException ignored) {
             /* notifications not allowed */
         }
         call.resolve();
+    }
+
+    /** The launcher icon that is switched on (classic or gradient), drawn as a picture. */
+    static android.graphics.Bitmap appIcon(Context ctx) {
+        try {
+            boolean g = ctx.getPackageManager().getComponentEnabledSetting(new android.content.ComponentName(ctx, "app.frogity.reader.IconGradient"))
+                == android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
+            int id = ctx.getResources().getIdentifier(g ? "frog_logo_g" : "frog_logo", "drawable", ctx.getPackageName());
+            if (id == 0) return null;
+            return android.graphics.BitmapFactory.decodeResource(ctx.getResources(), id);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** Is Frogity allowed to keep working in the background (left out of the phone's battery saving)? */

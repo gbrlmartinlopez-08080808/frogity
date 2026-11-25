@@ -18,6 +18,7 @@ import { resumeScans } from './lib/scan';
 
 import { isGuide } from './lib/harvest';
 import { refreshReminder } from './lib/reminders';
+import { OPEN_SAVE_EVENT, Saved } from './screens/Saved';
 import { importUrl, looksLikeUrl } from './lib/links';
 const Settings = lazy(() => import('./screens/Settings').then(m => ({ default: m.Settings })));
 const About = lazy(() => import('./screens/About').then(m => ({ default: m.About })));
@@ -71,6 +72,7 @@ export default function App() {
   const [rate, setRate] = useState(false);
   const [tour, setTour] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [convert, setConvert] = useState<{ doc: DocMeta; root?: HTMLElement | null } | null>(null);
   const [scanFiles, setScanFiles] = useState<File[] | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -203,6 +205,35 @@ export default function App() {
       toast((e as Error).message || 'Couldn’t read that folder');
     }
   };
+
+  // Saved: from a highlight's notice, Home, Settings; and from a card back into its book
+  useEffect(() => {
+    const show = () => setSaved(true);
+    const go = (e: Event) => {
+      const d = (e as CustomEvent<{ docId: string; id: string }>).detail;
+      if (!d) return;
+      try {
+        sessionStorage.setItem('jump:h:' + d.docId, d.id);
+      } catch {
+        /* private mode */
+      }
+      setSettings(false);
+      setOpenId(d.docId);
+    };
+    window.addEventListener('frogity:show-saves', show);
+    window.addEventListener(OPEN_SAVE_EVENT, go);
+    return () => {
+      window.removeEventListener('frogity:show-saves', show);
+      window.removeEventListener(OPEN_SAVE_EVENT, go);
+    };
+  }, []);
+
+  // the offline dictionaries for English and the reader's language: once, quietly, a little after start
+  useEffect(() => {
+    if (!ready) return;
+    const t = window.setTimeout(() => void import('./lib/dicts').then((d) => d.ensureBasePacks()), 8000);
+    return () => clearTimeout(t);
+  }, [ready]);
 
   // plan the evening reminder again whenever things change
   useEffect(() => {
@@ -458,6 +489,7 @@ export default function App() {
         onScan={() => camIn.current?.click()}
         onStats={() => setStats(true)}
         onSettings={() => setSettings(true)}
+        onSaved={() => setSaved(true)}
         onConvert={(doc) => setConvert({ doc })}
         onDiscover={() => setDiscover({})}
         onInteresting={() => setInteresting(true)}
@@ -466,6 +498,7 @@ export default function App() {
       <StatsBubble open={stats} onClose={() => (setStats(false), setReward(null))} reward={reward} onRewardDone={() => {}} />
       {openDoc && <Reader key={openDoc.id} doc={openDoc} onClose={() => setOpenId(null)} onConvert={(doc, root) => setConvert({ doc, root })} onOpenDoc={setOpenId} />}
       {settings && <Settings open={settings} onClose={() => setSettings(false)} />}
+      <Saved open={saved} onClose={() => setSaved(false)} />
       {aboutOpen && <About open={aboutOpen} onClose={() => setAboutOpen(false)} />}
       {tour && <Tour onDone={() => (setTour(false), db.put('kv', 'tour', 'done'))} />}
       <RateSheet open={rate} onClose={closeRate} streak={streakInfo(getState().days).current} />

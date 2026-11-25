@@ -8,7 +8,8 @@ import { toast } from '../ui/kit';
 
 interface WorkPlugin {
   show(o: { title: string; text: string; progress: number; max: number; idle?: boolean }): Promise<void>;
-  done(o: { title: string; text: string }): Promise<void>;
+  /** `cover`: the book's cover (JPEG, base64) for the notification's picture; without it the app's own icon is shown */
+  done(o: { title: string; text: string; cover?: string }): Promise<void>;
   clear(): Promise<void>;
   battery(): Promise<{ free: boolean }>;
   askBattery(): Promise<void>;
@@ -58,7 +59,10 @@ export function initWorkNotice() {
     } else if (had) {
       had = false;
       const names = finished.splice(0);
-      if (names.length) Work.done({ title: names.length === 1 ? `“${names[0]}” is ready to read` : `${names.length} books are ready to read`, text: 'Liquid mode, Listen and search are ready.' }).catch(() => {});
+      if (names.length) {
+        const cover = names.length === 1 ? await coverOf(names[0]) : undefined;
+        Work.done({ title: names.length === 1 ? `“${names[0]}” is ready to read` : `${names.length} books are ready to read`, text: 'Liquid mode, Listen and search are ready.', cover }).catch(() => {});
+      }
       else Work.clear().catch(() => {});
     }
   };
@@ -68,9 +72,30 @@ export function initWorkNotice() {
   });
 }
 
+/** The book's cover, small, as base64 JPEG (for the notification's picture). */
+async function coverOf(title: string): Promise<string | undefined> {
+  try {
+    const { getState } = await import('./store');
+    const db = await import('./db');
+    const d = getState().docs.find((x) => x.name === title);
+    const blob = d?.coverId ? await db.get<Blob>('blobs', d.coverId) : undefined;
+    if (!blob) return undefined;
+    const bmp = await createImageBitmap(blob);
+    const k = Math.min(1, 256 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k);
+    c.height = Math.round(bmp.height * k);
+    c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height);
+    bmp.close();
+    return c.toDataURL('image/jpeg', 0.85).split(',')[1];
+  } catch {
+    return undefined;
+  }
+}
+
 /** Liquid mode has just become ready after a long wait: say so in the app, and in the notification shade when the app is not on screen. */
 export function liquidReady(title: string) {
   const name = title.length > 34 ? title.slice(0, 34) + '…' : title;
   if (!isNative || !document.hidden) toast(`Liquid mode is ready · ${name}`);
-  if (isNative && document.hidden) Work.done({ title: `Liquid mode is ready · ${name}`, text: 'Open it to read with text that reflows.' }).catch(() => {});
+  if (isNative && document.hidden) void coverOf(title).then((cover) => Work.done({ title: `Liquid mode is ready · ${name}`, text: 'Open it to read with text that reflows.', cover }).catch(() => {}));
 }

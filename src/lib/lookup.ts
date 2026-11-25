@@ -3,7 +3,9 @@
 //   origin      → Wiktionary etymology (Greek/Latin roots pulled out as chips)
 //   encyclopedia + picture → Wikipedia (+ Wikimedia images)
 import * as db from './db';
+import { tr } from './i18n';
 import { wikiHtmlToRich } from './mathtext';
+import { offlineDefine, offlineTranslate, type DictEntry } from './dicts';
 
 const HDRS = { 'Api-User-Agent': 'Frogity/1.1 (personal reading app)' };
 
@@ -152,7 +154,51 @@ async function fromWiktionary(w: string, lang = 'en'): Promise<Definition | null
   return meanings.length ? { word: w, meanings, source: 'Wiktionary' } : null;
 }
 
+/** A downloaded dictionary's entry in the shape the word sheet shows. */
+function fromPack(word: string, entries: DictEntry[], bases: [string, DictEntry[]][] = []): Definition {
+  const meanings: Definition['meanings'] = [];
+  // the word's own meanings first, then "past tense of …" and what that base word means
+  entries = [...entries].sort((a, b) => Number(!!a[4]?.length) - Number(!!b[4]?.length));
+  for (const [pos, gl, ex, , lemmas] of entries) {
+    if (lemmas?.length) meanings.push({ pos, defs: [{ d: gl[0] ?? `${tr('form of')} ${lemmas.join(', ')}` }], synonyms: [] });
+    else meanings.push({ pos, defs: gl.map((d, i) => ({ d, ex: i === 0 && ex ? ex : undefined })), synonyms: [] });
+  }
+  // an inflected form: what its base word means, right under it
+  for (const [b, es] of bases)
+    for (const [pos, gl, ex, , lemmas] of es) if (!lemmas?.length) meanings.push({ pos: `${pos} · ${b}`, defs: gl.map((d, i) => ({ d, ex: i === 0 && ex ? ex : undefined })), synonyms: [] });
+  return { word, phonetic: [...entries, ...bases.flatMap(([, e]) => e)].find((e) => e[3])?.[3] || undefined, meanings, source: 'Wiktionary · offline' };
+}
+
+/** The downloaded dictionary first (instant, works offline), then the online ones. */
 export async function define(word: string, lang = 'en'): Promise<Definition | null> {
+  const off = await offlineDefine(variants(word, lang).concat(word), lang).catch(() => null);
+  if (off) {
+    const lemmas = [...new Set(off.entries.flatMap((e) => e[4] ?? []))].slice(0, 2);
+    const bases: [string, DictEntry[]][] = [];
+    for (const l of lemmas) {
+      const x = await offlineDefine([l], lang).catch(() => null);
+      if (x) bases.push([x.word, x.entries]);
+    }
+    return fromPack(off.word, off.entries, bases);
+  }
+  return defineOnline(word, lang);
+}
+
+/** The word in another language, from the downloaded translation tables (null when that pair isn't downloaded or has no entry). */
+export async function translate(word: string, from: string, to: string): Promise<{ word: string; words: string[] } | null> {
+  const hit = await offlineTranslate(variants(word, from).concat(word), from, to).catch(() => null);
+  if (hit) return hit;
+  // an inflected form ("Häuser", "cansada"): the translations of its base word
+  const off = await offlineDefine(variants(word, from).concat(word), from).catch(() => null);
+  const lemmas = [...new Set((off?.entries ?? []).flatMap((e) => e[4] ?? []))];
+  for (const l of lemmas.slice(0, 2)) {
+    const x = await offlineTranslate([l], from, to).catch(() => null);
+    if (x) return x;
+  }
+  return null;
+}
+
+async function defineOnline(word: string, lang = 'en'): Promise<Definition | null> {
   return cached(`def:${lang}:` + word.toLowerCase(), async () => {
     let failure: unknown = null;
     for (const v of variants(word, lang)) {

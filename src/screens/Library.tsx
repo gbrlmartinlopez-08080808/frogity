@@ -12,6 +12,7 @@ import { FlapCount } from '../ui/Flap';
 import { Pixel, Screws, Sheet, toast } from '../ui/kit';
 import { ASCII } from '../lib/ascii';
 import { HomeTabs } from './HomeTabs';
+import { CoverPicker } from './CoverPicker';
 import { onBack, shareFile, tap } from '../lib/native';
 
 export function useCover(doc?: DocMeta) {
@@ -124,6 +125,7 @@ export function Library({
   onConvert,
   onSample,
   onDiscover,
+  onSaved,
   onInteresting,
 }: {
   onOpen: (id: string) => void;
@@ -134,9 +136,11 @@ export function Library({
   onConvert: (doc: DocMeta) => void;
   onSample: () => void;
   onDiscover: () => void;
+  onSaved?: () => void;
   onInteresting: () => void;
 }) {
   const docs = useStore((s) => s.docs);
+  const [coverFor, setCoverFor] = useState<DocMeta | null>(null);
   const settings = useStore((s) => s.settings);
   const days = useStore((s) => s.days);
   const readCount = useStore((s) => s.readIds.length);
@@ -270,6 +274,7 @@ export function Library({
           </h1>
           <div className="lib-meta">
             {settings.name && <span className="who">{tr("@")}{settings.name}</span>}
+
             <button className="ring-btn" onClick={onStats} aria-label={tr("Reading goal and streak")}>
               <Ring value={todayMs / goal} size={22} stroke={2} />
             </button>
@@ -379,6 +384,11 @@ export function Library({
               >
                 {picked ? 'done' : 'select'}
               </button>
+              {onSaved && (
+                <button className="chip saved-chip" onClick={() => (tap('select'), onSaved())} aria-label={tr("Saved")}>
+                  <Icon name="bookmark" size={17} />
+                </button>
+              )}
               <button className="chip" onClick={() => setQuery((q) => (q === null ? '' : null))} aria-label={tr("Search")}>
                 <Icon name="search" size={18} />
               </button>
@@ -475,7 +485,8 @@ export function Library({
         </button>
       </div>
 
-      <DocMenu doc={menu} onClose={() => setMenu(null)} onOpen={onOpen} onConvert={onConvert} onSelect={(d) => setPicked(new Set([d.id]))} />
+      <DocMenu doc={menu} onClose={() => setMenu(null)} onOpen={onOpen} onConvert={onConvert} onSelect={(d) => setPicked(new Set([d.id]))} onCover={(d) => (setMenu(null), setCoverFor(d))} />
+      <CoverPicker doc={coverFor} onClose={() => setCoverFor(null)} />
     </div>
   );
 }
@@ -534,7 +545,7 @@ function ShelfRow({ doc, onOpen, onMenu, picked }: { doc: DocMeta; onOpen: () =>
   );
 }
 
-function DocMenu({ doc, onClose, onOpen, onConvert, onSelect }: { doc: DocMeta | null; onClose: () => void; onOpen: (id: string) => void; onConvert: (d: DocMeta) => void; onSelect: (d: DocMeta) => void }) {
+function DocMenu({ doc, onClose, onOpen, onConvert, onSelect, onCover }: { doc: DocMeta | null; onClose: () => void; onOpen: (id: string) => void; onConvert: (d: DocMeta) => void; onSelect: (d: DocMeta) => void; onCover: (d: DocMeta) => void }) {
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState('');
   const [confirm, setConfirm] = useState(false);
@@ -582,20 +593,10 @@ function DocMenu({ doc, onClose, onOpen, onConvert, onSelect }: { doc: DocMeta |
                     <Icon name="globe" />
                   </span>{tr("Open original page")}</button>
               )}
-              {['pdf', 'docx', 'slides'].includes(d.kind) && (
-                <button
-                  className="action"
-                  onClick={async () => {
-                    toast('Looking for a better cover…');
-                    const ok = await refreshCover(d).catch(() => false);
-                    toast(ok ? 'Cover refreshed' : 'Couldn’t refresh the cover');
-                    onClose();
-                  }}
-                >
-                  <span className="ic">
-                    <Icon name="image" />
-                  </span>{tr("Refresh cover")}</button>
-              )}
+              <button className="action" onClick={() => onCover(d)}>
+                <span className="ic">
+                  <Icon name="image" />
+                </span>{tr("Change cover")}</button>
               <button className="action" onClick={() => setRenaming(true)}>
                 <span className="ic">
                   <Icon name="edit" />

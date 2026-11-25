@@ -22,6 +22,7 @@ import { LookupCard, SelectionMenu, ZoomViewer } from './Lookup';
 import { ListenBar } from './ListenBar';
 import { ContentsSheet, MoreSheet, THEMES, TypeSheet, type MoreAction } from './sheets';
 import { BinaryView, CodeView, ImageView, MediaView, SheetView } from './OtherViews';
+import { kindOf, OPEN_SAVE_EVENT, SavesIntro, savesChanged } from '../screens/Saved';
 import { anchorFromSelection, applyHighlights, clearMarks, findAll, wordAt, wrapSentences } from './dom';
 import { AskSheet } from './Ask';
 import { EndNote, useEndPull } from './EndPull';
@@ -105,6 +106,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   const [page, setPage] = useState(doc.kind === 'pdf' && doc.position ? Math.max(1, Math.round(doc.position.value)) : 1);
   const [listenFrom, setListenFrom] = useState<number | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [savesIntro, setSavesIntro] = useState(false);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [thumbs, setThumbs] = useState(false);
   const [scanned, setScanned] = useState<number[]>([]);
@@ -970,13 +972,41 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     if (!root || !sel) return;
     const a = anchorFromSelection(root, sel);
     if (!a) return;
-    const h: Highlight = { id: db.uid(), docId: id, text: a.text, prefix: a.prefix, at: Date.now() };
+    const h: Highlight = { id: db.uid(), docId: id, text: a.text, prefix: a.prefix, at: Date.now(), progress };
     await db.put('marks', `${id}:h:${h.id}`, h);
     clearSel();
     setHighlights((l) => [...l, h]);
     tap();
-    toast('Highlighted');
+    savesChanged();
+    // every highlight is also a save; the first one ever says where they all go
+    const seen = await db.get<boolean>('kv', 'saves:intro').catch(() => true);
+    if (!seen) {
+      db.put('kv', 'saves:intro', true).catch(() => {});
+      setSavesIntro(true);
+    } else toast(tr(kindOf(a.text) === 'word' ? 'Saved · see all your saves' : 'Highlighted and saved · see all'), undefined, () => window.dispatchEvent(new Event('frogity:show-saves')));
   };
+  // opened from Saved: go to that passage once the text is there
+  useEffect(() => {
+    if (!flowReady) return;
+    const go = (hid: string) => {
+      if (!liquid) switchMode('liquid');
+      setTimeout(() => showEl(flowRef.current?.querySelector(`mark.hl[data-id="${hid}"]`), 'center', true), liquid ? 250 : 900);
+    };
+    let pending: string | null = null;
+    try {
+      pending = sessionStorage.getItem('jump:h:' + id);
+      if (pending) sessionStorage.removeItem('jump:h:' + id);
+    } catch {
+      /* private mode */
+    }
+    if (pending) go(pending);
+    const on = (e: Event) => {
+      const d = (e as CustomEvent<{ docId: string; id: string }>).detail;
+      if (d?.docId === id) go(d.id);
+    };
+    window.addEventListener(OPEN_SAVE_EVENT, on);
+    return () => window.removeEventListener(OPEN_SAVE_EVENT, on);
+  }, [flowReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const listenFromSelection = () => {
     const root = flowRef.current;
@@ -1655,8 +1685,10 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         onDeleteHighlight={async (h) => {
           await db.del('marks', `${id}:h:${h.id}`);
           setHighlights((l) => l.filter((x) => x.id !== h.id));
+          savesChanged();
         }}
       />
+      <SavesIntro open={savesIntro} onClose={() => setSavesIntro(false)} onShow={() => (setSavesIntro(false), window.dispatchEvent(new Event('frogity:show-saves')))} />
       {form && formOpen && (
         <FormSheet
           open

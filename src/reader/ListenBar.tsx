@@ -165,7 +165,11 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
     const parts: { i: number; at: number; w: number }[] = [];
     let text = '';
     let i = from;
+    // one paragraph per request: the voice ends it, and the gap before the next request is the space between paragraphs
+    const blockOf = (k: number) => spansOf(root, k)[0]?.closest('p, li, h1, h2, h3, h4, h5, h6, blockquote, figcaption, td, pre, dd, dt');
+    let block: Element | null | undefined;
     for (; i < n; i++) {
+      if (text && block !== undefined && blockOf(i) !== block) break;
       if (!(i === from && offset > 0) && refs.current.some(([a, b]) => i >= a && i < b)) continue; // sources and notes are not read
       const raw = i === from && offset > 0 ? sentenceRaw(root, i).slice(offset) : sentenceText(root, i);
       if (isReferenceLine(raw.trim())) continue;
@@ -175,6 +179,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
       if (text && text.length + t.length > target * 1.35) break;
       parts.push({ i, at: text ? text.length + 1 : 0, w: t.length });
       text += (text ? ' ' : '') + t;
+      block = blockOf(i);
       if (text.length >= target) {
         i++;
         break;
@@ -426,7 +431,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
         const endsSentence = /[.!?…]["”’)\]]*$/.test(job.ch.text) && job.ch.next > lastI;
         const blockOf = (i: number) => spansOf(root, i)[0]?.closest('p, li, h1, h2, h3, h4, h5, h6, blockquote, figcaption, td, pre, dd, dt');
         const here = endsSentence ? blockOf(lastI) : null;
-        const gap = !endsSentence ? (/[,;:—–]$/.test(job.ch.text) ? 0.08 : 0.02) : here && /^H\d$/.test(here.tagName) ? 0.5 : here && here !== blockOf(lastI + 1) ? 0.38 : 0.2;
+        const gap = !endsSentence ? (/[,;:—–]$/.test(job.ch.text) ? 0.08 : 0.02) : here && /^H\d$/.test(here.tagName) ? 0.7 : here && here !== blockOf(lastI + 1) ? 0.55 : 0.2;
         pl.enqueue(job.ch.parts.map((p) => ({ i: p.i, w: p.w })), r.samples, r.rate, gap);
       } catch (e) {
         if (my !== token.current) return;
@@ -500,7 +505,12 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
           show(k);
         }
         // past the middle of this piece: the next one is queued now, so the voice rolls on into it
-        if (!handoff && !hold.pre && at < n && pos > ch.text.length * 0.5) {
+        // (a new paragraph is not queued: it starts after this one ends, so the space between paragraphs is heard)
+        const sameBlock = () => {
+          const a = spansOf(root!, ch.parts[ch.parts.length - 1].i)[0]?.closest('p, li, h1, h2, h3, h4, h5, h6, blockquote, figcaption, td, pre, dd, dt');
+          return !!a && a === spansOf(root!, at)[0]?.closest('p, li, h1, h2, h3, h4, h5, h6, blockquote, figcaption, td, pre, dd, dt');
+        };
+        if (!handoff && !hold.pre && at < n && pos > ch.text.length * 0.5 && sameBlock()) {
           const nx = buildChunk(at, n, 0, 300);
           if (nx) {
             const from = at;

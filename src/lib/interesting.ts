@@ -97,10 +97,47 @@ export interface Daily {
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-/** one entry per story id (a feed that repeats one would make the screens repeat a card) */
+/**
+ * A story's summary as a reader should see it: without what feeds tack on ("Continue reading…", "The post … appeared first on …"),
+ * without leftover markup, and ending on a whole sentence (a summary cut mid-word is taken back to its last full stop, or ends in "…").
+ */
+export function cleanSummary(t: string): string {
+  let s = t
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;|&rsquo;/g, '’')
+    .replace(/\s*(The post .* appeared first on .*|Continue reading.*|Read more.*|Keep reading.*|Seguir leyendo.*|Leer más.*|Lire la suite.*|Weiterlesen.*|Leia mais.*)$/i, '')
+    .replace(/\s*(\[…\]|\[\.\.\.\]|\(…\))\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!/[.!?…”"’)]$/.test(s)) {
+    const cut = Math.max(s.lastIndexOf('. '), s.lastIndexOf('? '), s.lastIndexOf('! '));
+    s = cut > s.length * 0.55 ? s.slice(0, cut + 1) : s.replace(/[\s,;:–—-]+\S*$/, '') + '…';
+  }
+  return s;
+}
+/** one entry per story id, and one card per summary (two stories that came with the same text are one story: their outlets are joined) */
 function tidy(d: Daily): Daily {
   const seen = new Set<string>();
-  return { ...d, news: d.news.filter((s) => (seen.has(s.id) ? false : (seen.add(s.id), true))) };
+  const bySummary = new Map<string, Story>();
+  const news: Story[] = [];
+  for (const s0 of d.news) {
+    if (seen.has(s0.id)) continue;
+    seen.add(s0.id);
+    const s = { ...s0, summary: cleanSummary(s0.summary) };
+    const k = s.summary.toLowerCase().slice(0, 120);
+    const same = bySummary.get(k);
+    if (same && k.length > 40) {
+      for (const x of s.sources) if (!same.sources.some((y) => (y.id ?? y.name) === (x.id ?? x.name))) same.sources.push(x);
+      continue;
+    }
+    bySummary.set(k, s);
+    news.push(s);
+  }
+  const local = d.local ? Object.fromEntries(Object.entries(d.local).map(([cc, l]) => [cc, l.map((s) => ({ ...s, summary: cleanSummary(s.summary) }))])) : d.local;
+  return { ...d, news, local };
 }
 const timed = async (url: string, ms = 9000) => {
   const c = new AbortController();

@@ -84,6 +84,93 @@ function joinLines(ls: string[]) {
   return out;
 }
 
+/** How a line of print looks: stroke thickness (to its height), lean, and ink colour. Compared with the page's own body text. */
+interface LStyle {
+  sw: number; // typical stroke width ÷ line height (bold print is thicker)
+  lean: number; // how much sharper the letters' upright strokes get when the line is straightened as italics would be (>1: leaning)
+  rgb: [number, number, number] | null; // the ink's colour when it is clearly not black/grey
+}
+function lineStyle(flat: HTMLCanvasElement, color: HTMLCanvasElement, f: number, ln: { x0: number; y0: number; x1: number; y1: number }): LStyle | null {
+  const x0 = Math.max(0, Math.floor(ln.x0));
+  const y0 = Math.max(0, Math.floor(ln.y0));
+  const w = Math.min(flat.width - x0, Math.ceil(ln.x1 - ln.x0));
+  const h = Math.min(flat.height - y0, Math.ceil(ln.y1 - ln.y0));
+  if (w < 12 || h < 6) return null;
+  const g = flat.getContext('2d', { willReadFrequently: true })!.getImageData(x0, y0, w, h).data;
+  let lo = 255;
+  let hi = 0;
+  for (let i = 0; i < g.length; i += 4) {
+    lo = Math.min(lo, g[i]);
+    hi = Math.max(hi, g[i]);
+  }
+  if (hi - lo < 60) return null;
+  const th = lo + (hi - lo) * 0.5;
+  const ink = new Uint8Array(w * h);
+  for (let i = 0, k = 0; i < g.length; i += 4, k++) ink[k] = g[i] < th ? 1 : 0;
+  // stroke width: the middle length of the horizontal runs of ink
+  const runs: number[] = [];
+  for (let y = 0; y < h; y++) {
+    let r = 0;
+    for (let x = 0; x < w; x++) {
+      if (ink[y * w + x]) r++;
+      else if (r) (runs.push(r), (r = 0));
+    }
+    if (r) runs.push(r);
+  }
+  if (runs.length < 12) return null;
+  runs.sort((a, b) => a - b);
+  const sw = runs[runs.length >> 1] / h;
+  // lean: straighten the line as if it were italic and see whether its upright strokes line up better
+  const sharp = (k: number) => {
+    const col = new Float32Array(w + h);
+    let tot = 0;
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++)
+        if (ink[y * w + x]) {
+          col[Math.max(0, Math.min(w + h - 1, Math.round(x + k * (y - h / 2)) + (h >> 1)))]++;
+          tot++;
+        }
+    let sq = 0;
+    for (const c of col) sq += c * c;
+    return tot ? sq / (tot * tot) : 0;
+  };
+  const s0 = sharp(0);
+  const lean = s0 ? sharp(0.22) / s0 : 1;
+  // colour: the average of the ink pixels in the original picture
+  let rgb: LStyle['rgb'] = null;
+  const cx0 = Math.floor(x0 * f);
+  const cy0 = Math.floor(y0 * f);
+  const cw = Math.max(1, Math.min(color.width - cx0, Math.round(w * f)));
+  const chh = Math.max(1, Math.min(color.height - cy0, Math.round(h * f)));
+  try {
+    const c = color.getContext('2d', { willReadFrequently: true })!.getImageData(cx0, cy0, cw, chh).data;
+    let R = 0;
+    let G = 0;
+    let B = 0;
+    let n = 0;
+    for (let y = 0; y < chh; y += 2)
+      for (let x = 0; x < cw; x += 2) {
+        const gx = Math.min(w - 1, Math.floor(x / f));
+        const gy = Math.min(h - 1, Math.floor(y / f));
+        if (!ink[gy * w + gx]) continue;
+        const i = (y * cw + x) * 4;
+        R += c[i];
+        G += c[i + 1];
+        B += c[i + 2];
+        n++;
+      }
+    if (n > 20) {
+      const m: [number, number, number] = [R / n, G / n, B / n];
+      const chroma = Math.max(...m) - Math.min(...m);
+      if (chroma > 55) rgb = m.map((v) => Math.round(v)) as [number, number, number];
+    }
+  } catch {
+    /* a canvas that cannot be read back: no colour */
+  }
+  return { sw, lean, rgb };
+}
+const hex = (c: [number, number, number]) => '#' + c.map((v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+
 export interface PageOut {
   blocks: LBlock[];
   /** share of the page the recogniser could read (0‥1); low means "keep it as a picture" */
@@ -131,6 +218,25 @@ export async function ocrPage(page: HTMLCanvasElement, pageNo: number): Promise<
       reads[i] = r;
     }),
   );
+  // a "picture" shaped like a line or two of print (a coloured heading, a bold title the layout took for a drawing): read it, and keep it
+  // as text when it reads cleanly
+  const lineLike = (l: Leaf) => {
+    const w = l.x1 - l.x0;
+    const h = l.y1 - l.y0;
+    return h < flat.height * 0.09 && w / Math.max(1, h) >= 3.5 && w > flat.width * 0.12;
+  };
+  await Promise.all(
+    leaves.map(async (l, i) => {
+      if (l.kind === 'text' || !lineLike(l)) return;
+      const h = l.y1 - l.y0;
+      const scale = Math.max(0.45, Math.min(3, TARGET_LINE / Math.max(8, h * 0.8)));
+      const r = await readLeaf(flat, { ...l, lh: h, lines: 1 } as Leaf, scale).catch(() => null);
+      if (r && r.conf >= 66 && r.chars >= 6 && r.lines.every((ln) => sane(ln.text, ln.conf))) {
+        reads[i] = r;
+        (l as { kind: string }).kind = 'text';
+      }
+    }),
+  );
 
   const t4 = performance.now();
   console.debug(`[ocr] timing page ${pageNo}: flatten ${(t1 - t0).toFixed(0)} skew ${(t2 - t1).toFixed(0)} layout ${(t3 - t2).toFixed(0)} read ${(t4 - t3).toFixed(0)} ms`);
@@ -138,6 +244,24 @@ export async function ocrPage(page: HTMLCanvasElement, pageNo: number): Promise<
   const allH: number[] = [];
   reads.forEach((r) => r && r.conf >= 55 && r.lines.forEach((ln) => allH.push(ln.h)));
   const body = median(allH) || 1;
+
+  // how each line looks, and how the page's ordinary text looks (the yardstick for bold, italic and colour)
+  const styles = new Map<object, LStyle>();
+  reads.forEach((r) => r && r.lines.forEach((ln) => {
+    if (!sane(ln.text, ln.conf)) return;
+    const st = lineStyle(flat, color, f, ln);
+    if (st) styles.set(ln, st);
+  }));
+  const bodySt = [...styles.values()];
+  const bodySw = median(bodySt.map((x) => x.sw)) || 0.1;
+  const bodyLean = median(bodySt.map((x) => x.lean)) || 1;
+  const isBold = (st?: LStyle) => !!st && st.sw > bodySw * 1.42;
+  const isItal = (st?: LStyle) => !!st && st.lean > Math.max(1.06, bodyLean * 1.12);
+  await tick();
+
+  const textLeaves = leaves.filter((l) => l.kind === 'text');
+  const colL = textLeaves.length ? Math.min(...textLeaves.map((l) => l.x0)) : 0;
+  const colR = textLeaves.length ? Math.max(...textLeaves.map((l) => l.x1)) : flat.width;
 
   const blocks: LBlock[] = [];
   let readChars = 0;
@@ -147,7 +271,7 @@ export async function ocrPage(page: HTMLCanvasElement, pageNo: number): Promise<
 
   for (let i = 0; i < leaves.length; i++) {
     const l = leaves[i];
-    const r = reads[i];
+    let r = reads[i];
     const asPicture = async (kind: 'figure' | 'table') => {
       const pad = 8;
       const x0 = Math.max(0, Math.floor((l.x0 - pad) * f));
@@ -170,8 +294,14 @@ export async function ocrPage(page: HTMLCanvasElement, pageNo: number): Promise<
       continue;
     }
     if (!r || !r.chars) continue;
-    // a "text" block the recogniser could not read is really a picture (or a smudge): keep it as one
-    if (r.conf < 42 && (l.y1 - l.y0) * (l.x1 - l.x0) > pageArea * 0.01) {
+    // a "text" block the recogniser could not read: one more look, whole lines at once and without softening, before it is kept as a
+    // picture. Only something that still does not read as words (a drawing, a smudge, handwriting) stays a picture.
+    if (r.conf < 50) {
+      const again = await readLeaf(flat, l, Math.max(0.45, Math.min(3, (TARGET_LINE * 1.25) / Math.max(8, l.lh)))).catch(() => null);
+      if (again && again.conf > r.conf) reads[i] = r = again;
+    }
+    const saneShare = r.lines.filter((ln) => sane(ln.text, ln.conf)).length / Math.max(1, r.lines.length);
+    if ((r.conf < 38 || saneShare < 0.4) && (l.y1 - l.y0) * (l.x1 - l.x0) > pageArea * 0.01) {
       await asPicture('figure');
       continue;
     }
@@ -185,7 +315,7 @@ export async function ocrPage(page: HTMLCanvasElement, pageNo: number): Promise<
     const left = Math.min(...good.map((ln) => ln.x0));
     const right = Math.max(...good.map((ln) => ln.x1));
     const mh = median(good.map((ln) => ln.h)) || body;
-    type Para = { text: string[]; hs: number[] };
+    type Para = { text: string[]; hs: number[]; sts: (LStyle | undefined)[]; x0: number; x1: number; gapBefore: number; gapAfter: number };
     const paras: Para[] = [];
     let prev: (typeof good)[number] | null = null;
     for (const ln of good) {
@@ -195,10 +325,22 @@ export async function ocrPage(page: HTMLCanvasElement, pageNo: number): Promise<
       const indent = ln.x0 - left > mh * 0.9;
       const prevShort = prev ? prev.x1 < left + (right - left) * 0.72 && /[.!?:”"’)]$/.test(prev.text.trim()) : false;
       const bigger = prev ? Math.abs(ln.h - prev.h) > Math.max(ln.h, prev.h) * 0.3 : false; // a heading beside body text
-      if (!prev || gap > mh * 0.75 || indent || prevShort || bigger) paras.push({ text: [t], hs: [ln.h] });
-      else {
-        paras[paras.length - 1].text.push(t);
-        paras[paras.length - 1].hs.push(ln.h);
+      const st = styles.get(ln);
+      const pst = prev ? styles.get(prev) : undefined;
+      // a bold or coloured title straight above its text: only a short line counts (a full line measured a little heavier is still body text)
+      const narrow = (x: { x0: number; x1: number }) => x.x1 - x.x0 < (right - left) * 0.8;
+      const odd = prev ? (isBold(st) ? ln : isBold(pst) ? prev : st?.rgb ? ln : pst?.rgb ? prev : null) : null;
+      const restyled = !!prev && !!odd && narrow(odd) && (isBold(st) !== isBold(pst) || !!st?.rgb !== !!pst?.rgb);
+      if (!prev || gap > mh * 0.75 || indent || prevShort || bigger || restyled) {
+        if (paras.length) paras[paras.length - 1].gapAfter = gap;
+        paras.push({ text: [t], hs: [ln.h], sts: [st], x0: ln.x0, x1: ln.x1, gapBefore: prev ? gap : mh * 2, gapAfter: mh * 2 });
+      } else {
+        const q = paras[paras.length - 1];
+        q.text.push(t);
+        q.hs.push(ln.h);
+        q.sts.push(st);
+        q.x0 = Math.min(q.x0, ln.x0);
+        q.x1 = Math.max(q.x1, ln.x1);
       }
       prev = ln;
     }
@@ -208,9 +350,37 @@ export async function ocrPage(page: HTMLCanvasElement, pageNo: number): Promise<
       readChars += text.length;
       textArea += (l.x1 - l.x0) * (l.y1 - l.y0) * (text.length / Math.max(1, r.chars));
       const ph = median(p.hs);
-      const head = p.text.length <= 2 && text.length < 110 && ph >= body * 1.2 && !/[,;]$/.test(text);
-      if (head) blocks.push({ t: 'h', level: ph >= body * 1.65 ? 0 : 1, html: escapeHtml(text), page: pageNo });
-      else blocks.push({ t: 'p', html: escapeHtml(text), page: pageNo });
+      const n = p.sts.length;
+      const bold = p.sts.filter(isBold).length >= Math.max(1, n * 0.6);
+      const ital = p.sts.filter(isItal).length >= Math.max(1, n * 0.6);
+      const cols = p.sts.map((x) => x?.rgb).filter((x): x is [number, number, number] => !!x);
+      const rgb = cols.length >= Math.max(1, n * 0.6) ? ([0, 1, 2].map((k) => median(cols.map((c) => c[k]))) as [number, number, number]) : null;
+      const words = text.split(/\s+/).length;
+      const short = p.text.length <= 2 && text.length < 110 && !/[,;]$/.test(text);
+      // set apart: room above it (a heading sits closer to what it introduces than to what came before)
+      const apart = p.gapBefore > mh * 0.9;
+      const mid = (p.x0 + p.x1) / 2;
+      // centred on the page's text column (a title is often a block of its own, so its own edges say nothing)
+      const centred = Math.abs(mid - (colL + colR) / 2) < (colR - colL) * 0.06 && p.x1 - p.x0 < (colR - colL) * 0.8;
+      const caps = /\p{Lu}/u.test(text) && text === text.toUpperCase() && /\p{L}{3}/u.test(text);
+      // "CHAPTER I." ends with a full stop and is still a heading; a short sentence in bold is not
+      const titleLike = !/[.]$/.test(text) || words <= 4 || caps;
+      const last = blocks[blocks.length - 1];
+      const head =
+        (short && ph >= body * 1.2) ||
+        (short && words <= 12 && titleLike && (bold || (caps && (centred || apart)) || (centred && apart && (ital || !!rgb))));
+      // straight under a heading, centred and set in italics (or smaller): its subtitle ("Down the Rabbit-Hole.")
+      const subtitle = !head && short && words <= 14 && centred && last?.t === 'h' && last.page === pageNo && (ital || bold || ph < body * 1.12);
+      let html = escapeHtml(text);
+      if (rgb) html = `<span class="lq-ink" style="color:${hex(rgb)}">${html}</span>`;
+      if (head) blocks.push({ t: 'h', level: ph >= body * 1.65 ? 0 : ph >= body * 1.2 ? 1 : 2, html: ital ? `<i>${html}</i>` : html, page: pageNo });
+      else if (subtitle && last?.t === 'h') blocks.push({ t: 'h', level: Math.min(2, last.level + 1), html: ital ? `<i>${html}</i>` : html, page: pageNo });
+      else {
+        // a whole paragraph in bold or italics keeps it; single words do not (that is where the random bold came from)
+        if (ital) html = `<i>${html}</i>`;
+        if (bold) html = `<b>${html}</b>`;
+        blocks.push({ t: 'p', html, page: pageNo });
+      }
     }
   }
 
