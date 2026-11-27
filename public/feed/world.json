@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-26T14:04:30.110Z",
+ "built": "2026-11-27T00:44:37.589Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -1864,21 +1864,6 @@
   },
   {
    "k": "election",
-   "t": "São Toméan parliamentary election",
-   "w": "São Tomé and Príncipe",
-   "a": "2026-09-27",
-   "cc": [
-    "st"
-   ],
-   "icon": {
-    "cc": "st"
-   },
-   "level": "national",
-   "wiki": "2026 São Toméan parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Bahamian parliamentary election",
    "w": "The Bahamas",
    "a": "2026-09-30",
@@ -2427,54 +2412,6 @@
   },
   {
    "k": "election",
-   "t": "Slovak parliamentary election",
-   "w": "Slovakia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "sk"
-   ],
-   "icon": {
-    "cc": "sk"
-   },
-   "level": "national",
-   "wiki": "Slovak parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Maltese general election",
-   "w": "Malta",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "mt"
-   ],
-   "icon": {
-    "cc": "mt"
-   },
-   "level": "national",
-   "wiki": "2027 Maltese general election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Gambian parliamentary election",
-   "w": "The Gambia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "gm"
-   ],
-   "icon": {
-    "cc": "gm"
-   },
-   "level": "national",
-   "wiki": "2027 Gambian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Angolan parliamentary election",
    "w": "Angola",
    "a": "2027-01-01",
@@ -2555,6 +2492,22 @@
   },
   {
    "k": "election",
+   "t": "Maltese general election",
+   "w": "Malta",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "mt"
+   ],
+   "icon": {
+    "cc": "mt"
+   },
+   "level": "national",
+   "wiki": "2027 Maltese general election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Barbadian parliamentary election",
    "w": "Barbados",
    "a": "2027-01-01",
@@ -2603,6 +2556,22 @@
   },
   {
    "k": "election",
+   "t": "Gambian parliamentary election",
+   "w": "The Gambia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "gm"
+   ],
+   "icon": {
+    "cc": "gm"
+   },
+   "level": "national",
+   "wiki": "2027 Gambian parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Papua New Guinean general election",
    "w": "Papua New Guinea",
    "a": "2027-01-01",
@@ -2647,6 +2616,22 @@
    },
    "level": "national",
    "wiki": "2027 Vanuatuan presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Slovak parliamentary election",
+   "w": "Slovakia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "sk"
+   ],
+   "icon": {
+    "cc": "sk"
+   },
+   "level": "national",
+   "wiki": "Slovak parliamentary election",
    "auto": true
   },
   {
@@ -2715,21 +2700,6 @@
   },
   {
    "k": "election",
-   "t": "New South Wales state election",
-   "w": "Australia",
-   "a": "2027-01-30",
-   "cc": [
-    "au"
-   ],
-   "icon": {
-    "cc": "au"
-   },
-   "level": "regional",
-   "wiki": "2027 New South Wales state election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "German presidential election",
    "w": "Germany",
    "a": "2027-01-30",
@@ -2741,6 +2711,21 @@
    },
    "level": "national",
    "wiki": "2027 German presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "New South Wales state election",
+   "w": "Australia",
+   "a": "2027-01-30",
+   "cc": [
+    "au"
+   ],
+   "icon": {
+    "cc": "au"
+   },
+   "level": "regional",
+   "wiki": "2027 New South Wales state election",
    "auto": true
   },
   {
@@ -3060,21 +3045,6 @@
   },
   {
    "k": "election",
-   "t": "Malagasy presidential election",
-   "w": "Madagascar",
-   "a": "2027-11-01",
-   "cc": [
-    "mg"
-   ],
-   "icon": {
-    "cc": "mg"
-   },
-   "level": "national",
-   "wiki": "2027 Malagasy presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Nicaraguan general election",
    "w": "Nicaragua",
    "a": "2027-11-01",
@@ -3086,6 +3056,21 @@
    },
    "level": "national",
    "wiki": "2027 Nicaraguan general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Malagasy presidential election",
+   "w": "Madagascar",
+   "a": "2027-11-01",
+   "cc": [
+    "mg"
+   ],
+   "icon": {
+    "cc": "mg"
+   },
+   "level": "national",
+   "wiki": "2027 Malagasy presidential election",
    "auto": true
   },
   {
@@ -3294,22 +3279,6 @@
   },
   {
    "k": "election",
-   "t": "Taiwanese legislative election",
-   "w": "Taiwan",
-   "a": "2028-01-01",
-   "when": "2028",
-   "cc": [
-    "tw"
-   ],
-   "icon": {
-    "cc": "tw"
-   },
-   "level": "national",
-   "wiki": "Taiwanese legislative election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Lower Austrian state election",
    "w": "Austria",
    "a": "2028-01-01",
@@ -3322,6 +3291,22 @@
    },
    "level": "regional",
    "wiki": "2028 Lower Austrian state election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Taiwanese legislative election",
+   "w": "Taiwan",
+   "a": "2028-01-01",
+   "when": "2028",
+   "cc": [
+    "tw"
+   ],
+   "icon": {
+    "cc": "tw"
+   },
+   "level": "national",
+   "wiki": "Taiwanese legislative election",
    "auto": true
   },
   {
@@ -3341,21 +3326,6 @@
   },
   {
    "k": "election",
-   "t": "Philippine vice presidential election",
-   "w": "Philippines",
-   "a": "2028-05-08",
-   "cc": [
-    "ph"
-   ],
-   "icon": {
-    "cc": "ph"
-   },
-   "level": "national",
-   "wiki": "2028 Philippine vice presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Philippine general election",
    "w": "Philippines",
    "a": "2028-05-08",
@@ -3367,6 +3337,21 @@
    },
    "level": "national",
    "wiki": "2028 Philippine general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Philippine vice presidential election",
+   "w": "Philippines",
+   "a": "2028-05-08",
+   "cc": [
+    "ph"
+   ],
+   "icon": {
+    "cc": "ph"
+   },
+   "level": "national",
+   "wiki": "2028 Philippine vice presidential election",
    "auto": true
   },
   {
@@ -3465,22 +3450,6 @@
   },
   {
    "k": "election",
-   "t": "Pakistani general election",
-   "w": "Pakistan",
-   "a": "2029-01-01",
-   "when": "2029",
-   "cc": [
-    "pk"
-   ],
-   "icon": {
-    "cc": "pk"
-   },
-   "level": "national",
-   "wiki": "Pakistani general election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "German federal election",
    "w": "Germany",
    "a": "2029-01-01",
@@ -3493,22 +3462,6 @@
    },
    "level": "national",
    "wiki": "German federal election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Indian general election",
-   "w": "India",
-   "a": "2029-01-01",
-   "when": "2029",
-   "cc": [
-    "in"
-   ],
-   "icon": {
-    "cc": "in"
-   },
-   "level": "national",
-   "wiki": "Indian general election",
    "auto": true
   },
   {
@@ -3541,6 +3494,38 @@
    },
    "level": "national",
    "wiki": "2029 Equatorial Guinean presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Pakistani general election",
+   "w": "Pakistan",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "pk"
+   ],
+   "icon": {
+    "cc": "pk"
+   },
+   "level": "national",
+   "wiki": "Pakistani general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Indian general election",
+   "w": "India",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "in"
+   ],
+   "icon": {
+    "cc": "in"
+   },
+   "level": "national",
+   "wiki": "Indian general election",
    "auto": true
   },
   {
