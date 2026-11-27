@@ -4,14 +4,14 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { loc, tr } from '../lib/i18n';
 import { RELEASES, releaseOf, type Release } from '../lib/changelog';
-import { artFor, credit } from '../lib/releaseArt';
+import { artFor, credit, grainy } from '../lib/releaseArt';
 import { onBack, tap } from '../lib/native';
 
 /** The release picture: an open-licence work of art or photograph, shown as it is across the top of the card. */
 function Scene({ r }: { r: Release }) {
   const a = artFor(r);
   return (
-    <div className="wn-scene" aria-hidden>
+    <div className={`wn-scene${grainy(a) ? ' grain' : ''}`} aria-hidden>
       <img className="wn-img" src={`./art/${a.id}.webp`} alt="" draggable={false} />
       <div className="wn-tag mono">
         frogity <b>{r.v}</b>
@@ -76,7 +76,7 @@ export function WhatsNew({ open, version, onClose }: { open: boolean; version?: 
             {tr('new features')} · {new Date(r.date + 'T12:00').toLocaleDateString(loc(), { day: 'numeric', month: 'short', year: 'numeric' })}
           </div>
           <h2>{tr("What's new")}</h2>
-          <Tree r={r} delay={1.7} />
+          <Tree r={r} delay={0.25} />
           {all &&
             RELEASES.filter((x) => x.v !== r.v).map((x) => (
               <div key={x.v} className="wn-older">

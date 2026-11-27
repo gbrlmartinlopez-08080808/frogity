@@ -2,7 +2,7 @@ import { tr } from '../lib/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { bestVoice, detectLanguage, LANG_NAME, listVoices, openVoiceInstall, queueSpeak, speak, speechText, stopSpeaking, ttsAvailable, type Voice } from '../lib/tts';
-import { NEURAL_PREFIX, NEURAL_VOICES, NeuralPlayer, sharedEngine, isNeural, lighterThan, neuralId, neuralStored, neuralSupported } from '../lib/neural';
+import { NEURAL_PREFIX, NEURAL_VOICES, NeuralPlayer, sharedEngine, isNeural, lighterThan, neuralDownload, neuralId, neuralStored, neuralSupported } from '../lib/neural';
 import { VoiceSheet } from './VoiceSheet';
 import { Scrub } from './Scrub';
 import { goPage } from './paged';
@@ -53,6 +53,7 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
   storedRef.current = stored;
   const player = useRef<NeuralPlayer | null>(null);
   const neuralBroken = useRef(false);
+  const neuralRetry = useRef(0); // a failed piece is made again once, with the engine started afresh
   const bestRef = useRef<string | undefined>(undefined);
   const sleepAt = useRef(0);
   const rateT = useRef(0);
@@ -236,7 +237,13 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
         () => 'ready' as const,
         (e) => (console.warn('studio voice failed to load', e), 'failed' as const),
       );
-      const out = await Promise.race([loading, new Promise<'late'>((res) => setTimeout(() => res('late'), 1200))]);
+      // the chosen voice is worth waiting for: a few seconds with "preparing…" rather than starting in another voice and
+      // changing mid-page. Only a voice that is very late (or fails) hands the first sentences to the phone's own voice.
+      const label = NEURAL_VOICES.find((v) => v.id === vid)?.label ?? '';
+      setNote(`preparing ${label}…`);
+      setBusy(true);
+      const out = await Promise.race([loading, new Promise<'late'>((res) => setTimeout(() => res('late'), 12000))]);
+      setNote('');
       if (my !== token.current) return;
       if (out === 'ready') return runNeural(from, my, sel, n, offset);
       if (out === 'failed') {
@@ -300,13 +307,23 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
       pl.stop();
       const cur = NEURAL_VOICES.find((v) => v.id === vid);
       const light = cur && lighterThan(cur);
-      toast(
-        light && !storedRef.current.includes(light.id)
-          ? `${cur.label} is too heavy for this phone — reading with the phone’s voice. “${light.label}” would run smoothly →`
-          : 'The studio voice cannot keep up on this phone right now — reading with the phone’s voice',
-        undefined,
-        light && !storedRef.current.includes(light.id) ? () => setVoiceSheet(true) : undefined,
-      );
+      // a lighter studio voice of the same language reads on in the same kind of voice: used at once when it is on the phone,
+      // fetched in the background when it is not (the phone's own voice reads only until it is there)
+      if (light && storedRef.current.includes(light.id)) {
+        neuralSlow.current = false;
+        void updateSettings({ ttsVoice: NEURAL_PREFIX + light.id }).then(() => run(here, 0));
+        toast(`${cur.label} is heavy for this phone — going on with ${light.label}`);
+        return;
+      }
+      if (light) {
+        toast(`Getting ${light.label}, a lighter voice that plays smoothly on this phone — the phone’s voice reads until then`);
+        void neuralDownload(light.id, () => {}).then(async () => {
+          storedRef.current = [...storedRef.current, light.id];
+          await updateSettings({ ttsVoice: NEURAL_PREFIX + light.id });
+          neuralSlow.current = false;
+          toast(`${light.label} is ready — it reads from the next time you press Listen`);
+        }, () => {});
+      } else toast('The studio voice cannot keep up on this phone right now — reading with the phone’s voice');
       void run(here, 0);
     };
 
@@ -338,12 +355,12 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
       if (!holding && pl.started() && !finished && pl.ahead() < 0.12 && (jobs.length || at < n)) {
         dry.push(now);
         while (dry.length && now - dry[0] > 90_000) dry.shift();
-        if (dry.length >= 3) return endWatch(), giveUp();
+        if (dry.length >= 6) return endWatch(), giveUp();
         holding = true;
         holdSince = now;
         pl.hold();
         setNote('catching up…');
-      } else if (holding && (pl.ahead() >= 2.5 || now - holdSince > 6000 || (finished && jobs.length === 0))) {
+      } else if (holding && (pl.ahead() >= 4 || now - holdSince > 9000 || (finished && jobs.length === 0))) {
         holding = false;
         pl.unhold();
         setNote('');
@@ -433,9 +450,23 @@ export function ListenBar({ root, scroller, startAt, onPlaying, docId, title = '
         const here = endsSentence ? blockOf(lastI) : null;
         const gap = !endsSentence ? (/[,;:—–]$/.test(job.ch.text) ? 0.08 : 0.02) : here && /^H\d$/.test(here.tagName) ? 0.7 : here && here !== blockOf(lastI + 1) ? 0.55 : 0.2;
         pl.enqueue(job.ch.parts.map((p) => ({ i: p.i, w: p.w })), r.samples, r.rate, gap);
+        neuralRetry.current = 0;
       } catch (e) {
         if (my !== token.current) return;
         console.warn('studio voice failed', e);
+        // once: the engine is started afresh and the same piece is made again (a hiccup is not a reason to change voice)
+        if (neuralRetry.current < 1) {
+          neuralRetry.current++;
+          try {
+            eng.dispose();
+            await eng.init(vid);
+            if (my !== token.current) return;
+            pl.stop();
+            return void runNeural(job.ch.parts[0].i, my, sel, n, 0);
+          } catch {
+            /* it really cannot: the phone's voice reads on */
+          }
+        }
         neuralBroken.current = true;
         pl.stop();
         toast('The studio voice stopped — using the phone’s voice');

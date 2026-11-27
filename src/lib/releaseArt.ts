@@ -21,3 +21,8 @@ const cmp = (a: string, b: string) => {
 };
 
 export const credit = (a: Art) => [a.artist, a.title].filter(Boolean).join(' · ') + (a.licence ? ` · ${a.licence}` : '');
+
+/** the natural, slightly abstract pictures are shown with a film grain (paintings of fields and flowers, space, landscapes);
+ * engravings, prints and manuscripts stay clean */
+const GRAINY = new Set(['northeaster', 'lane', 'starry', 'carina', 'southernring', 'jupiter', 'bluemarble', 'earthrise', 'redon', 'irises', 'roses', 'oleanders', 'sunflowers', 'wheat', 'cypresses', 'greenfield', 'harvesters', 'wanderer', 'landers', 'merced', 'andes', 'oxbow', 'sainte', 'impression', 'temeraire', 'grandcanal']);
+export const grainy = (a: Art) => GRAINY.has(a.id);

@@ -16,6 +16,38 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    v: '7.8',
+    date: '2026-11-29',
+    areas: [
+      {
+        dir: 'voices',
+        items: [
+          { file: 'studio', what: 'The studio voice you choose reads from the first word: it gets ready while you read, is given time to load, and rides out brief slow moments instead of switching.' },
+          { file: 'lighter', what: 'If a voice is too heavy for your phone, a lighter studio voice of the same language takes over.' },
+        ],
+      },
+      {
+        dir: 'highlights',
+        items: [
+          { file: 'remove', what: 'Tap a highlight to remove it, with Undo.' },
+          { file: 'save', what: 'The highlight button is yellow, with a small arrow: what you highlight is kept on your phone, in Saved.' },
+        ],
+      },
+      {
+        dir: 'words',
+        items: [{ file: 'pictures', what: 'Words show photographs, paintings and old prints, never flat computer drawings.' }],
+      },
+      {
+        dir: 'liquid',
+        items: [{ file: 'titles', what: 'A paragraph that starts with a bold line stays a paragraph, and titles with a hyphen are recognised as titles.' }],
+      },
+      {
+        dir: 'updates',
+        items: [{ file: 'grain', what: 'Some update pictures have a fine film grain.' }],
+      },
+    ],
+  },
+  {
     v: '7.7',
     date: '2026-11-28',
     areas: [

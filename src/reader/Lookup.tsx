@@ -1,7 +1,7 @@
 import { tr } from '../lib/i18n';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { define, origin, wiki, normalizeWord, sameSubject, translate, uniqueFiles, type Definition, type Origin, type WikiCard, type WikiImage } from '../lib/lookup';
+import { define, origin, wiki, normalizeWord, sameSubject, translate, uniqueFiles, looksDrawn, type Definition, type Origin, type WikiCard, type WikiImage } from '../lib/lookup';
 import { LANG_NAME, installPack, installedPacks, isDictLang, onDictChange, packIndex, packsForBook, userLang } from '../lib/dicts';
 import { texToHtml } from '../lib/mathtext';
 import { onBack, openExternal, tap } from '../lib/native';
@@ -9,6 +9,21 @@ import { Icon } from '../ui/Icon';
 import { PixelLoader } from '../ui/kit';
 
 type Tab = 'define' | 'origin' | 'wiki';
+
+/** The highlighter, in highlight yellow, with a small arrow into the phone: highlighting also keeps the words in Saved. */
+export function SaveMarkIcon({ size = 19, off = false }: { size?: number; off?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <path d="M14.6 3.4l5 5-8.3 8.3H6.3v-5z" fill="#FFD23F" stroke="#FFD23F" strokeWidth="1.4" strokeLinejoin="round" />
+      <path d="M4 20.5h7.5" stroke="#FFD23F" strokeWidth="2" strokeLinecap="round" />
+      {off ? (
+        <path d="M3.5 3.5l17 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      ) : (
+        <path d="M18.2 13.2v7m-2.6-2.6l2.6 2.6 2.6-2.6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+    </svg>
+  );
+}
 
 export function LookupCard({ word, lang = 'en', onClose, onHighlight }: { word: string | null; lang?: string; onClose: () => void; onHighlight?: () => void }) {
   const [saved, setSaved] = useState(false);
@@ -104,7 +119,7 @@ export function LookupCard({ word, lang = 'en', onClose, onHighlight }: { word: 
                 onHighlight();
               }}
             >
-              <Icon name={saved ? 'check' : 'pen'} size={18} />
+              {saved ? <Icon name="check" size={18} /> : <SaveMarkIcon size={19} />}
             </button>
           )}
         </div>
@@ -211,7 +226,7 @@ function Gallery({ images, onOpen, onBroken }: { images: WikiImage[]; onOpen: (i
       >
         {images.map((im) => (
           <button key={im.src} className="lk-slide" onClick={() => onOpen(im)} aria-label={`Open picture: ${im.title}`}>
-            <img src={im.src} alt={im.title} loading="lazy" draggable={false} onError={() => onBroken(im.src)} />
+            <img src={im.src} alt={im.title} loading="lazy" crossOrigin="anonymous" draggable={false} onError={() => onBroken(im.src)} onLoad={(e) => looksDrawn(e.currentTarget) && onBroken(im.src)} />
           </button>
         ))}
       </div>
@@ -260,8 +275,8 @@ export function SelectionMenu({
       {/* "Define" stays a word (no icon says it as clearly); the rest are icons that read at a glance */}
       <button className="sm-word" onClick={onDefine}>{tr("Define")}</button>
       {onHighlight && (
-        <button onClick={onHighlight} aria-label={tr("Highlight")} title={tr("Highlight")}>
-          <Icon name="pen" size={18} />
+        <button className="sm-hl" onClick={onHighlight} aria-label={tr("Highlight and save")} title={tr("Highlight and save")}>
+          <SaveMarkIcon />
         </button>
       )}
       {onListen && (
@@ -281,6 +296,42 @@ export function SelectionMenu({
         <Icon name="share" size={18} />
       </button>
     </div>,
+    document.body,
+  );
+}
+
+/** Tapping a highlight: look it up, copy it, or take the highlight away (which also takes it out of Saved). */
+export function HighlightMenu({ rect, onDefine, onCopy, onRemove, onClose }: { rect: DOMRect | null; onDefine: () => void; onCopy: () => void; onRemove: () => void; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const top = rect ? (rect.top > 150 ? rect.top - 56 : Math.min(window.innerHeight - 120, rect.bottom + 14)) : 0;
+  const centre = rect ? rect.left + rect.width / 2 : 0;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !rect) return;
+    const w = el.offsetWidth;
+    el.style.left = `${Math.max(w / 2 + 8, Math.min(window.innerWidth - w / 2 - 8, centre))}px`;
+  }, [rect, centre]);
+  useEffect(() => {
+    if (!rect) return;
+    const close = () => onClose();
+    window.addEventListener('scroll', close, true);
+    return () => window.removeEventListener('scroll', close, true);
+  }, [rect, onClose]);
+  if (!rect) return null;
+  return createPortal(
+    <>
+      <div className="hlm-scrim" onClick={onClose} />
+      <div ref={ref} className="selmenu hlm" style={{ top, left: centre }}>
+        <button className="sm-word" onClick={onDefine}>{tr('Define')}</button>
+        <button className="sm-remove" onClick={onRemove} aria-label={tr('Remove highlight')}>
+          <SaveMarkIcon off />
+          <span>{tr('Remove')}</span>
+        </button>
+        <button onClick={onCopy} aria-label={tr('Copy')} title={tr('Copy')}>
+          <Icon name="copy" size={18} />
+        </button>
+      </div>
+    </>,
     document.body,
   );
 }

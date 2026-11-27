@@ -795,13 +795,33 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
     // paragraph (common in scanned and newspaper PDFs) is text, not a title.
     const nWords = plain.split(/\s+/).length;
     const openSentence = !!para && !/[.!?:"”»)]\s*$/.test(rowText((para as { lastRow: Row }).lastRow).trim()) && gap < body * 2.2;
-    const runsOn = /([,;\-–]|\b(the|a|an|of|and|or|to|in|on|at|for|with|by|from|that|which|el|la|los|las|de|del|y|en|un|una|le|les|des|et|du|der|die|das|und)$)/i.test(plain);
+    const runsOn = /([,;\-–]|\b(the|a|an|of|and|or|to|in|on|at|for|with|by|from|that|which|el|la|los|las|de|del|y|en|un|una|le|les|des|et|du|der|die|das|und))$/i.test(plain);
     const titleLike = /^[\p{Lu}0-9§«“"¿¡(]/u.test(plain) && !runsOn && nWords <= 16 && plain.length < 120 && !openSentence;
     // a short line on its own, centred in the column, after space: "CHAPTER IV", "Part Two", "XII", "* * *"
     const centred = Math.abs((r.x0 + r.x1) / 2 - (cb.l + cb.r) / 2) < (cb.r - cb.l) * 0.06 && r.x1 - r.x0 < (cb.r - cb.l) * 0.6;
     const marker = /^((chapter|cap[ií]tulo|chapitre|kapitel|capitolo|part|parte|partie|teil|book|libro|livre|section|secci[oó]n|act|acto|scene|escena|prologue|pr[oó]logo|epilogue|ep[ií]logo|introduction|introducci[oó]n|preface|prefacio|pr[eé]face)\b.{0,40}|[IVXLCDM]{1,7}\.?|\d{1,3}\.?)$/i.test(plain);
+    // the line below: a title stands apart from it; the first line of a paragraph (in bold or a little larger, as some books and
+    // newspapers set it) runs straight into it at ordinary line spacing
+    let below: Row | null = null;
+    for (let j = i + 1; j < ordered.length; j++) {
+      const n = ordered[j];
+      if (n.k === 'line' && n.col === e.col && !footRows.has(n.row)) {
+        below = n.row;
+        break;
+      }
+      if (n.k === 'img') break;
+    }
+    const belowBold = !!below && below.items.every((it) => it.bold || !/[A-Za-z]/.test(it.str));
+    // (a short headline set tight above its article, whose text starts a sentence of its own, is still a headline)
+    const tight = !!below && !belowBold && below.top - r.bot < Math.max(lineGap * 1.8, body * 0.55) && Math.abs(below.fh - body) < body * 0.15;
+    const goesOnBelow = !!below && /^[\p{Ll}(,;:]/u.test(rowText(below).trim());
+    const wide = r.x1 > cb.r - body * 4;
+    const runsInto = tight && (goesOnBelow || wide) && sizeRatio < 1.35 && !marker;
+    const fullWidth = r.x1 > cb.r - body * 1.5 && r.x0 <= cb.l + body * 2.5 && nWords >= 9 && sizeRatio < 1.35;
     const isHeading =
       titleLike &&
+      !runsInto &&
+      !fullWidth &&
       ((sizeRatio > 1.18 && plain.length > 1) ||
         (allBold && plain.length < 80 && !/\.$/.test(plain) && (gap > body * 0.5 || lastCol !== e.col)) ||
         (marker && (centred || gap > body * 1.2 || sizeRatio > 1.05)) ||
@@ -833,6 +853,8 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
       continue;
     }
 
+    // a whole line in bold inside ordinary text (a run-in first line, a line the page set apart) reads as ordinary text
+    const textHtml = allBold && !belowBold && plain.split(/\s+/).length > 3 ? text.replace(/<\/?b>/g, '') : text;
     const bullet = /^([•●◦▪‣∙·\-–—*]\s|\(?[a-z0-9ivx]{1,3}[.)]\s)/i.test(plain) && r.x0 <= cb.l + body * 3;
     let newPara = !para;
     if (para) {
@@ -862,12 +884,12 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
       flushPara();
       // a wide empty band before a paragraph is a break between sections (or scenes)
       if (lastBottom > -Infinity && gap > Math.max(body * 2.6, lineGap * 6) && e.col === lastCol) pendingSec = true;
-      para = { html: text, lastRow: r, col: e.col, li: bullet, sec: pendingSec };
+      para = { html: textHtml, lastRow: r, col: e.col, li: bullet, sec: pendingSec };
       pendingSec = false;
     } else if (para) {
       // de-hyphenate
-      if (/[A-Za-z]-$/.test(para.html) && /^[a-z]/.test(plain)) para.html = para.html.slice(0, -1) + text;
-      else para.html += ' ' + text;
+      if (/[A-Za-z]-$/.test(para.html) && /^[a-z]/.test(plain)) para.html = para.html.slice(0, -1) + textHtml;
+      else para.html += ' ' + textHtml;
       para.lastRow = r;
       para.col = e.col;
     }

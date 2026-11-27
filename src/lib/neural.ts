@@ -77,11 +77,13 @@ export const isNeural = (voice?: string): voice is string => !!voice && voice.st
 export const neuralId = (voice: string) => voice.slice(NEURAL_PREFIX.length) as VoiceId;
 
 const HF = 'https://huggingface.co/diffusionstudio/piper-voices/resolve/main';
-const RUNTIME: { name: string; url: string }[] = [
-  { name: 'ort-wasm-simd.wasm', url: 'https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.18.0/ort-wasm-simd.wasm' },
-  { name: 'piper_phonemize.wasm', url: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.wasm' },
-  { name: 'piper_phonemize.data', url: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.data' },
+// each file from more than one place: a host that is slow or blocked where the reader is must not leave them without the voice
+const RUNTIME: { name: string; urls: string[] }[] = [
+  { name: 'ort-wasm-simd.wasm', urls: ['https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.18.0/ort-wasm-simd.wasm', 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort-wasm-simd.wasm', 'https://unpkg.com/onnxruntime-web@1.18.0/dist/ort-wasm-simd.wasm'] },
+  { name: 'piper_phonemize.wasm', urls: ['https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.wasm', 'https://unpkg.com/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.wasm'] },
+  { name: 'piper_phonemize.data', urls: ['https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.data', 'https://unpkg.com/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.data'] },
 ];
+const HF2 = 'https://huggingface.co/rhasspy/piper-voices/resolve/main';
 
 /** A short recording of the voice (about 5 s), streamed when you tap ▶ — no download of the voice needed. */
 export const sampleUrl = (id: VoiceId) => `https://huggingface.co/rhasspy/piper-voices/resolve/main/${voicePath(id).split('/').slice(0, -1).join('/')}/samples/speaker_0.mp3`;
@@ -128,9 +130,22 @@ export async function neuralStored(): Promise<string[]> {
   }
 }
 
-async function save(d: FileSystemDirectoryHandle, name: string, url: string, onBytes: (n: number) => void) {
-  const r = await fetch(url);
-  if (!r.ok || !r.body) throw new Error(`download failed (${r.status})`);
+async function save(d: FileSystemDirectoryHandle, name: string, from: string | string[], onBytes: (n: number) => void) {
+  let r: Response | null = null;
+  let why = '';
+  for (const url of Array.isArray(from) ? from : [from]) {
+    try {
+      const x = await fetch(url);
+      if (x.ok && x.body) {
+        r = x;
+        break;
+      }
+      why = String(x.status);
+    } catch (e) {
+      why = (e as Error).message;
+    }
+  }
+  if (!r?.body) throw new Error(`download failed (${why})`);
   const w = await (await d.getFileHandle(name, { create: true })).createWritable();
   const reader = r.body.getReader();
   for (;;) {
@@ -149,13 +164,13 @@ export async function neuralDownload(id: VoiceId, onProgress: (fraction: number)
   const bump = (n: number) => onProgress(Math.min(0.99, (got += n) / total));
   if (needRt) {
     const d = await dir('piper-rt', true);
-    for (const f of RUNTIME) await save(d, f.name, f.url, bump);
+    for (const f of RUNTIME) await save(d, f.name, f.urls, bump);
     await (await d.getFileHandle('rt.ok', { create: true })).createWritable().then((w) => w.close());
   }
   const d = await dir('piper', true);
-  const base = `${HF}/${voicePath(id)}.onnx`;
-  await save(d, `${id}.onnx.json`, `${base}.json`, bump);
-  await save(d, `${id}.onnx`, base, bump);
+  const bases = [`${HF}/${voicePath(id)}.onnx`, `${HF2}/${voicePath(id)}.onnx`];
+  await save(d, `${id}.onnx.json`, bases.map((b) => `${b}.json`), bump);
+  await save(d, `${id}.onnx`, bases, bump);
   onProgress(1);
 }
 

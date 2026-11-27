@@ -10,7 +10,7 @@ import { coverUrl } from '../lib/library';
 import { onBack, shareText, tap } from '../lib/native';
 import { Icon } from '../ui/Icon';
 import { toast } from '../ui/kit';
-import { define, normalizeWord, sameSubject, wiki, type Definition, type WikiImage } from '../lib/lookup';
+import { define, looksDrawn, normalizeWord, sameSubject, wiki, type Definition, type WikiImage } from '../lib/lookup';
 import { getLang } from '../lib/i18n';
 
 type Kind = 'word' | 'sentence' | 'passage';
@@ -40,13 +40,16 @@ export async function allSaves(): Promise<Highlight[]> {
 function WordPeek({ text, lang }: { text: string; lang?: string }) {
   const w = normalizeWord(text.trim().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''));
   const [def, setDef] = useState<Definition | null | undefined>();
-  const [img, setImg] = useState<WikiImage | null | undefined>();
-  const [bad, setBad] = useState(false);
+  const [pics, setPics] = useState<WikiImage[] | null | undefined>();
+  const [k, setK] = useState(0);
+  const img = pics === undefined ? undefined : pics?.[k] ?? null;
+  const bad = false;
+  const setBad = (_: boolean) => setK((x) => x + 1); // a picture that will not do: the next one
   useEffect(() => {
     let live = true;
     setDef(undefined);
-    setImg(undefined);
-    setBad(false);
+    setPics(undefined);
+    setK(0);
     // the book's language when it was saved with one; otherwise English, then the reader's own
     const langs = [...new Set([lang, 'en', getLang()].filter((l): l is string => !!l))];
     (async () => {
@@ -60,10 +63,10 @@ function WordPeek({ text, lang }: { text: string; lang?: string }) {
       .then((card) => {
         if (!live) return;
         // only a picture of this very thing (not of a namesake article)
-        const pic = card && (sameSubject(w, card) || /\s/.test(w)) ? (card.images.find((i) => i.lead) ?? card.images[0]) : undefined;
-        setImg(pic ?? null);
+        const ok = card && (sameSubject(w, card) || /\s/.test(w)) ? [...card.images].sort((a, b) => (b.lead ? 1 : 0) - (a.lead ? 1 : 0)) : [];
+        setPics(ok.length ? ok : null);
       })
-      .catch(() => live && setImg(null));
+      .catch(() => live && setPics(null));
     return () => {
       live = false;
     };
@@ -78,7 +81,7 @@ function WordPeek({ text, lang }: { text: string; lang?: string }) {
         img &&
         !bad && (
           <figure className="sv-pic">
-            <img src={img.src} alt={img.title} loading="lazy" referrerPolicy="no-referrer" onError={() => setBad(true)} draggable={false} />
+            <img src={img.src} alt={img.title} loading="lazy" crossOrigin="anonymous" referrerPolicy="no-referrer" onError={() => setBad(true)} onLoad={(e) => looksDrawn(e.currentTarget) && setBad(true)} draggable={false} />
             {img.credit && <figcaption className="mono">{img.credit}</figcaption>}
           </figure>
         )

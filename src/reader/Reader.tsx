@@ -18,7 +18,7 @@ import { Icon, TypeGlyph } from '../ui/Icon';
 import { PixelBar, PixelLoader, Segmented, Sheet, toast } from '../ui/kit';
 import { PdfView, type PdfViewHandle } from './PdfView';
 import { DocxView } from './DocxView';
-import { LookupCard, SelectionMenu, ZoomViewer } from './Lookup';
+import { HighlightMenu, LookupCard, SelectionMenu, ZoomViewer } from './Lookup';
 import { ListenBar } from './ListenBar';
 import { ContentsSheet, MoreSheet, THEMES, TypeSheet, type MoreAction } from './sheets';
 import { BinaryView, CodeView, ImageView, MediaView, SheetView } from './OtherViews';
@@ -106,6 +106,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   const [page, setPage] = useState(doc.kind === 'pdf' && doc.position ? Math.max(1, Math.round(doc.position.value)) : 1);
   const [listenFrom, setListenFrom] = useState<number | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [hlMenu, setHlMenu] = useState<{ id: string; rect: DOMRect; text: string } | null>(null);
   const highlightsRef = useRef(highlights);
   highlightsRef.current = highlights;
   const [savesIntro, setSavesIntro] = useState(false);
@@ -940,6 +941,13 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   const onContentTap = (e: React.MouseEvent) => {
     if (selectionText()) return;
     const target = e.target as HTMLElement;
+    // a highlight: its own little menu (to remove it, look it up or copy it)
+    const mk = target.closest<HTMLElement>('mark.hl');
+    if (mk?.dataset.id) {
+      const parts = Array.from(flowRef.current?.querySelectorAll<HTMLElement>(`mark.hl[data-id="${mk.dataset.id}"]`) ?? [mk]);
+      setHlMenu({ id: mk.dataset.id, rect: parts[0].getBoundingClientRect(), text: parts.map((p) => p.textContent ?? '').join('') });
+      return;
+    }
     if (target.closest('a')) {
       const a = target.closest('a')!;
       const href = a.getAttribute('href') ?? '';
@@ -968,6 +976,19 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     if (listening && target.closest('.s')) return;
     setChrome((c) => !c);
   };
+
+  // the chosen studio voice is loaded while the book is being read, so pressing Listen starts in that voice straight away
+  useEffect(() => {
+    const v = settings.ttsVoice;
+    if (!v || !v.startsWith('neural:')) return;
+    const t = setTimeout(() => {
+      void import('../lib/neural').then(async (n) => {
+        if (!n.neuralSupported() || !(await n.neuralStored()).includes(n.neuralId(v))) return;
+        await n.sharedEngine.init(n.neuralId(v)).catch(() => {});
+      });
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [settings.ttsVoice]);
 
   // the words a lookup was opened for, so the word sheet can highlight them too
   const lookupAnchor = useRef<ReturnType<typeof anchorFromSelection>>(null);
@@ -1659,6 +1680,37 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         </button>
       </div>
 
+      <HighlightMenu
+        rect={hlMenu?.rect ?? null}
+        onClose={() => setHlMenu(null)}
+        onDefine={() => {
+          const w = (hlMenu?.text ?? '').trim().split(/\s+/).slice(0, 5).join(' ');
+          lookupAnchor.current = null;
+          setHlMenu(null);
+          if (w) setLookup(w);
+        }}
+        onCopy={() => {
+          navigator.clipboard?.writeText(hlMenu?.text ?? '').then(() => toast(tr('Copied')), () => {});
+          setHlMenu(null);
+        }}
+        onRemove={async () => {
+          const hid = hlMenu?.id;
+          setHlMenu(null);
+          if (!hid) return;
+          const gone = highlightsRef.current.find((h) => h.id === hid);
+          await db.del('marks', `${id}:h:${hid}`);
+          setHighlights((l) => l.filter((x) => x.id !== hid));
+          savesChanged();
+          tap('light');
+          toast(tr('Highlight removed · Undo'), undefined, () => {
+            if (!gone) return;
+            void db.put('marks', `${id}:h:${gone.id}`, gone).then(() => {
+              setHighlights((l) => [...l, gone]);
+              savesChanged();
+            });
+          });
+        }}
+      />
       <SelectionMenu
         rect={selRect}
         onDefine={() => {

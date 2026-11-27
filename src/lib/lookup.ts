@@ -302,6 +302,9 @@ async function queryWiki(params: Record<string, string>): Promise<WikiPage | nul
 
 const NOT_PICTURES = /(logo|icon|flag_of|commons-|wiki(?:media|data|pedia|source|quote|books|versity|news|voyage|species)|question_book|ambox|edit-|increase2|decrease2|steady2|crystal_clear|folder|nuvola|padlock|symbol|portal|stub|disambig|oojs|redirect|information_icon|lock-|searchtool|merge-|split-|text_document|gnome|p_vip|star_|speaker_icon|loudspeaker|audio|button|arrow|blank|pending|wikt|ooui|vote|check_mark|cross_|red_pencil|cscr|translation|semi-protection|cartoon|clipart|clip_art|emoji|emoticon|smiley|sticker|meme|comic|anime|manga|doodle|chibi|mascot|avatar|screenshot|poster|template|pictogram|ikon|badge|seal_of|coat_of_arms|signature|autograph|diagram_|chart|graph|banner|header|wordmark|stamp|sprite|animation|animated|gif)/i;
 
+/** file names that give away a computer drawing */
+const DRAWN = /(clip[ _-]?art|cartoon|vector|\bicon|flat|line[ _-]?art|outline|silhouette|doodle|emoji|kawaii|chibi|for[ _-]?kids|children'?s|coloring|colouring|pictogram|infographic|illustration[ _-]?\d*\.png$)/i;
+
 const plain = (h?: string) => (h ? h.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim() : '');
 
 interface RawInfo {
@@ -330,6 +333,8 @@ function toImages(pages: Record<string, RawInfo> | undefined, first?: string, to
     // real photographs and paintings only: no vector art, no animations
     if (!ii?.thumburl || !/^image\/(jpeg|png|webp|tiff)/.test(ii.mime ?? '')) continue;
     if (NOT_PICTURES.test(p.title)) continue;
+    // a drawing made on a computer (flat, childish, clip-art) is not a picture of the thing: photographs, paintings and old prints are
+    if (/^image\/png/.test(ii.mime ?? '') && DRAWN.test(p.title)) continue;
     const w = ii.width ?? ii.thumbwidth ?? 0;
     const h = ii.height ?? ii.thumbheight ?? 0;
     if (Math.max(w, h) < 480 || Math.min(w, h) < 260) continue; // icons, slivers, thumbnails
@@ -359,8 +364,9 @@ function toImages(pages: Record<string, RawInfo> | undefined, first?: string, to
       credit: [artist, lic].filter(Boolean).join(' · ') || undefined,
     });
   }
-  // lead picture first, then the biggest remaining
-  out.sort((a, b) => (a.lead ? -1 : b.lead ? 1 : b.w * b.h - a.w * a.h));
+  // lead picture first, then photographs (JPEG) before anything else, the biggest first
+  const jpg = (i: WikiImage) => (/\.jpe?g/i.test(i.full ?? i.src) ? 1 : 0);
+  out.sort((a, b) => (a.lead ? -1 : b.lead ? 1 : jpg(b) - jpg(a) || b.w * b.h - a.w * a.h));
   const seen = new Set<string>();
   return out.filter((i) => (seen.has(i.src) ? false : (seen.add(i.src), true))).slice(0, cap);
 }
@@ -400,7 +406,8 @@ export async function wiki(term: string, exactOnly = false): Promise<WikiCard | 
       images = await articleImages(page.title, page.thumbnail?.source, term).catch(() => []);
       // the lead picture is always allowed, even if the filters above would have dropped it (and never twice: the same file comes
       // back at another size from the article's picture list)
-      if (page.thumbnail?.source && !images.some((i) => fileKey(i.src) === fileKey(page!.thumbnail!.source))) {
+      // (but not a vector drawing rendered as a picture: maps of colour, logos, diagrams)
+      if (page.thumbnail?.source && !/\.svg\.png$|\.svg\//i.test(page.thumbnail.source) && !images.some((i) => fileKey(i.src) === fileKey(page!.thumbnail!.source))) {
         images.unshift({ src: page.thumbnail.source, title: page.title, w: 640, h: 480 });
         images = images.slice(0, 6);
       }
@@ -458,4 +465,34 @@ export function sameSubject(word: string, card: WikiCard | null): boolean {
   const a = norm(word);
   const b = norm(card.title);
   return variants(a).some((v) => v === b || v + 's' === b) || b === a;
+}
+
+/**
+ * Is this loaded picture flat digital line art (pure black strokes on pure white or on nothing)? Those are hidden: a word shows
+ * photographs, paintings and old prints (an engraving's paper is never pure white).
+ */
+export function looksDrawn(img: HTMLImageElement): boolean {
+  try {
+    const w = 64;
+    const h = Math.max(8, Math.round((img.naturalHeight / Math.max(1, img.naturalWidth)) * 64));
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const cx = c.getContext('2d', { willReadFrequently: true })!;
+    cx.drawImage(img, 0, 0, w, h);
+    const d = cx.getImageData(0, 0, w, h).data;
+    let flat = 0;
+    let ink = 0;
+    let colour = 0;
+    const n = d.length / 4;
+    for (let i = 0; i < d.length; i += 4) {
+      const [r, g, b, a] = [d[i], d[i + 1], d[i + 2], d[i + 3]];
+      if (a < 40 || (r > 248 && g > 248 && b > 248)) flat++;
+      else if (r < 40 && g < 40 && b < 40) ink++;
+      if (Math.max(r, g, b) - Math.min(r, g, b) > 30 && a > 40) colour++;
+    }
+    return flat / n > 0.55 && (flat + ink) / n > 0.85 && colour / n < 0.05;
+  } catch {
+    return false; // a picture that cannot be looked at (no permission) is kept
+  }
 }
