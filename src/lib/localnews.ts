@@ -76,13 +76,35 @@ function parse(xml: string, o: O): Item[] {
   return out;
 }
 
+/** A request that gives up after `ms`: one outlet that never answers must not hold up the others. */
+async function timed(url: string, ms = 9000): Promise<Response | null> {
+  const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  let t = 0;
+  try {
+    return await Promise.race([
+      fetch(url, ctl ? { signal: ctl.signal } : undefined),
+      new Promise<null>((r) => {
+        t = window.setTimeout(() => {
+          ctl?.abort();
+          r(null);
+        }, ms);
+      }),
+    ]);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 /** The picture an article page announces for sharing (og:image), when its feed gave none. */
 async function ogImage(url: string): Promise<string | undefined> {
   try {
-    const r = await fetch(url);
-    if (!r.ok) return;
+    const r = await timed(url, 6000);
+    if (!r?.ok) return;
     const h = (await r.text()).slice(0, 200_000);
-    return /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i.exec(h)?.[1] ?? /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image/i.exec(h)?.[1];
+    const u = /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i.exec(h)?.[1] ?? /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image/i.exec(h)?.[1];
+    return u?.replace(/&amp;/g, '&').replace(/^http:/, 'https:');
   } catch {
     return undefined;
   }
@@ -90,30 +112,63 @@ async function ogImage(url: string): Promise<string | undefined> {
 
 export const hasOutlets = (cc: string) => OUTLETS.some((o) => o.cc === cc);
 
+/** Google News for the country: the last resort when the outlets' own feeds give nothing (headlines and outlet names only). */
+const GN: Record<string, [string, string]> = { es: ['es', 'ES'], mx: ['es-419', 'MX'], ar: ['es-419', 'AR'], co: ['es-419', 'CO'], cl: ['es-419', 'CL'], pe: ['es-419', 'PE'], fr: ['fr', 'FR'], de: ['de', 'DE'], it: ['it', 'IT'], pt: ['pt-PT', 'PT'], br: ['pt-BR', 'BR'] };
+async function googleNews(cc: string): Promise<Item[]> {
+  const g = GN[cc];
+  if (!g) return [];
+  const r = await timed(`https://news.google.com/rss?hl=${g[0]}&gl=${g[1]}&ceid=${g[1]}:${g[0].split('-')[0]}`);
+  if (!r?.ok) return [];
+  const doc = new DOMParser().parseFromString(await r.text(), 'text/xml');
+  const region = OUTLETS.find((o) => o.cc === cc)?.region ?? cc.toUpperCase();
+  const out: Item[] = [];
+  for (const it of Array.from(doc.querySelectorAll('item')).slice(0, 24)) {
+    const src = it.getElementsByTagName('source')[0];
+    const outlet = src?.textContent?.trim() || 'Google News';
+    const title = clean(it.getElementsByTagName('title')[0]?.textContent ?? '').replace(new RegExp(`\\s+-\\s+${outlet.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), '');
+    const link = it.getElementsByTagName('link')[0]?.textContent?.trim() ?? '';
+    const when = Date.parse(it.getElementsByTagName('pubDate')[0]?.textContent ?? '');
+    if (!title || !link) continue;
+    let domain = '';
+    try {
+      domain = new URL(src?.getAttribute('url') ?? '').hostname.replace(/^www\./, '');
+    } catch {
+      /* no address */
+    }
+    const o: O = { cc, region, id: 'gn' + hash(outlet), name: outlet, domain, kind: 'commercial', about: `${region} news outlet.`, feeds: [] };
+    out.push({ title, link, summary: '', time: Number.isFinite(when) ? when : Date.now(), o });
+  }
+  return out;
+}
+
+type Local = { at: number; stories: Story[]; sources: Record<string, Outlet> };
 /** Up to 24 stories from the country's outlets, taking turns so one outlet does not fill the list. */
-export async function fetchLocal(cc: string): Promise<{ stories: Story[]; sources: Record<string, Outlet> }> {
+export async function fetchLocal(cc: string, force = false): Promise<{ stories: Story[]; sources: Record<string, Outlet> }> {
   const key = `localnews:${cc}`;
-  const hit = await db.get<{ at: number; stories: Story[]; sources: Record<string, Outlet> }>('kv', key).catch(() => undefined);
-  if (hit && Date.now() - hit.at < 90 * 60_000 && hit.stories.length) return hit;
+  const hit = await db.get<Local>('kv', key).catch(() => undefined);
+  if (!force && hit && Date.now() - hit.at < 90 * 60_000 && hit.stories.length) return hit;
   const outlets = OUTLETS.filter((o) => o.cc === cc);
   const now = Date.now();
   const lists = await Promise.all(
     outlets.map(async (o) => {
       const got: Item[] = [];
       for (const url of o.feeds) {
+        const r = await timed(url);
+        if (!r?.ok) continue;
         try {
-          const r = await fetch(url);
-          if (r.ok) got.push(...parse(await r.text(), o).filter((x) => now - x.time < 48 * 3600e3 && x.summary.length >= 40));
+          got.push(...parse(await r.text(), o).filter((x) => now - x.time < 72 * 3600e3));
         } catch {
-          /* an outlet that is down is skipped */
+          /* a feed that is not readable is skipped */
         }
       }
       return got;
     }),
   );
+  // nothing from the outlets themselves (blocked, down, or changed address): the country's headlines from Google News
+  if (lists.every((l) => !l.length)) lists.push(await googleNews(cc).catch(() => []));
   const picked: Item[] = [];
   const seen = new Set<string>();
-  for (let i = 0; picked.length < 24 && i < 16; i++)
+  for (let i = 0; picked.length < 24 && i < 24; i++)
     for (const l of lists) {
       const it = l[i];
       if (!it || picked.length >= 24) continue;
@@ -122,41 +177,58 @@ export async function fetchLocal(cc: string): Promise<{ stories: Story[]; source
       seen.add(k);
       picked.push(it);
     }
-  // a few stories without a picture get the one their article page names
-  let og = 0;
-  for (const it of picked) if (!it.image && og++ < 8) it.image = await ogImage(it.link);
+  // stories without a picture get the one their article page names (a few at a time, never waiting long)
+  const need = picked.filter((it) => !it.image && !/news\.google\.com/.test(it.link)).slice(0, 12);
+  for (let i = 0; i < need.length; i += 4) await Promise.all(need.slice(i, i + 4).map(async (it) => (it.image = await ogImage(it.link))));
   const stories: Story[] = picked
-    .filter((it) => it.image)
     .sort((a, b) => b.time - a.time)
     .map((it) => ({
       id: 'l' + hash(it.link),
       title: it.title,
       summary: cleanSummary(it.summary.length > 420 ? it.summary.slice(0, 420) : it.summary),
-      image: it.image!,
-      imageFrom: it.o.name,
+      image: it.image ?? '',
+      imageFrom: it.image ? it.o.name : '',
       time: it.time,
       topic: 'world',
       local: true,
       sources: [{ id: it.o.id, title: it.title, url: it.link }],
     }));
   const sources: Record<string, Outlet> = {};
-  for (const o of outlets) sources[o.id] = { name: o.name, region: o.region, domain: o.domain, kind: o.kind, lean: null, about: o.about };
-  if (stories.length) await db.put('kv', key, { at: Date.now(), stories, sources }).catch(() => {});
+  for (const it of picked) sources[it.o.id] = { name: it.o.name, region: it.o.region, domain: it.o.domain, kind: it.o.kind, lean: null, about: it.o.about };
+  if (stories.length) {
+    await db.put('kv', key, { at: Date.now(), stories, sources }).catch(() => {});
+    return { stories, sources };
+  }
+  // offline or every source failed: yesterday's list is better than none
+  if (hit?.stories.length && Date.now() - hit.at < 36 * 3600e3) return hit;
   return { stories, sources };
 }
 
-/** The day's file, with the reader's country's stories added when the file has none for it. */
-export function useWithLocal(d: Daily, home: string): Daily {
+export type LocalState = 'idle' | 'loading' | 'done' | 'failed';
+/** The day's file, with the reader's country's stories added when the file has none for it; `state` says how fetching went. */
+export function useWithLocal(d: Daily, home: string): { d: Daily; state: LocalState; retry: () => void } {
   const [extra, setExtra] = useState<{ cc: string; stories: Story[]; sources: Record<string, Outlet> } | null>(null);
-  const missing = !(d.local?.[home]?.length) && hasOutlets(home);
+  const [state, setState] = useState<LocalState>('idle');
+  const [n, setN] = useState(0);
+  const missing = !d.local?.[home]?.length && hasOutlets(home);
   useEffect(() => {
     if (!missing) return;
     let live = true;
-    fetchLocal(home).then((r) => live && setExtra({ cc: home, ...r }), () => {});
+    setState('loading');
+    fetchLocal(home, n > 0).then(
+      (r) => {
+        if (!live) return;
+        setExtra({ cc: home, ...r });
+        setState(r.stories.length ? 'done' : 'failed');
+      },
+      () => live && setState('failed'),
+    );
     return () => {
       live = false;
     };
-  }, [missing, home]);
-  if (!missing || !extra || extra.cc !== home || !extra.stories.length) return d;
-  return { ...d, local: { ...(d.local ?? {}), [home]: extra.stories }, sources: { ...extra.sources, ...(d.sources ?? {}) } };
+  }, [missing, home, n]);
+  const retry = () => setN((x) => x + 1);
+  if (!missing) return { d, state: 'done', retry };
+  if (!extra || extra.cc !== home || !extra.stories.length) return { d, state, retry };
+  return { d: { ...d, local: { ...(d.local ?? {}), [home]: extra.stories }, sources: { ...extra.sources, ...(d.sources ?? {}) } }, state, retry };
 }

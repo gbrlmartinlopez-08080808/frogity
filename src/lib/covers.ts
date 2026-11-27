@@ -148,9 +148,60 @@ export async function coverChoices(doc: DocMeta): Promise<CoverChoice[]> {
 const W = 720;
 const H = 1040;
 
+/** A picture from the web as a Blob. On the phone the download is made by Android itself (the WebView's own fetch is routed
+ * through a layer that returns pictures as text, which then cannot be decoded); in a browser, fetch, then an <img> as a last try. */
+async function imageBlob(url: string): Promise<Blob> {
+  const { Capacitor, CapacitorHttp } = await import('@capacitor/core');
+  if (Capacitor.isNativePlatform()) {
+    const r = await CapacitorHttp.get({ url, responseType: 'blob', connectTimeout: 15000, readTimeout: 30000, headers: { Accept: 'image/*' } });
+    if (r.status >= 200 && r.status < 300 && typeof r.data === 'string') {
+      const bin = atob(r.data.replace(/^data:[^,]*,/, ''));
+      const u = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      const type = String(r.headers?.['Content-Type'] ?? r.headers?.['content-type'] ?? 'image/jpeg').split(';')[0];
+      return new Blob([u], { type });
+    }
+  }
+  try {
+    const r = await fetch(url);
+    if (r.ok) {
+      const b = await r.blob();
+      if (b.size > 200 && /^image\//.test(b.type || 'image/')) return b;
+    }
+  } catch {
+    /* the picture element below */
+  }
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.referrerPolicy = 'no-referrer';
+    im.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = im.naturalWidth;
+      c.height = im.naturalHeight;
+      c.getContext('2d')!.drawImage(im, 0, 0);
+      c.toBlob((b) => (b ? res(b) : rej(new Error('no picture'))), 'image/jpeg', 0.92);
+    };
+    im.onerror = () => rej(new Error('no picture'));
+    im.src = url;
+  });
+}
 async function loadBitmap(src: string | Blob) {
-  const blob = typeof src === 'string' ? await (await fetch(src)).blob() : src;
-  return createImageBitmap(blob);
+  const blob = typeof src === 'string' ? await imageBlob(src) : src;
+  try {
+    return await createImageBitmap(blob);
+  } catch {
+    // some WebViews cannot decode every format with createImageBitmap: an <img> can
+    const u = URL.createObjectURL(blob);
+    try {
+      const im = new Image();
+      im.src = u;
+      await im.decode();
+      return await createImageBitmap(im);
+    } finally {
+      URL.revokeObjectURL(u);
+    }
+  }
 }
 const toJpeg = (c: HTMLCanvasElement) => new Promise<Blob | undefined>((r) => c.toBlob((b) => r(b ?? undefined), 'image/jpeg', 0.88));
 

@@ -43,6 +43,45 @@ export function PixelBar({ value, cells = 16 }: { value: number; cells?: number 
 }
 
 // ------------------------------------------------------------------ bottom sheet
+// Only one sheet shows at a time: a sheet opened from inside another slides the one below out of sight, and it comes back when
+// the top one closes. A sheet that opens while another is still closing waits for it, so two never cross on the screen.
+const sheetStack: number[] = [];
+const sheetBus = new EventTarget();
+let sheetSeq = 0;
+let lastSheetClose = 0;
+const stackChanged = () => sheetBus.dispatchEvent(new Event('ch'));
+function useIsTop(id: number, open: boolean) {
+  const [top, setTop] = useState(true);
+  useLayoutEffect(() => {
+    if (!open) return;
+    sheetStack.push(id);
+    stackChanged();
+    return () => {
+      const i = sheetStack.lastIndexOf(id);
+      if (i >= 0) sheetStack.splice(i, 1);
+      stackChanged();
+    };
+  }, [open, id]);
+  useEffect(() => {
+    const f = () => setTop(sheetStack.length === 0 || sheetStack.at(-1) === id || !sheetStack.includes(id));
+    f();
+    sheetBus.addEventListener('ch', f);
+    return () => sheetBus.removeEventListener('ch', f);
+  }, [id]);
+  return top;
+}
+
+/** the scrollable element between the touched one and the sheet (if any) */
+function scrollerOf(target: EventTarget | null, sheet: HTMLElement): HTMLElement | null {
+  for (let el = target as HTMLElement | null; el && el !== sheet; el = el.parentElement) {
+    if (el.scrollHeight > el.clientHeight + 1) {
+      const oy = getComputedStyle(el).overflowY;
+      if (oy === 'auto' || oy === 'scroll') return el;
+    }
+  }
+  return null;
+}
+
 export function Sheet({
   open,
   onClose,
@@ -64,14 +103,26 @@ export function Sheet({
 }) {
   const [mounted, setMounted] = useState(open);
   const [closing, setClosing] = useState(false);
+  const [dragged, setDragged] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ y: number; dy: number; scroll: boolean } | null>(null);
+  const scrim = useRef<HTMLDivElement>(null);
+  const id = useRef(0);
+  if (!id.current) id.current = ++sheetSeq;
+  const top = useIsTop(id.current, open && mounted);
+  const close = useRef(onClose);
+  close.current = onClose;
+  // opened right after another sheet started closing: wait until it is out of the way
+  const [delay, setDelay] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (open) {
+      const since = performance.now() - lastSheetClose;
+      setDelay(since < 230 ? Math.round(230 - since) : 0);
       setMounted(true);
       setClosing(false);
+      setDragged(false);
     } else if (mounted) {
+      lastSheetClose = performance.now();
       setClosing(true);
       const t = setTimeout(() => {
         setMounted(false);
@@ -82,19 +133,19 @@ export function Sheet({
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !top) return;
     return onBack(() => {
       onClose();
       return true;
     });
-  }, [open, onClose]);
+  }, [open, onClose, top]);
 
   useEffect(() => {
     if (!open || !mounted) return;
     const previous = document.activeElement as HTMLElement | null;
     const panel = ref.current;
     if (!panel) return;
-    const frame = requestAnimationFrame(() => (panel.querySelector<HTMLElement>('input, button, [tabindex="0"]') ?? panel).focus());
+    const frame = requestAnimationFrame(() => (panel.querySelector<HTMLElement>('input, button, [tabindex="0"]') ?? panel).focus({ preventScroll: true }));
     const key = (e: KeyboardEvent) => {
       const panels = Array.from(document.querySelectorAll('.sheet[role="dialog"]'));
       if (panels.at(-1) !== panel || e.key !== 'Tab') return;
@@ -105,34 +156,108 @@ export function Sheet({
       else if (!e.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', key);
-    return () => { cancelAnimationFrame(frame); document.removeEventListener('keydown', key); if (previous?.isConnected) previous.focus(); };
+    return () => { cancelAnimationFrame(frame); document.removeEventListener('keydown', key); if (previous?.isConnected) previous.focus({ preventScroll: true }); };
   }, [open, mounted]);
+
+  // Pull the sheet down to close it. The sheet follows the finger frame by frame (and the shade behind it lightens); a short
+  // flick is enough, and a sheet let go early springs back. Inside a list that is scrolled, the list scrolls first.
+  useEffect(() => {
+    const el = ref.current;
+    if (!mounted || !el) return;
+    type D = { x: number; y: number; dy: number; on: boolean; sc: HTMLElement | null; ly: number; lt: number; v: number; h: number };
+    let d: D | null = null;
+    let raf = 0;
+    const paint = () => {
+      raf = 0;
+      if (!d) return;
+      const y = d.dy > 0 ? d.dy : -Math.min(28, Math.sqrt(-d.dy) * 3);
+      el.style.transform = `translate3d(0,${y}px,0)`;
+      if (scrim.current) scrim.current.style.opacity = String(Math.max(0, 1 - Math.max(0, d.dy) / d.h));
+    };
+    const start = (e: TouchEvent) => {
+      if (e.touches.length !== 1 || el.classList.contains('under') || el.classList.contains('out')) return;
+      const t = e.touches[0];
+      const sc = scrollerOf(e.target, el);
+      // a list scrolled down scrolls; only at its top does pulling down move the sheet
+      if (sc && sc.scrollTop > 2) return (d = null);
+      if ((e.target as HTMLElement).closest('input[type="range"], .ruler, .no-drag, textarea, [contenteditable="true"]')) return (d = null);
+      d = { x: t.clientX, y: t.clientY, dy: 0, on: false, sc, ly: t.clientY, lt: e.timeStamp, v: 0, h: el.offsetHeight || 600 };
+    };
+    const move = (e: TouchEvent) => {
+      if (!d) return;
+      const t = e.touches[0];
+      const dx = t.clientX - d.x;
+      const dy = t.clientY - d.y;
+      if (!d.on) {
+        if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+        // sideways (a row of chips), or upwards inside a list: not a pull
+        if (Math.abs(dx) > Math.abs(dy) || (dy < 0 && d.sc)) return (d = null);
+        d.on = true;
+        d.y = t.clientY;
+        el.style.transition = 'none';
+        if (scrim.current) scrim.current.style.transition = 'none';
+      }
+      e.preventDefault();
+      const dt = Math.max(1, e.timeStamp - d.lt);
+      d.v = 0.7 * d.v + 0.3 * ((t.clientY - d.ly) / dt);
+      d.ly = t.clientY;
+      d.lt = e.timeStamp;
+      d.dy = t.clientY - d.y;
+      if (!raf) raf = requestAnimationFrame(paint);
+    };
+    const end = () => {
+      const g = d;
+      d = null;
+      if (!g?.on) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+      const away = g.dy > Math.min(150, g.h * 0.3) || (g.v > 0.55 && g.dy > 24);
+      if (away) {
+        const ms = Math.round(Math.max(140, Math.min(260, (g.h - g.dy) / Math.max(1.4, g.v))));
+        el.style.transition = `transform ${ms}ms cubic-bezier(.3,.7,.4,1)`;
+        el.style.transform = 'translate3d(0,100%,0)';
+        if (scrim.current) {
+          scrim.current.style.transition = `opacity ${ms}ms linear`;
+          scrim.current.style.opacity = '0';
+        }
+        tap('light');
+        setTimeout(() => {
+          setDragged(true);
+          close.current();
+        }, ms - 20);
+      } else {
+        el.style.transition = 'transform .42s cubic-bezier(.2,1.1,.3,1)';
+        el.style.transform = '';
+        if (scrim.current) {
+          scrim.current.style.transition = 'opacity .3s ease';
+          scrim.current.style.opacity = '';
+        }
+        setTimeout(() => {
+          el.style.transition = '';
+          if (scrim.current) scrim.current.style.transition = '';
+        }, 440);
+      }
+    };
+    el.addEventListener('touchstart', start, { passive: true });
+    el.addEventListener('touchmove', move, { passive: false });
+    el.addEventListener('touchend', end);
+    el.addEventListener('touchcancel', end);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener('touchstart', start);
+      el.removeEventListener('touchmove', move);
+      el.removeEventListener('touchend', end);
+      el.removeEventListener('touchcancel', end);
+    };
+  }, [mounted]);
+
   if (!mounted) return null;
-  const onStart = (e: React.TouchEvent) => {
-    const body = ref.current?.querySelector('.sheet-body');
-    drag.current = { y: e.touches[0].clientY, dy: 0, scroll: !!body && body.scrollTop > 0 && body.contains(e.target as Node) };
-  };
-  const onMove = (e: React.TouchEvent) => {
-    const d = drag.current;
-    if (!d || d.scroll) return;
-    d.dy = Math.max(0, e.touches[0].clientY - d.y);
-    if (ref.current) ref.current.style.transform = `translateY(${d.dy}px)`;
-  };
-  const onEnd = () => {
-    const d = drag.current;
-    drag.current = null;
-    if (!ref.current) return;
-    ref.current.style.transition = 'transform .3s cubic-bezier(.2,.8,.2,1)';
-    if (d && d.dy > 110) {
-      ref.current.style.transform = 'translateY(100%)';
-      setTimeout(onClose, 200);
-    } else ref.current.style.transform = '';
-    setTimeout(() => ref.current && (ref.current.style.transition = ''), 320);
-  };
+  const st = delay && !closing ? ({ animationDelay: `${delay}ms` } as React.CSSProperties) : undefined;
+  const cls = `${closing ? ' out' : ''}${dragged ? ' dragged' : ''}${!top && !closing ? ' under' : ''}`;
   return createPortal(
     <>
-      <div className={`scrim${closing ? ' out' : ''}${className?.includes('over') ? ' over' : ''}`} onClick={onClose} />
-      <div ref={ref} className={`sheet${closing ? ' out' : ''} ${className ?? ''}`} data-dark={dark ? '1' : undefined} onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd} onTouchCancel={onEnd} role="dialog" tabIndex={-1} aria-modal="true" aria-label={typeof title === 'string' ? title : 'Frogity options'}>
+      <div ref={scrim} className={`scrim${cls}${className?.split(/\s+/).includes('over') ? ' over' : ''}`} style={st} onClick={onClose} />
+      <div ref={ref} className={`sheet${cls} ${className ?? ''}`} style={st} data-dark={dark ? '1' : undefined} role="dialog" tabIndex={-1} aria-modal="true" aria-hidden={!top || undefined} aria-label={typeof title === 'string' ? title : 'Frogity options'}>
         {!noGrip && <div className="sheet-grip" />}
         {title !== undefined && (
           <div className="sheet-head">

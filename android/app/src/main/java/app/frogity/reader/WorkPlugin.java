@@ -58,7 +58,7 @@ public class WorkPlugin extends Plugin {
                 .setContentText(call.getString("text", ""))
                 .setContentIntent(pi)
                 .setAutoCancel(true);
-            // the picture beside it: the book's own cover when there is one, otherwise the app's icon as it is on the home screen
+            // the picture beside it: the book's cover when its Liquid mode is ready; otherwise none (the small icon says who it is from)
             android.graphics.Bitmap big = null;
             String cover = call.getString("cover", null);
             if (cover != null && !cover.isEmpty()) {
@@ -69,7 +69,6 @@ public class WorkPlugin extends Plugin {
                     big = null;
                 }
             }
-            if (big == null) big = appIcon(ctx);
             if (big != null) nb.setLargeIcon(big);
             NotificationManagerCompat.from(ctx).notify(READY, nb.build());
         } catch (SecurityException ignored) {

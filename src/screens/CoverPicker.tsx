@@ -34,6 +34,7 @@ export function CoverPicker({ doc, onClose }: { doc: DocMeta | null; onClose: ()
   const shown = (list ?? []).filter((c) => !bad.has(c.url));
   return (
     <Sheet open={!!doc} onClose={onClose} title={tr('Change cover')} className="cover-pick">
+      <div className="sheet-body">
       <div className="cp-grid">
         <button className="cp-own" onClick={() => void pick('file', () => refreshCover(doc))} disabled={!!busy}>
           <Icon name="page" size={22} />
@@ -93,6 +94,7 @@ export function CoverPicker({ doc, onClose }: { doc: DocMeta | null; onClose: ()
           if (f) void pick('photo', () => useCover(doc, f));
         }}
       />
+      </div>
     </Sheet>
   );
 }

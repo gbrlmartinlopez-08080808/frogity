@@ -298,7 +298,8 @@ const settle = (doc: DocMeta, status: 'done' | 'none') => {
   jobs.set(doc.id, { id: doc.id, title: doc.name, kind: 'scan', status, progress: 1, done: 1, total: 1, startedAt: Date.now() });
   emit();
 };
-const finish = (doc: DocMeta) => window.dispatchEvent(new CustomEvent('frogity:scan', { detail: { id: doc.id, title: doc.name } }));
+/** `liquid`: the book's Liquid view is ready (its notification shows the book's cover); a photo or camera scan has none */
+const finish = (doc: DocMeta, liquid = false) => window.dispatchEvent(new CustomEvent('frogity:scan', { detail: { id: doc.id, title: doc.name, liquid } }));
 
 // ---------------------------------------------------------------- photos and camera scans
 /** A photo or screenshot: read its text once, keep where every word sits so the reader can select it. */
@@ -689,7 +690,7 @@ async function prepareDoc(doc: DocMeta, p: Plan) {
   await db.put('kv', `liquid:${doc.id}`, 'ready');
   retried.delete(doc.id);
   setPrep(doc.id, { known: true, ready: true, busy: false, progress: 1, eta: null, info: '', error: '' });
-  finish(doc);
+  finish(doc, true);
   // `ms`: how long the Liquid view took to make (a long wait is worth a notification)
   const since = busySince.get(doc.id);
   busySince.delete(doc.id);

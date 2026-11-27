@@ -18,6 +18,9 @@ import { detectLang, ensureNaturalVoice } from '../lib/voices';
 import { LangChips } from '../ui/LangChips';
 import { askWorkFree, workFree } from '../lib/workNotice';
 import { DictsSheet } from './Dicts';
+import { WhatsNew } from './WhatsNew';
+import { AGE_OPTIONS } from '../lib/reminderWords';
+import type { AgeBand } from '../lib/types';
 
 export function Settings({ open, onClose }: { open: boolean; onClose: () => void }) {
   const s = useStore((x) => x.settings);
@@ -29,6 +32,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
   const [fonts, setFonts] = useState(false);
   const [dicts, setDicts] = useState(false);
   const [about, setAbout] = useState(false);
+  const [news, setNews] = useState(false);
   const [adv, setAdv] = useState(false);
   const [folders, setFolders] = useState<LinkedFolder[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -78,6 +82,20 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
             maxLength={16}
             style={{ flex: 1, border: 0, outline: 0, background: 'transparent', fontSize: 16, fontWeight: 600, height: 44 }}
             aria-label={tr("Your name")}
+          />
+        </div>
+        <div className="age-row">
+          <div className="row-label">{tr("Age")}</div>
+          <div className="row-sub">{tr("Only to choose how your reminders speak to you")}</div>
+          <Segmented<AgeBand>
+            value={(s.age ?? '') as AgeBand}
+            onChange={(v) => {
+              updateSettings({ age: v });
+              void refreshReminder();
+            }}
+            options={AGE_OPTIONS}
+            className="w100"
+            light
           />
         </div>
 
@@ -332,6 +350,15 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
             <Ruler value={s.dailyGoal} min={5} max={120} step={5} onChange={(v) => updateSettings({ dailyGoal: v })} format={(v) => `${v}m`} label="Daily goal" />
           </>
         )}
+        <button className="row ver-row" style={{ width: '100%', textAlign: 'left' }} onClick={() => setNews(true)}>
+          <Icon name="info" />
+          <div className="grow">
+            <div className="row-label">{tr("Version")}</div>
+            <div className="row-sub">{tr("What's new, and what came before")}</div>
+          </div>
+          <span className="ver mono">{APP_VERSION}</span>
+          <Icon name="right" size={18} />
+        </button>
         <button className="row" style={{ width: '100%', textAlign: 'left' }} onClick={() => setAbout(true)}>
           <Icon name="info" />
           <div className="grow">
@@ -353,6 +380,7 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
       <FontsSheet open={fonts} onClose={() => setFonts(false)} />
       <DictsSheet open={dicts} onClose={() => setDicts(false)} />
       <About open={about} onClose={() => setAbout(false)} />
+      <WhatsNew open={news} version={APP_VERSION} onClose={() => setNews(false)} />
     </Sheet>
   );
 }

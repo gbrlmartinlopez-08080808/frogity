@@ -1,5 +1,6 @@
 import { tr, loc } from '../lib/i18n';
-import { useWithLocal } from '../lib/localnews';
+import { hasOutlets, useWithLocal } from '../lib/localnews';
+import { country } from '../lib/worldx';
 import { Fragment, useCallback, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { readArticle, type Article } from '../lib/article';
 import { wikiArticle, type WikiDoc } from '../lib/wikiarticle';
@@ -492,10 +493,13 @@ function News({ d: day, setDetail, mode }: { d: Daily; setDetail: (x: Detail) =>
   const [topic, setTopic] = useState<'all' | Topic | 'local'>('all');
   const [home] = useHome();
   // the reader's country: from the day's file, or read by the phone from the country's outlets when the file has none
-  const d = useWithLocal(day, home);
+  const { d, state, retry } = useWithLocal(day, home);
   const hasLocal = useMemo(() => localsOf(d, home).length > 0, [d, home]);
-  const topics = useMemo(() => [...(hasLocal ? (['local'] as const) : []), ...new Set(d.news.map((s) => s.topic).filter((x): x is Topic => !!x))], [d, hasLocal]);
+  // the Local tab stays while the country's outlets are being read (or could not be reached), so it never vanishes
+  const showLocal = hasLocal || hasOutlets(home);
+  const topics = useMemo(() => [...(showLocal ? (['local'] as const) : []), ...new Set(d.news.map((s) => s.topic).filter((x): x is Topic => !!x))], [d, showLocal]);
   const list = useMemo(() => withLocal(d, topic === 'all' || topic === 'local' ? d.news : d.news.filter((s) => s.topic === topic), home, topic), [d, topic, home]);
+  const place = tr(country(home)?.name ?? home.toUpperCase());
   return (
     <div className="news">
       {mode}
@@ -508,7 +512,21 @@ function News({ d: day, setDetail, mode }: { d: Daily; setDetail: (x: Detail) =>
           ))}
         </div>
       )}
-      <Reels key={topic} d={d} stories={list} setDetail={setDetail} />
+      {topic === 'local' && !list.length ? (
+        <div className="local-wait">
+          {state === 'failed' ? (
+            <>
+              <Froggy mood="sleepy" size="md" />
+              <p>{tr('The news from')} {place} {tr('could not be reached just now.')}</p>
+              <button className="pill" onClick={() => (tap('select'), retry())}>{tr('Try again')}</button>
+            </>
+          ) : (
+            <PixelLoader size={5} label={`${tr('reading the news from')} ${place}`} />
+          )}
+        </div>
+      ) : (
+        <Reels key={topic} d={d} stories={list} setDetail={setDetail} />
+      )}
     </div>
   );
 }
@@ -548,7 +566,7 @@ function Reels({ d, stories, setDetail }: { d: Daily; stories: Story[]; setDetai
                 <span className="reel-count mono">
                   {i + 1}{tr(" / ")}{stories.length}
                 </span>
-                <span className="reel-credit mono">{tr("photo · ")}{s.imageFrom}</span>
+                {s.image && s.imageFrom && <span className="reel-credit mono">{tr("photo · ")}{s.imageFrom}</span>}
               </div>
               <div className="reel-body">
                 <div className="reel-meta mono">
@@ -564,7 +582,7 @@ function Reels({ d, stories, setDetail }: { d: Daily; stories: Story[]; setDetai
                   </span>
                 </div>
                 <h2>{s.title}</h2>
-                <p>{tidy(s.summary)}</p>
+                {s.summary.trim() && <p>{tidy(s.summary)}</p>}
                 <div className="reel-act">
                   <button className="pill" onClick={() => setDetail({ kind: 'story', story: s })}>{tr("Read more")}</button>
                   <button className="pill ghost" onClick={() => setDetail({ kind: 'story', story: s, open: 0 })}>{tr("Full story")}</button>

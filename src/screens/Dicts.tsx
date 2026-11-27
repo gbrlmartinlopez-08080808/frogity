@@ -43,6 +43,7 @@ export function DictsSheet({ open, onClose }: { open: boolean; onClose: () => vo
   };
   return (
     <Sheet open={open} onClose={onClose} title={tr('Dictionaries')}>
+      <div className="sheet-body" style={{ paddingBottom: 16 }}>
       <p className="row-sub" style={{ padding: '0 4px 10px' }}>
         {tr('Look words up without a connection. Each language comes with its own definitions and its words in ')}
         {LANG_NAME[u]}
@@ -84,6 +85,7 @@ export function DictsSheet({ open, onClose }: { open: boolean; onClose: () => vo
           );
         })
       )}
+      </div>
     </Sheet>
   );
 }

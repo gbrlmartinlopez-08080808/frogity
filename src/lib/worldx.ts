@@ -35,8 +35,33 @@ export const country = (cc: string) => COUNTRIES.find((c) => c.cc === cc.toLower
 
 const KEY = 'world:home';
 const bus = new EventTarget();
+/** Where the phone is, from its time zone (a phone set to English in Madrid is still in Spain). */
+const TZ: [RegExp, string][] = [
+  [/^(Europe\/Madrid|Atlantic\/Canary|Africa\/Ceuta)$/, 'es'], [/^Europe\/Paris$/, 'fr'], [/^Europe\/(Berlin|Busingen)$/, 'de'], [/^Europe\/(Rome|Vatican|San_Marino)$/, 'it'],
+  [/^(Europe\/Lisbon|Atlantic\/(Azores|Madeira))$/, 'pt'], [/^Europe\/London$/, 'gb'], [/^Europe\/Dublin$/, 'ie'], [/^Europe\/Amsterdam$/, 'nl'], [/^Europe\/Brussels$/, 'be'],
+  [/^Europe\/Zurich$/, 'ch'], [/^Europe\/Vienna$/, 'at'], [/^Europe\/Warsaw$/, 'pl'], [/^Europe\/Stockholm$/, 'se'], [/^Europe\/Oslo$/, 'no'], [/^Europe\/Copenhagen$/, 'dk'],
+  [/^Europe\/Athens$/, 'gr'], [/^Europe\/(Istanbul)$/, 'tr'], [/^Europe\/Kiev|Europe\/Kyiv$/, 'ua'],
+  [/^America\/(Mexico_City|Monterrey|Merida|Cancun|Tijuana|Chihuahua|Hermosillo|Mazatlan|Bahia_Banderas|Matamoros|Ojinaga)$/, 'mx'], [/^America\/Argentina\//, 'ar'], [/^America\/Buenos_Aires$/, 'ar'],
+  [/^America\/Bogota$/, 'co'], [/^America\/(Santiago|Punta_Arenas)$/, 'cl'], [/^America\/Lima$/, 'pe'], [/^America\/(Sao_Paulo|Bahia|Fortaleza|Recife|Manaus|Belem|Cuiaba|Porto_Velho|Campo_Grande|Maceio|Araguaina|Boa_Vista|Rio_Branco|Santarem|Noronha)$/, 'br'],
+  [/^America\/Montevideo$/, 'uy'], [/^America\/Caracas$/, 've'], [/^America\/(Toronto|Vancouver|Montreal|Edmonton|Winnipeg|Halifax|St_Johns|Regina)$/, 'ca'],
+  [/^(America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Detroit|Boise|Indiana\/.*|Kentucky\/.*)|Pacific\/Honolulu)$/, 'us'],
+  [/^Australia\//, 'au'], [/^Pacific\/Auckland$/, 'nz'], [/^Asia\/(Kolkata|Calcutta)$/, 'in'], [/^Asia\/Tokyo$/, 'jp'], [/^Asia\/Seoul$/, 'kr'], [/^Asia\/Shanghai$/, 'cn'],
+  [/^Africa\/Johannesburg$/, 'za'], [/^Africa\/Lagos$/, 'ng'], [/^Africa\/Cairo$/, 'eg'], [/^Africa\/Nairobi$/, 'ke'], [/^Asia\/Riyadh$/, 'sa'], [/^Asia\/Dubai$/, 'ae'],
+  [/^Asia\/(Jerusalem|Tel_Aviv)$/, 'il'], [/^Asia\/Jakarta$/, 'id'], [/^Asia\/Singapore$/, 'sg'], [/^Asia\/Hong_Kong$/, 'hk'],
+];
+function fromZone(): string | undefined {
+  try {
+    const z = Intl.DateTimeFormat().resolvedOptions().timeZone ?? '';
+    const cc = TZ.find(([r]) => r.test(z))?.[1];
+    return cc && country(cc) ? cc : undefined;
+  } catch {
+    return undefined;
+  }
+}
 function guess(): string {
   const [lang, reg] = (navigator.language || 'en-US').split('-');
+  const zone = fromZone();
+  if (zone) return zone;
   const region = reg?.toLowerCase();
   if (region && country(region)) return region;
   // a language with no country attached: the country most of its readers live in

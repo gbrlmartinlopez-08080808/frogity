@@ -3287,3 +3287,303 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.age-row {
+  padding: 12px 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+.age-row .seg {
+  margin-top: 10px;
+}
+.age-row .seg button,
+.ob-age .seg button {
+  font-size: 13px;
+  padding-left: 0;
+  padding-right: 0;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------------ what's new */
+.wn {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.wn-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 12, 20, 0.42);
+  animation: fade 0.3s var(--ease) backwards;
+}
+.wn-card {
+  position: relative;
+  width: min(392px, 100%);
+  max-height: min(86vh, 760px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.45);
+  animation: wnin 0.5s var(--spring) backwards;
+}
+.wn.out .wn-card {
+  animation: wnout 0.22s var(--ease) forwards;
+}
+.wn.out .wn-scrim {
+  animation: fadeout 0.22s var(--ease) forwards;
+}
+@keyframes wnin {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(0.96);
+  }
+}
+@keyframes wnout {
+  to {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+
+/* the scene: day (sun rises) → match cut at 1.5 s → night (the same circle is the version) */
+.wn-scene {
+  position: relative;
+  height: 172px;
+  flex: none;
+  overflow: hidden;
+}
+.wn-day,
+.wn-night {
+  position: absolute;
+  inset: 0;
+}
+.wn-day {
+  animation: wncutout 0.01s step-end 1.5s forwards;
+}
+.wn-night {
+  opacity: 0;
+  animation: wncutin 0.01s step-end 1.5s forwards;
+}
+@keyframes wncutout {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes wncutin {
+  to {
+    opacity: 1;
+  }
+}
+.wn-sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, var(--b), var(--a) 55%, var(--c));
+  background-size: 220% 220%;
+  animation: wnflow 6s ease-in-out infinite alternate;
+}
+.wn-sky2 {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 100%, color-mix(in srgb, var(--c) 55%, #0b1030), #070914 70%);
+}
+@keyframes wnflow {
+  to {
+    background-position: 100% 100%;
+  }
+}
+.wn-sun,
+.wn-badge {
+  position: absolute;
+  left: 50%;
+  top: 44px;
+  width: 76px;
+  height: 76px;
+  margin-left: -38px;
+  border-radius: 50%;
+}
+.wn-sun {
+  background: radial-gradient(circle at 40% 38%, #fff8e6, #ffe08a 45%, #ffb35c);
+  box-shadow: 0 0 40px 12px rgba(255, 214, 120, 0.55);
+  animation: wnrise 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+@keyframes wnrise {
+  from {
+    transform: translateY(90px);
+  }
+}
+.wn-badge {
+  display: grid;
+  place-items: center;
+  background: #0d0f18;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7), 0 0 36px 6px color-mix(in srgb, var(--c) 60%, transparent);
+  animation: wnglow 2.4s ease-in-out 1.6s infinite alternate;
+}
+@keyframes wnglow {
+  to {
+    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9), 0 0 46px 10px color-mix(in srgb, var(--a) 55%, transparent);
+  }
+}
+.wn-hills {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 70px;
+}
+.wn-hills .h1 {
+  fill: color-mix(in srgb, var(--c) 45%, #1f3a2a);
+}
+.wn-hills .h2 {
+  fill: color-mix(in srgb, var(--c) 25%, #12261b);
+}
+.wn-hills.dark .h1 {
+  fill: #121528;
+}
+.wn-hills.dark .h2 {
+  fill: #0a0c18;
+}
+.wn-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0;
+  animation: wntwinkle 2.2s ease-in-out infinite alternate;
+}
+@keyframes wntwinkle {
+  to {
+    opacity: 0.9;
+  }
+}
+
+/* what changed, as a folder of files */
+.wn-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 22px 6px;
+  overscroll-behavior: contain;
+}
+.wn-kicker {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3, var(--ink-2));
+}
+.wn-body h2 {
+  margin: 4px 0 12px;
+  font-size: 23px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.wn-tree {
+  font-size: 13.5px;
+}
+.wn-root {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  margin-bottom: 4px;
+}
+.wn-root b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.wn-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 14px;
+}
+.wn-tree > ul {
+  padding-left: 6px;
+}
+.wn-tree li {
+  position: relative;
+  padding: 3px 0 3px 16px;
+  animation: rise 0.4s var(--ease) backwards;
+}
+/* the tree's lines: a rail down the side and a short branch to each name */
+.wn-tree li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--line-2);
+}
+.wn-tree li:last-child::before {
+  bottom: auto;
+  height: 14px;
+}
+.wn-tree li::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 13px;
+  width: 11px;
+  border-top: 1px solid var(--line-2);
+}
+.wn-name {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.wn-dir > .wn-name {
+  color: var(--ink-2);
+}
+.wn-what {
+  display: block;
+  margin-top: 1px;
+  font-size: 13.5px;
+  line-height: 1.42;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.wn-older {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line-2);
+  opacity: 0.85;
+}
+.wn-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 22px calc(16px + var(--safe-b, 0px));
+  border-top: 1px solid var(--line);
+}
+.wn-foot .txtbtn {
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wn-day {
+    display: none;
+  }
+  .wn-night {
+    opacity: 1;
+    animation: none;
+  }
+  .wn-tree li {
+    animation: none;
+  }
+}
+
+/* Settings → Version */
+.ver-row .ver {
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--surface-2);
+}

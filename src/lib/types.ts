@@ -76,8 +76,13 @@ export interface Bookmark {
 export type ReaderTheme = 'paper' | 'white' | 'dusk' | 'night';
 export type ReaderFont = string;
 
+/** under 18 · 18–29 · 30–49 · 50–64 · 65 and over */
+export type AgeBand = 'u18' | '18' | '30' | '50' | '65';
+
 export interface Settings {
   name: string;
+  /** only to choose how the reminders speak (never leaves the phone) */
+  age?: AgeBand;
   /** the reading language (en, es, fr, de, it, pt, other): chosen from the phone's, changeable in Settings */
   lang: string;
   appTheme: 'light' | 'system' | 'dark';

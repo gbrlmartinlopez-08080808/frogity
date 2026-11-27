@@ -4,6 +4,8 @@
 import { isNative } from './native';
 import { dayKey, getState, streakInfo } from './store';
 import { displayName } from './cheer';
+import { getLang } from './i18n';
+import { reminderBody } from './reminderWords';
 
 type LN = typeof import('@capacitor/local-notifications');
 let mod: LN | null = null;
@@ -22,18 +24,29 @@ export async function notifyPermission(ask: boolean): Promise<boolean> {
   }
 }
 
-function words(): { title: string; body: string } {
+function words(at: Date): { title: string; body: string } {
   const s = getState();
-  const name = displayName(s.settings.name);
-  const hi = name ? `${name}, ` : '';
   const goal = s.settings.dailyGoal;
   const info = streakInfo(s.days);
   const left = Math.max(1, Math.ceil((goal * 60_000 - (s.days[dayKey()] ?? 0)) / 60_000));
-  const soon = (s.days[dayKey()] ?? 0) >= goal * 60_000 || new Date().getHours() >= 21; // planned for tomorrow
-  if (info.current >= 2 && !soon) return { title: 'Frogity', body: `${hi}your ${info.current}-day streak is waiting — ${left} min to today’s light.` };
-  if (info.current >= 2) return { title: 'Frogity', body: `${hi}${info.current} days in a row. Keep the light on today?` };
-  if (!info.total) return { title: 'Frogity', body: `${hi}a few pages tonight? ${goal} minutes lights your first place on the globe.` };
-  return { title: 'Frogity', body: `${hi}a quiet ${goal} minutes with a book, maybe?` };
+  const tomorrow = at.toDateString() !== new Date().toDateString();
+  // the book in progress: the last one opened in the past two weeks and not finished
+  const doc = [...s.docs].filter((d) => !d.finished && d.progress > 0.01 && d.progress < 0.97 && Date.now() - d.openedAt < 14 * 864e5).sort((x, y) => y.openedAt - x.openedAt)[0];
+  const book = doc ? (doc.name.length > 34 ? doc.name.slice(0, 33).replace(/\s+\S*$/, '') + '…' : doc.name) : undefined;
+  const body = reminderBody({
+    lang: getLang(),
+    age: s.settings.age,
+    name: displayName(s.settings.name),
+    streak: info.current,
+    left,
+    goal,
+    total: info.total,
+    book,
+    hour: at.getHours(),
+    day: Math.floor(at.getTime() / 864e5),
+    tomorrow,
+  });
+  return { title: 'Frogity', body };
 }
 
 /** Plan (or cancel) the next reminder from the current settings and what you've read today. */
@@ -49,12 +62,9 @@ export async function refreshReminder() {
     at.setHours(h, m || 0, 0, 0);
     const metToday = (getState().days[dayKey()] ?? 0) >= s.dailyGoal * 60_000;
     if (at.getTime() <= Date.now() + 30_000 || metToday) at.setDate(at.getDate() + 1);
-    const w = words();
-    // the picture beside the reminder: the app's icon as it is on the home screen (the classic one or the gradient one)
-    const { registerPlugin } = await import('@capacitor/core');
-    const icon = await registerPlugin<{ get(): Promise<{ icon: string }> }>('AppIcon').get().catch(() => ({ icon: 'classic' }));
-    const largeIcon = icon.icon === 'gradient' ? 'frog_logo_g' : 'frog_logo';
-    await LocalNotifications.schedule({ notifications: [{ id: ID, title: w.title, body: w.body, schedule: { at, allowWhileIdle: true }, isExactNotification: false, smallIcon: 'ic_stat_frogity', largeIcon, iconColor: '#111111' }] });
+    const w = words(at);
+    // no picture beside a reminder: the app's small icon in the status bar says who it is from
+    await LocalNotifications.schedule({ notifications: [{ id: ID, title: w.title, body: w.body, largeBody: w.body, schedule: { at, allowWhileIdle: true }, isExactNotification: false, smallIcon: 'ic_stat_frogity', iconColor: '#111111' }] });
   } catch (e) {
     console.warn('reminder not planned', e);
   }

@@ -27,6 +27,8 @@ import { RateSheet } from './screens/RateSheet';
 import { Tour } from './screens/Tour';
 import { initWorkNotice, liquidReady } from './lib/workNotice';
 import { ensureNaturalVoice, resumeVoice } from './lib/voices';
+import { WhatsNew } from './screens/WhatsNew';
+import { shouldShowWhatsNew } from './lib/changelog';
 import { Onboarding, type Finish } from './screens/Onboarding';
 const ConvertSheet = lazy(() => import('./screens/Convert').then(m => ({ default: m.ConvertSheet })));
 const ScanSheet = lazy(() => import('./screens/Scan').then(m => ({ default: m.ScanSheet })));
@@ -275,6 +277,20 @@ export default function App() {
       document.removeEventListener('visibilitychange', checkAward);
     };
   }, [ready]);
+
+  // after an update: once, the card with what is new in this version
+  const [whatsNew, setWhatsNew] = useState(false);
+  useEffect(() => {
+    if (!ready) return;
+    let live = true;
+    const t = setTimeout(() => {
+      void shouldShowWhatsNew(onboarded).then((yes) => live && yes && setWhatsNew(true));
+    }, 900);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+  }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // the first full week of reading turns the app's icon from the classic one into the gradient one (once; after that it is the reader's choice)
   const daysMap = useStore((st) => st.days);
@@ -543,6 +559,7 @@ export default function App() {
       {interesting && !openDoc && <Interesting docs={docs} onSwitch={() => setInteresting(false)} onFindBooks={(q) => setDiscover({ q })} />}
       {discover && <Discover initial={discover.q} onClose={() => setDiscover(false)} onOpen={setOpenId} />}
       <JobsHost />
+      <WhatsNew open={whatsNew} onClose={() => setWhatsNew(false)} />
       <Toasts />
       <input
         ref={fileIn}

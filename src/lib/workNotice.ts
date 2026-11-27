@@ -33,9 +33,11 @@ export function initWorkNotice() {
   let had = false;
   let asked = false;
   const finished: string[] = [];
+  const liquid = new Set<string>();
   window.addEventListener('frogity:scan', (e) => {
-    const title = (e as CustomEvent<{ title: string }>).detail.title;
+    const { title, liquid: lq } = (e as CustomEvent<{ title: string; liquid?: boolean }>).detail;
     if (!finished.includes(title)) finished.push(title);
+    if (lq) liquid.add(title);
   });
   const sync = async () => {
     const r = runningJobs();
@@ -60,8 +62,16 @@ export function initWorkNotice() {
       had = false;
       const names = finished.splice(0);
       if (names.length) {
-        const cover = names.length === 1 ? await coverOf(names[0]) : undefined;
-        Work.done({ title: names.length === 1 ? `“${names[0]}” is ready to read` : `${names.length} books are ready to read`, text: 'Liquid mode, Listen and search are ready.', cover }).catch(() => {});
+        // the book's cover only when one book's Liquid mode is ready; otherwise no picture at all
+        const one = names.length === 1 && liquid.has(names[0]);
+        const cover = one ? await coverOf(names[0]) : undefined;
+        const allLiquid = names.every((n) => liquid.has(n));
+        names.forEach((n) => liquid.delete(n));
+        Work.done({
+          title: names.length === 1 ? `“${names[0]}” is ready to read` : `${names.length} books are ready to read`,
+          text: allLiquid ? 'Liquid mode, Listen and search are ready.' : 'Its text can now be selected, searched and read aloud.',
+          cover,
+        }).catch(() => {});
       }
       else Work.clear().catch(() => {});
     }

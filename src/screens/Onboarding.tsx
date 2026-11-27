@@ -8,7 +8,9 @@ import { lightsFor, renderGlobe } from '../lib/globe';
 import { plantStage } from '../lib/ascii';
 import { glyphFor, legendFor } from '../lib/glyphs';
 import { Icon } from '../ui/Icon';
-import { Pixel, Ruler, Toggle, toast } from '../ui/kit';
+import { Pixel, Ruler, Segmented, Toggle, toast } from '../ui/kit';
+import { AGE_OPTIONS } from '../lib/reminderWords';
+import type { AgeBand } from '../lib/types';
 import { isNative, tap } from '../lib/native';
 import { notifyPermission, refreshReminder } from '../lib/reminders';
 import type { PixelName } from '../lib/pixels';
@@ -404,6 +406,13 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
                 }}
               />
               <small className="mono">{tr("picked from your phone · your natural reading voice downloads in this language")}</small>
+            </div>
+          )}
+          {step.id === 'name' && (
+            <div className="ob-lang ob-age">
+              <span className="mono">{tr("age")}</span>
+              <Segmented<AgeBand> value={(settings.age ?? '') as AgeBand} onChange={(v) => updateSettings({ age: v })} options={AGE_OPTIONS} className="w100" light />
+              <small className="mono">{tr("only so your reminders sound right · stays on this phone")}</small>
             </div>
           )}
           {step.id === 'goal' && (
