@@ -334,21 +334,6 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
             <Ruler value={s.dailyGoal} min={5} max={120} step={5} onChange={(v) => updateSettings({ dailyGoal: v })} format={(v) => `${v}m`} label="Daily goal" />
           </>
         )}
-        <button
-          className="row"
-          style={{ width: '100%', textAlign: 'left' }}
-          onClick={() => {
-            onClose();
-            setTimeout(() => window.dispatchEvent(new Event('frogity:week-test')), 260);
-          }}
-        >
-          <Icon name="frog" />
-          <div className="grow">
-            <div className="row-label">{tr("Try the full-week moment")}</div>
-            <div className="row-sub">{tr("See what appears after seven full days in a row, and try the icons. Your streak is not changed.")}</div>
-          </div>
-          <Icon name="right" size={18} />
-        </button>
         <button className="row ver-row" style={{ width: '100%', textAlign: 'left' }} onClick={() => setNews(true)}>
           <Icon name="info" />
           <div className="grow">

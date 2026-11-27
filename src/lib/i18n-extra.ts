@@ -10,7 +10,7 @@ export const EXTRA: P[] = [
   ['shelf ·', 'estantería ·', 'étagère ·'],
   ['day', 'día', 'jour'],
   ['now', 'ahora', 'maintenant'],
-  ['(tap 2 read!)', '(toca 2 veces para leer)', '(touchez 2 fois pour lire)'],
+  ['(tap to read)', '(toca para leer)', '(touchez pour lire)'],
   ['reader', 'lector', 'lecteur'],
   ['15 min to today’s goal', '15 min para la meta de hoy', '15 min pour l’objectif du jour'],
   ['figure of the day ·', 'figura del día ·', 'figure du jour ·'],

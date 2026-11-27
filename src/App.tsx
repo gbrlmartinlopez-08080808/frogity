@@ -307,7 +307,7 @@ export default function App() {
 
   // a first full week (seven days in a row, each at the goal): the next time the app opens, a card says so and offers the new icons;
   // nothing changes by itself. Otherwise the launcher is kept in step with the reader's choice (a reinstall, a restored phone).
-  const [weekCard, setWeekCard] = useState<false | 'real' | 'test'>(false);
+  const [weekCard, setWeekCard] = useState(false);
   useEffect(() => {
     if (!ready || !onboarded) return;
     const s = getState().settings;
@@ -316,13 +316,8 @@ export default function App() {
         const want = s.appIcon ?? 'classic';
         if (cur && cur !== want) void appIconSet(want);
       });
-    const t = setTimeout(() => void weekAwardDue().then((due) => due && setWeekCard((w) => w || 'real')), 2600);
-    const test = () => setWeekCard('test');
-    window.addEventListener('frogity:week-test', test);
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener('frogity:week-test', test);
-    };
+    const t = setTimeout(() => void weekAwardDue().then((due) => due && setWeekCard(true)), 2600);
+    return () => clearTimeout(t);
   }, [ready, onboarded]);
 
   // a missed day is covered by a freeze (the free one, plus any that were won); the check runs when the app opens, when it comes
@@ -578,7 +573,7 @@ export default function App() {
       {discover && <Discover initial={discover.q} onClose={() => setDiscover(false)} onOpen={setOpenId} />}
       <JobsHost />
       <WhatsNew open={whatsNew} onClose={() => setWhatsNew(false)} />
-      <WeekAward open={!!weekCard && !whatsNew} test={weekCard === 'test'} onClose={() => setWeekCard(false)} />
+      <WeekAward open={weekCard && !whatsNew} onClose={() => setWeekCard(false)} />
       <Toasts />
       <input
         ref={fileIn}

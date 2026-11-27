@@ -69,7 +69,7 @@ export async function applyIcon(icon: AppIconId) {
   toast(ok ? tr('Your icon is changing — the home screen may take a moment to show it') : tr('Saved'));
 }
 
-export function WeekAward({ open, onClose, test }: { open: boolean; onClose: () => void; test?: boolean }) {
+export function WeekAward({ open, onClose }: { open: boolean; onClose: () => void }) {
   const using = useStore((s) => s.settings.appIcon ?? 'classic');
   const theme = useStore((s) => s.settings.appTheme);
   const dark = theme === 'dark' || (theme === 'system' && typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches);
@@ -79,7 +79,7 @@ export function WeekAward({ open, onClose, test }: { open: boolean; onClose: () 
     if (!open) return;
     setOut(false);
     setPick(using === 'classic' ? 'gradient' : using);
-    if (!test) void markShown();
+    void markShown();
     void updateSettings({ iconUnlocked: true });
     return onBack(() => {
       close();

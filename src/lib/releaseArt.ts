@@ -20,7 +20,11 @@ const cmp = (a: string, b: string) => {
   return 0;
 };
 
-export const credit = (a: Art) => [a.artist, a.title].filter(Boolean).join(' · ') + (a.licence ? ` · ${a.licence}` : '');
+/** who made it, what it is, and its licence — the licence's source is left out when the maker already names it ("NASA … · NASA") */
+export const credit = (a: Art) => {
+  const parts = (a.licence ?? '').split(' · ').filter((p) => p && !(a.artist ?? '').includes(p));
+  return [a.artist, a.title, ...parts].filter(Boolean).join(' · ');
+};
 
 /** the natural, slightly abstract pictures are shown with a film grain (paintings of fields and flowers, space, landscapes);
  * engravings, prints and manuscripts stay clean */

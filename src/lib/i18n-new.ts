@@ -261,8 +261,6 @@ export const NEW: [string, string, string][] = [
   ["Results", "Resultados", "Résultats"],
   ["updated", "actualizado", "mis à jour"],
   ["as counted so far · from Wikipedia, refreshed every few minutes", "según el recuento hasta ahora · de Wikipedia, se actualiza cada pocos minutos", "selon le dépouillement · d’après Wikipédia, actualisé toutes les quelques minutes"],
-  ["Try the full-week moment", "Probar el momento de la semana completa", "Essayer le moment de la semaine complète"],
-  ["See what appears after seven full days in a row, and try the icons. Your streak is not changed.", "Mira lo que aparece tras siete días completos seguidos y prueba los iconos. Tu racha no cambia.", "Voyez ce qui apparaît après sept jours complets d’affilée et essayez les icônes. Votre série ne change pas."],
   ["A full week", "Una semana completa", "Une semaine complète"],
   ["a full week", "una semana completa", "une semaine complète"],
   ["preview", "vista previa", "aperçu"],
@@ -356,4 +354,7 @@ export const NEW: [string, string, string][] = [
   ["That picture could not be used — try another", "No se pudo usar esa imagen; prueba otra", "Cette image n’a pas pu être utilisée — essayez-en une autre"],
   ["No other covers found for this title. You can still use a photo, the file’s own first page, or a cover with the title.", "No se encontraron otras portadas para este título. Puedes usar una foto, la primera página del archivo o una portada con el título.", "Aucune autre couverture trouvée pour ce titre. Vous pouvez utiliser une photo, la première page du fichier ou une couverture avec le titre."],
   ["The pages as photographed", "Las páginas tal como se fotografiaron", "Les pages telles que photographiées"],
+  ["The first complete Frogity: every screen gone over, end to end, with the small rough edges smoothed.", "El primer Frogity completo: cada pantalla revisada de principio a fin, con los pequeños detalles pulidos.", "Le premier Frogity complet : chaque écran revu de bout en bout, avec les petites aspérités polies."],
+  ["The book in front of your shelf now simply says “tap to read”.", "El libro al frente de tu estantería ahora dice simplemente «toca para leer».", "Le livre au premier plan de votre étagère dit maintenant simplement « touchez pour lire »."],
+  ["hint", "pista", "indice"],
 ];

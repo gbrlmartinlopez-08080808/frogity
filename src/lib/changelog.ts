@@ -16,8 +16,22 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    v: '8.0.0',
+    date: '2026-11-27',
+    areas: [
+      {
+        dir: 'frogity',
+        items: [{ file: '8.0.0', what: 'The first complete Frogity: every screen gone over, end to end, with the small rough edges smoothed.' }],
+      },
+      {
+        dir: 'shelf',
+        items: [{ file: 'hint', what: 'The book in front of your shelf now simply says “tap to read”.' }],
+      },
+    ],
+  },
+  {
     v: '7.8',
-    date: '2026-11-29',
+    date: '2026-11-27',
     areas: [
       {
         dir: 'voices',
@@ -49,7 +63,7 @@ export const RELEASES: Release[] = [
   },
   {
     v: '7.7',
-    date: '2026-11-28',
+    date: '2026-11-27',
     areas: [
       {
         dir: 'liquid',
@@ -103,7 +117,7 @@ export const RELEASES: Release[] = [
   },
   {
     v: '7.6',
-    date: '2026-11-28',
+    date: '2026-11-27',
     areas: [
       {
         dir: 'saved',

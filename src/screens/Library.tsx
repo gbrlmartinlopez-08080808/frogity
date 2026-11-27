@@ -317,7 +317,7 @@ export function Library({
                   <b>{tr("“")}{hero.name}{tr("”")}</b>
                   {hero.author ? ` — ${hero.author}` : ''}
                 </div>
-                <div className="hint">{hero.finished ? '(finished — read it again?)' : hero.progress > 0.01 ? `(${Math.round(hero.progress * 100)}% in, keep going!)` : '(tap 2 read!)'}</div>
+                <div className="hint">{hero.finished ? '(finished — read it again?)' : hero.progress > 0.01 ? `(${Math.round(hero.progress * 100)}% in, keep going!)` : '(tap to read)'}</div>
               </div>
             )}
             <div className="hero-cta">
