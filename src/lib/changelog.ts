@@ -10,21 +10,31 @@ export interface Change {
 export interface Release {
   v: string;
   date: string; // yyyy-mm-dd
-  /** the colours of the card's sky for this version */
-  sky: [string, string, string];
   areas: { dir: string; items: Change[] }[];
 }
 
 export const RELEASES: Release[] = [
   {
+    v: '7.6',
+    date: '2026-11-28',
+    areas: [
+      {
+        dir: 'saved',
+        items: [{ file: 'word-pictures', what: 'Open a saved word to see its picture and meaning, just as in the book.' }],
+      },
+      {
+        dir: 'updates',
+        items: [{ file: 'cover-art', what: 'Each update now opens with a work of art or a photograph from the public domain — fifty of them, one after another.' }],
+      },
+    ],
+  },
+  {
     v: '7.5',
     date: '2026-11-27',
-    sky: ['#ff9a5a', '#ffcf6b', '#7a5cff'],
     areas: [
       {
         dir: 'notifications',
         items: [
-          { file: 'reminders', what: 'Your evening reminder speaks your way: easy-going when you are young, courteous when you are older. Set your age in Settings.' },
           { file: 'pictures', what: 'Reminders come without a picture. Only a book whose Liquid mode is ready shows its cover.' },
         ],
       },
@@ -53,7 +63,6 @@ export const RELEASES: Release[] = [
   {
     v: '7.4',
     date: '2026-11-25',
-    sky: ['#1b3cff', '#7de0c0', '#e8cf9a'],
     areas: [
       { dir: 'words', items: [{ file: 'dictionaries', what: 'Offline dictionaries in English and your language, and in each book’s own language.' }] },
       { dir: 'saved', items: [{ file: 'highlights', what: 'What you highlight is kept as a card in Saved, from every book.' }] },
@@ -64,7 +73,6 @@ export const RELEASES: Release[] = [
   {
     v: '7.3',
     date: '2026-11-23',
-    sky: ['#7a4cff', '#1fa2e8', '#ffd23f'],
     areas: [{ dir: 'streak', items: [{ file: 'card', what: 'The streak card follows your finger and lets go with a spring.' }] }],
   },
 ];

@@ -410,9 +410,9 @@ export function Onboarding({ onDone }: { onDone: (f: Finish) => void }) {
           )}
           {step.id === 'name' && (
             <div className="ob-lang ob-age">
-              <span className="mono">{tr("age")}</span>
+              <span className="mono">{tr("your age")}</span>
               <Segmented<AgeBand> value={(settings.age ?? '') as AgeBand} onChange={(v) => updateSettings({ age: v })} options={AGE_OPTIONS} className="w100" light />
-              <small className="mono">{tr("only so your reminders sound right · stays on this phone")}</small>
+              <small className="mono">{tr("optional · stays on this phone")}</small>
             </div>
           )}
           {step.id === 'goal' && (

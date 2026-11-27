@@ -3349,120 +3349,148 @@
   }
 }
 
-/* the scene: day (sun rises) → match cut at 1.5 s → night (the same circle is the version) */
+/* the scene: picture A, a framed window onto picture B opens in it and grows into the whole scene (the cut through the frame) */
 .wn-scene {
   position: relative;
-  height: 172px;
+  height: 216px;
   flex: none;
   overflow: hidden;
+  background: #111;
+  isolation: isolate;
 }
-.wn-day,
-.wn-night {
+.wn-a,
+.wn-b {
   position: absolute;
   inset: 0;
+  background-size: cover;
+  background-position: center;
 }
-.wn-day {
-  animation: wncutout 0.01s step-end 1.5s forwards;
+.wn-a {
+  animation: wnzoom 3.2s cubic-bezier(0.3, 0.2, 0.2, 1) both;
 }
-.wn-night {
-  opacity: 0;
-  animation: wncutin 0.01s step-end 1.5s forwards;
-}
-@keyframes wncutout {
+@keyframes wnzoom {
+  from {
+    transform: scale(1.12);
+  }
   to {
-    opacity: 0;
+    transform: scale(1.02);
   }
 }
-@keyframes wncutin {
+.wn-b {
+  clip-path: inset(20% 34% 20% 34% round 3px);
+  opacity: 0;
+  animation:
+    wnwin 0.45s var(--ease) 0.55s forwards,
+    wngrow 0.95s cubic-bezier(0.7, 0, 0.2, 1) 1.55s forwards,
+    wndrift 9s ease-in-out 2.5s infinite alternate;
+}
+@keyframes wnwin {
   to {
     opacity: 1;
   }
 }
-.wn-sky {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(160deg, var(--b), var(--a) 55%, var(--c));
-  background-size: 220% 220%;
-  animation: wnflow 6s ease-in-out infinite alternate;
-}
-.wn-sky2 {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(120% 90% at 50% 100%, color-mix(in srgb, var(--c) 55%, #0b1030), #070914 70%);
-}
-@keyframes wnflow {
-  to {
-    background-position: 100% 100%;
-  }
-}
-.wn-sun,
-.wn-badge {
-  position: absolute;
-  left: 50%;
-  top: 44px;
-  width: 76px;
-  height: 76px;
-  margin-left: -38px;
-  border-radius: 50%;
-}
-.wn-sun {
-  background: radial-gradient(circle at 40% 38%, #fff8e6, #ffe08a 45%, #ffb35c);
-  box-shadow: 0 0 40px 12px rgba(255, 214, 120, 0.55);
-  animation: wnrise 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-}
-@keyframes wnrise {
+@keyframes wngrow {
   from {
-    transform: translateY(90px);
+    clip-path: inset(20% 34% 20% 34% round 3px);
+    opacity: 1;
   }
-}
-.wn-badge {
-  display: grid;
-  place-items: center;
-  background: #0d0f18;
-  color: #fff;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7), 0 0 36px 6px color-mix(in srgb, var(--c) 60%, transparent);
-  animation: wnglow 2.4s ease-in-out 1.6s infinite alternate;
-}
-@keyframes wnglow {
   to {
-    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9), 0 0 46px 10px color-mix(in srgb, var(--a) 55%, transparent);
+    clip-path: inset(0 0 0 0 round 0);
+    opacity: 1;
   }
 }
-.wn-hills {
+@keyframes wndrift {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
+/* the window's pale mount, like a print set into a page */
+.wn-frame {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  width: 100%;
-  height: 70px;
-}
-.wn-hills .h1 {
-  fill: color-mix(in srgb, var(--c) 45%, #1f3a2a);
-}
-.wn-hills .h2 {
-  fill: color-mix(in srgb, var(--c) 25%, #12261b);
-}
-.wn-hills.dark .h1 {
-  fill: #121528;
-}
-.wn-hills.dark .h2 {
-  fill: #0a0c18;
-}
-.wn-star {
-  position: absolute;
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  background: #fff;
+  top: 20%;
+  bottom: 20%;
+  left: 34%;
+  right: 34%;
+  border: 3px solid rgba(255, 253, 246, 0.92);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
   opacity: 0;
-  animation: wntwinkle 2.2s ease-in-out infinite alternate;
+  animation:
+    wnwin 0.45s var(--ease) 0.55s forwards,
+    wnframe 0.95s cubic-bezier(0.7, 0, 0.2, 1) 1.55s forwards;
 }
-@keyframes wntwinkle {
+@keyframes wnframe {
+  from {
+    top: 20%;
+    bottom: 20%;
+    left: 34%;
+    right: 34%;
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
   to {
-    opacity: 0.9;
+    top: -3px;
+    bottom: -3px;
+    left: -3px;
+    right: -3px;
+    opacity: 0;
+  }
+}
+.wn-tag {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  padding: 5px 10px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  color: #fff;
+  background: rgba(12, 12, 16, 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  animation: wnwin 0.5s var(--ease) 2.4s forwards;
+}
+.wn-tag b {
+  font-weight: 600;
+}
+.wn-credit {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 54%;
+  height: 26px;
+  font-size: 9px;
+  line-height: 13px;
+  color: rgba(255, 255, 255, 0.86);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  text-align: right;
+}
+/* each picture's credit, in the same place: the first one gives way to the second at the cut */
+.wn-credit span {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.wn-credit .c1 {
+  animation: wnfade 0.25s linear 2.1s forwards;
+}
+.wn-credit .c2 {
+  opacity: 0;
+  animation: wnwin 0.4s var(--ease) 2.4s forwards;
+}
+@keyframes wnfade {
+  to {
+    opacity: 0;
   }
 }
 
@@ -3568,12 +3596,17 @@
   font-size: 12px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .wn-day {
+  .wn-a,
+  .wn-frame,
+  .wn-credit .c1 {
     display: none;
   }
-  .wn-night {
-    opacity: 1;
+  .wn-b,
+  .wn-tag,
+  .wn-credit .c2 {
     animation: none;
+    opacity: 1;
+    clip-path: none;
   }
   .wn-tree li {
     animation: none;
@@ -3586,4 +3619,75 @@
   padding: 4px 10px;
   border-radius: 99px;
   background: var(--surface-2);
+}
+/* a saved word, opened: its picture and meaning, as in the book */
+.sv-peek {
+  display: grid;
+  gap: 10px;
+}
+.sv-pic {
+  margin: 0;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-2);
+  aspect-ratio: 16 / 10;
+}
+.sv-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #fff;
+}
+.sv-pic.wait {
+  animation: svPulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes svPulse {
+  to {
+    opacity: 0.55;
+  }
+}
+.sv-pic figcaption {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  max-width: calc(100% - 12px);
+  font-size: 9.5px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sv-def p {
+  margin: 0 0 6px;
+  font-family: 'Literata', Georgia, serif;
+  font-size: 15.5px;
+  line-height: 1.5;
+}
+.sv-def i {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.sv-ph {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.sv-def-wait {
+  display: block;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--bg-2);
+  animation: svPulse 1.2s ease-in-out infinite alternate;
+}
+/* an opened word keeps its heading: the picture and meaning come under it */
+.sv-card.open.k-word .sv-face .sv-text {
+  display: block;
 }

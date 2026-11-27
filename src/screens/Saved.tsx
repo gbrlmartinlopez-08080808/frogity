@@ -10,6 +10,8 @@ import { coverUrl } from '../lib/library';
 import { onBack, shareText, tap } from '../lib/native';
 import { Icon } from '../ui/Icon';
 import { toast } from '../ui/kit';
+import { define, normalizeWord, sameSubject, wiki, type Definition, type WikiImage } from '../lib/lookup';
+import { getLang } from '../lib/i18n';
 
 type Kind = 'word' | 'sentence' | 'passage';
 type Layout = 'cards' | 'grid' | 'books';
@@ -29,6 +31,72 @@ export const OPEN_SAVE_EVENT = 'frogity:open-save';
 export async function allSaves(): Promise<Highlight[]> {
   const all = await db.entries<Highlight>('marks').catch(() => [] as [string, Highlight][]);
   return all.filter(([k, v]) => k.includes(':h:') && v && 'text' in v).map(([, v]) => v);
+}
+
+/**
+ * A saved word, opened: the same picture and meaning the word sheet shows in the book (the article's lead picture from
+ * Wikipedia / Wikimedia Commons, and the dictionary's first senses), so a word reads the same here as on the page.
+ */
+function WordPeek({ text, lang }: { text: string; lang?: string }) {
+  const w = normalizeWord(text.trim().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''));
+  const [def, setDef] = useState<Definition | null | undefined>();
+  const [img, setImg] = useState<WikiImage | null | undefined>();
+  const [bad, setBad] = useState(false);
+  useEffect(() => {
+    let live = true;
+    setDef(undefined);
+    setImg(undefined);
+    setBad(false);
+    // the book's language when it was saved with one; otherwise English, then the reader's own
+    const langs = [...new Set([lang, 'en', getLang()].filter((l): l is string => !!l))];
+    (async () => {
+      for (const l of langs) {
+        const d = await define(w, l).catch(() => null);
+        if (d?.meanings.length) return d;
+      }
+      return null;
+    })().then((d) => live && setDef(d));
+    wiki(w)
+      .then((card) => {
+        if (!live) return;
+        // only a picture of this very thing (not of a namesake article)
+        const pic = card && (sameSubject(w, card) || /\s/.test(w)) ? (card.images.find((i) => i.lead) ?? card.images[0]) : undefined;
+        setImg(pic ?? null);
+      })
+      .catch(() => live && setImg(null));
+    return () => {
+      live = false;
+    };
+  }, [w, lang]);
+  const senses = def?.meanings.flatMap((m) => m.defs.slice(0, 2).map((d) => ({ pos: m.pos, d: d.d }))).slice(0, 3) ?? [];
+  if (def === null && img === null) return null;
+  return (
+    <div className="sv-peek">
+      {img === undefined ? (
+        <div className="sv-pic wait" aria-hidden />
+      ) : (
+        img &&
+        !bad && (
+          <figure className="sv-pic">
+            <img src={img.src} alt={img.title} loading="lazy" referrerPolicy="no-referrer" onError={() => setBad(true)} draggable={false} />
+            {img.credit && <figcaption className="mono">{img.credit}</figcaption>}
+          </figure>
+        )
+      )}
+      <div className="sv-def">
+        {def?.phonetic && <span className="sv-ph mono">{def.phonetic}</span>}
+        {def === undefined ? (
+          <span className="sv-def-wait" />
+        ) : (
+          senses.map((s, i) => (
+            <p key={i}>
+              <i className="mono">{s.pos}</i> {s.d}
+            </p>
+          ))
+        )}
+      </div>
+    </div>
+  );
 }
 
 function Cover({ doc }: { doc?: DocMeta }) {
@@ -138,7 +206,7 @@ export function Saved({ open, onClose }: { open: boolean; onClose: () => void })
         </button>
         {isOpen && (
           <div className="sv-more">
-            <div className="sv-full">{h.text.trim()}</div>
+            {k === 'word' ? <WordPeek text={h.text} lang={h.lang} /> : <div className="sv-full">{h.text.trim()}</div>}
             <div className="sv-info mono">
               {d?.name}
               {d?.author ? ` · ${d.author}` : ''}

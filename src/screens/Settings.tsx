@@ -86,7 +86,6 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
         </div>
         <div className="age-row">
           <div className="row-label">{tr("Age")}</div>
-          <div className="row-sub">{tr("Only to choose how your reminders speak to you")}</div>
           <Segmented<AgeBand>
             value={(s.age ?? '') as AgeBand}
             onChange={(v) => {

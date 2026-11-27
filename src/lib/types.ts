@@ -60,6 +60,8 @@ export interface Highlight {
   at: number;
   /** where in the book (0…1) it was saved */
   progress?: number;
+  /** the book's language where it was saved (en, es…), so a saved word is looked up in it */
+  lang?: string;
 }
 
 export interface Bookmark {

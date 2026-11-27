@@ -972,7 +972,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     if (!root || !sel) return;
     const a = anchorFromSelection(root, sel);
     if (!a) return;
-    const h: Highlight = { id: db.uid(), docId: id, text: a.text, prefix: a.prefix, at: Date.now(), progress };
+    const h: Highlight = { id: db.uid(), docId: id, text: a.text, prefix: a.prefix, at: Date.now(), progress, lang: flowRef.current?.dataset.lang };
     await db.put('marks', `${id}:h:${h.id}`, h);
     clearSel();
     setHighlights((l) => [...l, h]);

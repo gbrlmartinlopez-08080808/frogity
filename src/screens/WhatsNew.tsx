@@ -4,32 +4,27 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { loc, tr } from '../lib/i18n';
 import { RELEASES, releaseOf, type Release } from '../lib/changelog';
+import { artFor, credit } from '../lib/releaseArt';
 import { onBack, tap } from '../lib/native';
 
+/**
+ * The release picture, like a new model's announcement: an open-licence work of art or photograph fills the top of the card, a
+ * framed window opens in it onto the next picture, and the window grows until it is the whole scene (a match cut through the
+ * frame). Each update brings the next pair from a rotation of fifty.
+ */
 function Scene({ r }: { r: Release }) {
-  const [a, b, c] = r.sky;
+  const [a, b] = artFor(r);
   return (
-    <div className="wn-scene" aria-hidden style={{ ['--a' as string]: a, ['--b' as string]: b, ['--c' as string]: c }}>
-      {/* day: the sun comes up over the hills */}
-      <div className="wn-day">
-        <div className="wn-sky" />
-        <div className="wn-sun" />
-        <svg className="wn-hills" viewBox="0 0 400 120" preserveAspectRatio="none">
-          <path className="h1" d="M0 70 C60 40 110 44 170 66 S290 96 400 58 L400 120 L0 120Z" />
-          <path className="h2" d="M0 92 C80 70 150 74 220 92 S340 110 400 88 L400 120 L0 120Z" />
-        </svg>
+    <div className="wn-scene" aria-hidden>
+      <div className="wn-a" style={{ backgroundImage: `url(./art/${a.id}.webp)` }} />
+      <div className="wn-b" style={{ backgroundImage: `url(./art/${b.id}.webp)` }} />
+      <div className="wn-frame" />
+      <div className="wn-tag mono">
+        frogity <b>{r.v}</b>
       </div>
-      {/* the cut: the same circle, now the version, under a night sky */}
-      <div className="wn-night">
-        <div className="wn-sky2" />
-        {Array.from({ length: 14 }, (_, i) => (
-          <i key={i} className="wn-star" style={{ left: `${(i * 37) % 100}%`, top: `${(i * 23) % 60}%`, animationDelay: `${1.6 + (i % 5) * 0.25}s` }} />
-        ))}
-        <div className="wn-badge mono">{r.v}</div>
-        <svg className="wn-hills dark" viewBox="0 0 400 120" preserveAspectRatio="none">
-          <path className="h1" d="M0 70 C60 40 110 44 170 66 S290 96 400 58 L400 120 L0 120Z" />
-          <path className="h2" d="M0 92 C80 70 150 74 220 92 S340 110 400 88 L400 120 L0 120Z" />
-        </svg>
+      <div className="wn-credit mono">
+        <span className="c1">{credit(a)}</span>
+        <span className="c2">{credit(b)}</span>
       </div>
     </div>
   );
