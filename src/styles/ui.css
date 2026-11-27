@@ -3659,27 +3659,31 @@
   transform: scale(1.06);
   box-shadow: 0 0 0 2px var(--ink), 0 8px 18px -8px rgba(0, 0, 0, 0.4);
 }
-/* the full-week card: seven days lighting up */
+/* the full-week card: seven days lighting up over the app's own colours (orange, a little yellow and white, blue), in dots */
+.wk .wn-card {
+  box-shadow: none;
+}
 .wk-top {
   position: relative;
-  height: 150px;
+  height: 168px;
   flex: none;
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 14px;
-  background: radial-gradient(120% 120% at 50% 0%, #ffd23f 0%, #ff9a5a 45%, #7a5cff 100%);
+  gap: 16px;
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.5) 1.1px, transparent 1.6px) 0 0 / 11px 11px,
+    linear-gradient(168deg, #ff8748 0%, #ffad5e 28%, #ffd98c 46%, #f6efe3 58%, #a9c4e6 76%, #6f9bd6 100%);
 }
 .wk-days {
   display: flex;
-  gap: 9px;
+  gap: 10px;
 }
 .wk-days i {
   width: 22px;
   height: 22px;
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  background: #fff;
   animation: wkday 0.45s var(--spring) backwards;
 }
 @keyframes wkday {
@@ -3690,12 +3694,33 @@
 }
 .wk-n {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.95);
-  letter-spacing: 0.08em;
+  color: rgba(70, 45, 20, 0.62);
+  letter-spacing: 0.1em;
+}
+.wk .wn-body {
+  padding: 24px 24px 10px;
+}
+.wk .wn-body h2 {
+  margin: 6px 0 12px;
 }
 .wk-p {
-  margin: 0 0 4px;
+  margin: 0 0 26px;
   font-size: 14.5px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--ink-2);
+}
+.wk .ichoose {
+  margin: 0 0 18px;
+  gap: 8px;
+}
+.wk .wn-foot {
+  padding-top: 16px;
+}
+/* the moment between the welcome steps and the home-screen tour: the page waits, taps do nothing */
+.tour-wait {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  background: transparent;
+  touch-action: none;
 }

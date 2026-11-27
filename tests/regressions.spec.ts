@@ -6,6 +6,8 @@ const openLibrary = async (page: import('@playwright/test').Page) => {
   await expect(
     page.getByText('Welcome to Frogity', { exact: true }).first(),
   ).toBeVisible();
+  // the home-screen tour (and the pause before it, when taps do nothing) is not what these tests are about
+  await page.evaluate(async () => (await import('/src/lib/db.ts')).put('kv', 'tour', 'done'));
   await page.reload();
   await page.getByRole('button', { name: 'Add', exact: true }).waitFor();
 };

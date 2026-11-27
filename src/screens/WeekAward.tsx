@@ -11,10 +11,11 @@ import { toast } from '../ui/kit';
 import * as db from '../lib/db';
 
 export const ICONS: { id: AppIconId; name: string; light: string; dark: string }[] = [
-  { id: 'classic', name: 'Classic', light: './icon-classic-512.png', dark: './icon-classic-dark-512.png' },
-  { id: 'gradient', name: 'Gradient', light: './icon-squircle-512.png', dark: './icon-squircle-512.png' },
-  { id: 'kid', name: 'Kid', light: './icon-kid-512.png', dark: './icon-kid-dark-512.png' },
-  { id: 'gradient-kid', name: 'Kid · gradient', light: './icon-kid-gradient-512.png', dark: './icon-kid-gradient-512.png' },
+  // named for what they show, not what they are made of
+  { id: 'classic', name: 'Inkwell', light: './icon-classic-512.png', dark: './icon-classic-dark-512.png' },
+  { id: 'gradient', name: 'Daybreak', light: './icon-squircle-512.png', dark: './icon-squircle-512.png' },
+  { id: 'kid', name: 'Wishing star', light: './icon-kid-512.png', dark: './icon-kid-dark-512.png' },
+  { id: 'gradient-kid', name: 'Afterglow', light: './icon-kid-gradient-512.png', dark: './icon-kid-gradient-512.png' },
 ];
 
 /** A day that counts towards a full week: the day's goal was reached (and at least three minutes were read). */
@@ -104,7 +105,7 @@ export function WeekAward({ open, onClose, test }: { open: boolean; onClose: () 
           <div className="wk-n mono">7 / 7</div>
         </div>
         <div className="wn-body">
-          <div className="wn-kicker mono">{test ? tr('preview') : tr('a full week')}</div>
+          <div className="wn-kicker mono">{tr('a full week')}</div>
           <h2>{tr('Seven full days in a row.')}</h2>
           <p className="wk-p">{tr('You reached your goal every day for a week. Frogity has new icons for your home screen — choose the one you like, or keep yours.')}</p>
           <IconChooser pick={pick} onPick={setPick} dark={dark} />

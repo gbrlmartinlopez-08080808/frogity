@@ -459,7 +459,7 @@ export function toast(text: string, kind?: 'award' | 'ice', onClick?: () => void
       toastMsg = null;
       toastSubs.forEach((s) => s());
     }
-  }, onClick ? 9000 : kind ? 4200 : 2400);
+  }, onClick ? 5200 : kind ? 3200 : 2000); // short: long enough to read (and to tap Undo), never lingering
 }
 export function Toasts() {
   const msg = useSyncExternalStore(

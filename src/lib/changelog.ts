@@ -53,7 +53,7 @@ export const RELEASES: Release[] = [
       },
       {
         dir: 'streak',
-        items: [{ file: 'full-week', what: 'Seven full days in a row now have a moment of their own, with four app icons to choose from: the frog or the kid with a star, on paper or on the gradient.' }],
+        items: [{ file: 'full-week', what: 'Seven full days in a row now have a moment of their own, with four app icons to choose from: Inkwell, Daybreak, Wishing star and Afterglow.' }],
       },
       {
         dir: 'news',

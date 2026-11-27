@@ -74,6 +74,18 @@ export default function App() {
   const [reward, setReward] = useState<string | null>(null);
   const [rate, setRate] = useState(false);
   const [tour, setTour] = useState(false);
+  // until the home-screen tour has started, taps on the page do nothing (they would open things the tour then points past)
+  const [tourWait, setTourWait] = useState(false);
+  useEffect(() => {
+    void db.get<string>('kv', 'tour').then((t) => t === 'pending' && setTourWait(true));
+  }, []);
+  useEffect(() => {
+    if (tour) setTourWait(false);
+    if (!tourWait) return;
+    // never a trap: if the tour cannot start, the page is free again after a few seconds
+    const t = setTimeout(() => setTourWait(false), 6000);
+    return () => clearTimeout(t);
+  }, [tour, tourWait]);
   const [settings, setSettings] = useState(false);
   const [saved, setSaved] = useState(false);
   const [convert, setConvert] = useState<{ doc: DocMeta; root?: HTMLElement | null } | null>(null);
@@ -464,13 +476,14 @@ export default function App() {
     void markVersionSeen();
     updateSettings({ onboarded: true });
     db.put('kv', 'tour', 'pending'); // the home-screen tour runs once the library is on screen
-    let guide = docs.find(isGuide);
-    if (!guide) guide = await importFile(new Blob([welcome], { type: 'text/markdown' }), 'Welcome to Frogity.md', { title: 'Welcome to Frogity' });
-    // Samples are optional; the welcome guide is available immediately. // a famous novel and an economics paper, in the background
-    // Voices are downloaded only when chosen in Settings.
-    // void ensureNaturalVoice(); // the natural voice for the reader's language, downloaded in the background and made the default
-    if (f === 'guide') setOpenId(guide.id);
-    else if (f === 'add') setAddOpen(true);
+    setTourWait(true);
+    // nothing is put on the shelf by itself: the short guide only when it is asked for ("begin with the guide"); "add" opens the
+    // reader's own files; "explore on my own" leaves an empty shelf
+    if (f === 'guide') {
+      let guide = docs.find(isGuide);
+      if (!guide) guide = await importFile(new Blob([welcome], { type: 'text/markdown' }), 'Welcome to Frogity.md', { title: 'Welcome to Frogity' });
+      setOpenId(guide.id);
+    } else if (f === 'add') setAddOpen(true);
   };
 
   // drag & drop on desktop
@@ -521,6 +534,7 @@ export default function App() {
       <Saved open={saved} onClose={() => setSaved(false)} />
       {aboutOpen && <About open={aboutOpen} onClose={() => setAboutOpen(false)} />}
       {tour && <Tour onDone={() => (setTour(false), db.put('kv', 'tour', 'done'))} />}
+      {tourWait && !tour && idle && <div className="tour-wait" aria-hidden onPointerDown={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()} />}
       <RateSheet open={rate} onClose={closeRate} streak={streakInfo(getState().days).current} />
       {convert && <ConvertSheet doc={convert.doc} root={convert.root} onClose={() => setConvert(null)} onOpenDoc={setOpenId} />}
       {scanFiles && <ScanSheet
