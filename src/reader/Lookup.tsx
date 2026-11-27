@@ -1,7 +1,7 @@
 import { tr } from '../lib/i18n';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { define, origin, wiki, normalizeWord, sameSubject, translate, type Definition, type Origin, type WikiCard, type WikiImage } from '../lib/lookup';
+import { define, origin, wiki, normalizeWord, sameSubject, translate, uniqueFiles, type Definition, type Origin, type WikiCard, type WikiImage } from '../lib/lookup';
 import { LANG_NAME, installPack, installedPacks, isDictLang, onDictChange, packIndex, packsForBook, userLang } from '../lib/dicts';
 import { texToHtml } from '../lib/mathtext';
 import { onBack, openExternal, tap } from '../lib/native';
@@ -10,7 +10,8 @@ import { PixelLoader } from '../ui/kit';
 
 type Tab = 'define' | 'origin' | 'wiki';
 
-export function LookupCard({ word, lang = 'en', onClose }: { word: string | null; lang?: string; onClose: () => void }) {
+export function LookupCard({ word, lang = 'en', onClose, onHighlight }: { word: string | null; lang?: string; onClose: () => void; onHighlight?: () => void }) {
+  const [saved, setSaved] = useState(false);
   const w = word ? normalizeWord(word) : '';
   const [tab, setTab] = useState<Tab>('define');
   const [def, setDef] = useState<Definition | null | undefined>();
@@ -31,6 +32,7 @@ export function LookupCard({ word, lang = 'en', onClose }: { word: string | null
     setClosing(false);
     setBad(new Set());
     setZoomImg(null);
+    setSaved(false);
     const multi = /\s/.test(w);
     setTab(multi ? 'wiki' : 'define');
     setFailed({ define: false, origin: false, wiki: false });
@@ -58,7 +60,7 @@ export function LookupCard({ word, lang = 'en', onClose }: { word: string | null
   }, [w]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!w) return null;
-  const gallery = wk && (tab === 'wiki' || sameSubject(w, wk)) ? wk.images.filter((i) => !bad.has(i.src)) : [];
+  const gallery = wk && (tab === 'wiki' || sameSubject(w, wk)) ? uniqueFiles(wk.images).filter((i) => !bad.has(i.src)) : [];
   const rawTitle = wk?.title && tab === 'wiki' ? wk.title : def?.word ?? w;
   const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
   const loading = (tab === 'define' && def === undefined) || (tab === 'origin' && ety === undefined) || (tab === 'wiki' && wk === undefined);
@@ -87,9 +89,24 @@ export function LookupCard({ word, lang = 'en', onClose }: { word: string | null
                 setTab(t);
               }}
             >
-              {t === 'define' ? 'Define' : t === 'origin' ? 'Origin' : 'Wikipedia'}
+              {t === 'define' ? tr('Define') : t === 'origin' ? tr('Origin') : 'Wikipedia'}
             </button>
           ))}
+          {onHighlight && (
+            <button
+              className={`lk-save${saved ? ' done' : ''}`}
+              aria-label={saved ? tr('Saved') : tr('Highlight and save')}
+              title={saved ? tr('Saved') : tr('Highlight and save')}
+              disabled={saved}
+              onClick={() => {
+                tap('medium');
+                setSaved(true);
+                onHighlight();
+              }}
+            >
+              <Icon name={saved ? 'check' : 'pen'} size={18} />
+            </button>
+          )}
         </div>
         <div className="lk-body">
           {failed[tab] ? (
@@ -240,13 +257,28 @@ export function SelectionMenu({
   if (!rect) return null;
   return createPortal(
     <div ref={ref} className="selmenu" style={{ top, left: centre }} onMouseDown={(e) => e.preventDefault()} onTouchStart={(e) => e.stopPropagation()}>
-      <button onClick={onDefine}>{tr("Define")}</button>
-      {onHighlight && <button onClick={onHighlight}>{tr("Highlight")}</button>}
-      {onListen && <button onClick={onListen}>{tr("Listen")}</button>}
-      {onAsk && <button onClick={onAsk}>{tr("Ask")}</button>}
-      <button onClick={onCopy}>{tr("Copy")}</button>
-      <button onClick={onShare} aria-label={tr("Share")}>
-        <Icon name="share" size={16} />
+      {/* "Define" stays a word (no icon says it as clearly); the rest are icons that read at a glance */}
+      <button className="sm-word" onClick={onDefine}>{tr("Define")}</button>
+      {onHighlight && (
+        <button onClick={onHighlight} aria-label={tr("Highlight")} title={tr("Highlight")}>
+          <Icon name="pen" size={18} />
+        </button>
+      )}
+      {onListen && (
+        <button onClick={onListen} aria-label={tr("Listen")} title={tr("Listen")}>
+          <Icon name="ear" size={18} />
+        </button>
+      )}
+      {onAsk && (
+        <button onClick={onAsk} aria-label={tr("Ask")} title={tr("Ask")}>
+          <Icon name="ask" size={18} />
+        </button>
+      )}
+      <button onClick={onCopy} aria-label={tr("Copy")} title={tr("Copy")}>
+        <Icon name="copy" size={18} />
+      </button>
+      <button onClick={onShare} aria-label={tr("Share")} title={tr("Share")}>
+        <Icon name="share" size={18} />
       </button>
     </div>,
     document.body,

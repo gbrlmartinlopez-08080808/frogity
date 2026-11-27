@@ -1863,3 +1863,33 @@
 .listen-chips button small {
   flex: none;
 }
+/* the selection menu: icons sit in square buttons; "Define" stays a word */
+.selmenu button:not(.sm-word) {
+  width: 42px;
+  padding: 0;
+}
+/* the word sheet: highlight and save, at the far right of the tabs */
+.lk-tabs .lk-save {
+  margin-left: auto;
+  width: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #e9e7df;
+  background: rgba(255, 255, 255, 0.06);
+}
+.lk-tabs .lk-save.done {
+  color: #ffd23f;
+  background: rgba(255, 210, 63, 0.14);
+}
+/* the page colours, at the top of the reading sheet: a sample and its name */
+.themes button {
+  gap: 0;
+  align-content: center;
+  line-height: 1.1;
+}
+.themes button small {
+  font-family: var(--mono);
+  font-size: 10px;
+  opacity: 0.7;
+}

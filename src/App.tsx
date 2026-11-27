@@ -27,8 +27,9 @@ import { RateSheet } from './screens/RateSheet';
 import { Tour } from './screens/Tour';
 import { initWorkNotice, liquidReady } from './lib/workNotice';
 import { ensureNaturalVoice, resumeVoice } from './lib/voices';
+import { WeekAward, weekAwardDue } from './screens/WeekAward';
 import { WhatsNew } from './screens/WhatsNew';
-import { shouldShowWhatsNew } from './lib/changelog';
+import { markVersionSeen, shouldShowWhatsNew } from './lib/changelog';
 import { Onboarding, type Finish } from './screens/Onboarding';
 const ConvertSheet = lazy(() => import('./screens/Convert').then(m => ({ default: m.ConvertSheet })));
 const ScanSheet = lazy(() => import('./screens/Scan').then(m => ({ default: m.ScanSheet })));
@@ -292,24 +293,25 @@ export default function App() {
     };
   }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // the first full week of reading turns the app's icon from the classic one into the gradient one (once; after that it is the reader's choice)
-  const daysMap = useStore((st) => st.days);
-  const longest = streakInfo(daysMap).longest;
+  // a first full week (seven days in a row, each at the goal): the next time the app opens, a card says so and offers the new icons;
+  // nothing changes by itself. Otherwise the launcher is kept in step with the reader's choice (a reinstall, a restored phone).
+  const [weekCard, setWeekCard] = useState<false | 'real' | 'test'>(false);
   useEffect(() => {
     if (!ready || !onboarded) return;
     const s = getState().settings;
-    if (!s.iconUnlocked && longest >= 7) {
-      updateSettings({ iconUnlocked: true, appIcon: 'gradient' });
-      void appIconSet('gradient');
-      toast('A full week in a row — your app icon has a new look', 'award', () => setStats(true));
-    } else if (isNative) {
-      // keep the launcher in step with the choice (a reinstall, a restored phone)
+    if (isNative)
       appIconGet().then((cur) => {
         const want = s.appIcon ?? 'classic';
         if (cur && cur !== want) void appIconSet(want);
       });
-    }
-  }, [ready, onboarded, longest]);
+    const t = setTimeout(() => void weekAwardDue().then((due) => due && setWeekCard((w) => w || 'real')), 2600);
+    const test = () => setWeekCard('test');
+    window.addEventListener('frogity:week-test', test);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('frogity:week-test', test);
+    };
+  }, [ready, onboarded]);
 
   // a missed day is covered by a freeze (the free one, plus any that were won); the check runs when the app opens, when it comes
   // back to the front and every minute (a day can end while it is open)
@@ -458,6 +460,8 @@ export default function App() {
 
   // end of the introduction: the welcome guide goes on the shelf (once), then whatever they chose
   const finishIntro = async (f: Finish) => {
+    // a new reader starts on this version: nothing to announce as new
+    void markVersionSeen();
     updateSettings({ onboarded: true });
     db.put('kv', 'tour', 'pending'); // the home-screen tour runs once the library is on screen
     let guide = docs.find(isGuide);
@@ -560,6 +564,7 @@ export default function App() {
       {discover && <Discover initial={discover.q} onClose={() => setDiscover(false)} onOpen={setOpenId} />}
       <JobsHost />
       <WhatsNew open={whatsNew} onClose={() => setWhatsNew(false)} />
+      <WeekAward open={!!weekCard && !whatsNew} test={weekCard === 'test'} onClose={() => setWeekCard(false)} />
       <Toasts />
       <input
         ref={fileIn}

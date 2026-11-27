@@ -11,7 +11,9 @@ import { Ring } from './Library';
 import { cheer, displayName } from '../lib/cheer';
 import { harvestRecent, type Harvest } from '../lib/harvest';
 import { pickQuote, quoteArt } from '../lib/quotes';
-import { appIconSet, onBack, tap } from '../lib/native';
+import { onBack, tap } from '../lib/native';
+import { IconChooser, applyIcon, longestFullRun } from './WeekAward';
+import type { AppIconId } from '../lib/types';
 import { FrogScene } from './FrogScene';
 import { Blocks } from './Games';
 
@@ -514,44 +516,31 @@ export function StatsBubble({ open, onClose, reward, onRewardDone }: { open: boo
  * The app's two icons as two cards that overlap: tap to bring one to the front. The gradient one is earned with the first full
  * week (seven days in a row); after that either can be chosen at any time.
  */
-function IconCards({ longest }: { longest: number }) {
+function IconCards({ longest: _longest }: { longest: number }) {
   const settings = useStore((st) => st.settings);
-  const unlocked = !!settings.iconUnlocked || longest >= 7;
+  const days = useStore((st) => st.days);
+  const full = longestFullRun(days, settings.dailyGoal);
+  const unlocked = !!settings.iconUnlocked || full >= 7;
   const using = settings.appIcon ?? 'classic';
-  const [front, setFront] = useState<'classic' | 'gradient'>(using);
-  useEffect(() => setFront(using), [using]);
-  const pick = async (icon: 'classic' | 'gradient') => {
-    tap('select');
-    if (front !== icon) return setFront(icon);
-    if (icon === using) return;
-    if (icon === 'gradient' && !unlocked) return toast(`${7 - Math.min(7, longest)} more day${7 - longest === 1 ? '' : 's'} in a row to unlock it`);
-    await updateSettings({ appIcon: icon });
-    const ok = await appIconSet(icon);
-    toast(ok ? 'App icon changed — the launcher may take a moment to show it' : 'Saved — the icon changes on the phone itself');
-  };
-  const card = (icon: 'classic' | 'gradient') => {
-    const locked = icon === 'gradient' && !unlocked;
-    return (
-      <button key={icon} className={`icard ${icon}${front === icon ? ' front' : ''}${using === icon ? ' using' : ''}`} onClick={() => pick(icon)} aria-label={`${icon} icon${locked ? ', locked' : using === icon ? ', in use' : ''}`}>
-        <img src={icon === 'classic' ? './icon-classic-512.png' : './icon-squircle-512.png'} alt="" draggable={false} />
-        <b>{icon}</b>
-        <small className="mono">{locked ? `locked · ${Math.min(7, longest)}/7 days` : using === icon ? 'in use' : front === icon ? 'tap to use' : icon === 'gradient' ? 'unlocked' : 'original'}</small>
-        {locked && (
-          <span className="lock" aria-hidden>
-            <Icon name="timer" size={14} />
-          </span>
-        )}
-      </button>
-    );
-  };
+  const dark = settings.appTheme === 'dark' || (settings.appTheme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  const [pick, setPick] = useState<AppIconId>(using);
+  useEffect(() => setPick(using), [using]);
   return (
     <div className="icon-cards">
       <div className="section-label">{tr("app icon")}</div>
-      <div className="icard-stack">{[card('classic'), card('gradient')]}</div>
+      <IconChooser
+        pick={pick}
+        dark={dark}
+        onPick={(i) => {
+          if (i !== 'classic' && !unlocked) return toast(`${7 - Math.min(7, full)} ${tr(7 - full === 1 ? 'more full day in a row to unlock it' : 'more full days in a row to unlock them')}`);
+          setPick(i);
+          if (i !== using) void applyIcon(i);
+        }}
+      />
       <p className="muted">
         {unlocked
-          ? 'You reached a full week in a row, so the new gradient icon is yours. Tap a card to bring it forward, tap it again to use it.'
-          : 'Read seven days in a row — your first full week — and the app icon turns from the classic one into the new gradient one. Tap the cards to see them side by side.'}
+          ? tr('A full week in a row made these yours: the frog or the kid with a star, on paper or on the gradient.')
+          : `${tr('Reach your goal seven days in a row — a full week — to unlock the other icons.')} ${Math.min(7, full)}/7`}
       </p>
     </div>
   );

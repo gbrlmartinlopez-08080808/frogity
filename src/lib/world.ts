@@ -95,6 +95,8 @@ export const isOn = (e: WorldEvent) => {
   return at(e.a) <= t && t <= at(e.b ?? e.a);
 };
 export const isOver = (e: WorldEvent) => today() > at(e.b ?? e.a);
+/** days since it ended */
+export const daysSince = (e: WorldEvent) => Math.round((today() - at(e.b ?? e.a)) / DAY);
 
 export function dateLabel(e: WorldEvent): string {
   if (e.when) return e.when;

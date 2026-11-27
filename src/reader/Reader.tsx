@@ -106,6 +106,8 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   const [page, setPage] = useState(doc.kind === 'pdf' && doc.position ? Math.max(1, Math.round(doc.position.value)) : 1);
   const [listenFrom, setListenFrom] = useState<number | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const highlightsRef = useRef(highlights);
+  highlightsRef.current = highlights;
   const [savesIntro, setSavesIntro] = useState(false);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [thumbs, setThumbs] = useState(false);
@@ -515,11 +517,19 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     if (isPdf) {
       restoreLiquidPage(root);
       // Use liquid headings when the PDF has no outline
+      // the book's own parts when the PDF has no outline: its headings, and the sections that open without one (a new chapter on a
+      // fresh page, a break between scenes), named by their first words
       setToc((t) => {
         if (t.length) return t;
-        return Array.from(root.querySelectorAll<HTMLElement>('h2,h3,h4'))
-          .filter((h) => (h.textContent ?? '').length < 100)
-          .map((h) => ({ title: h.textContent ?? '', anchor: h.id, level: Number(h.tagName[1]) - 1, page: Number(h.dataset.page) || undefined }));
+        let n = 0;
+        return Array.from(root.querySelectorAll<HTMLElement>('h2,h3,h4,p.sec'))
+          .filter((h) => (h.textContent ?? '').trim().length > 0 && (h.textContent ?? '').length < (h.tagName === 'P' ? 100000 : 100))
+          .map((h) => {
+            if (!h.id) h.id = `sec-${n++}`;
+            const text = (h.textContent ?? '').trim().replace(/\s+/g, ' ');
+            const title = h.tagName === 'P' ? text.split(' ').slice(0, 7).join(' ') + '…' : text;
+            return { title, anchor: h.id, level: h.tagName === 'P' ? 2 : Number(h.tagName[1]) - 1, page: Number(h.dataset.page) || undefined };
+          });
       });
     }
     setFlowReady((n) => n + 1);
@@ -926,13 +936,6 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     } else setListen(false);
   };
 
-  const cycleTheme = () => {
-    tap();
-    const i = THEMES.findIndex((t) => t.id === settings.readerTheme);
-    const next = THEMES[(i + 1) % THEMES.length];
-    updateSettings({ readerTheme: next.id });
-    toast(next.name);
-  };
 
   const onContentTap = (e: React.MouseEvent) => {
     if (selectionText()) return;
@@ -966,12 +969,15 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     setChrome((c) => !c);
   };
 
-  const addHighlight = async () => {
+  // the words a lookup was opened for, so the word sheet can highlight them too
+  const lookupAnchor = useRef<ReturnType<typeof anchorFromSelection>>(null);
+  const addHighlight = async (given?: ReturnType<typeof anchorFromSelection>) => {
     const root = flowRef.current;
     const sel = window.getSelection();
-    if (!root || !sel) return;
-    const a = anchorFromSelection(root, sel);
+    if (!root || (!given && !sel)) return;
+    const a = given ?? anchorFromSelection(root, sel!);
     if (!a) return;
+    if (given && highlightsRef.current.some((h) => h.prefix === a.prefix && h.text === a.text)) return void toast(tr('Already saved'));
     const h: Highlight = { id: db.uid(), docId: id, text: a.text, prefix: a.prefix, at: Date.now(), progress, lang: flowRef.current?.dataset.lang };
     await db.put('marks', `${id}:h:${h.id}`, h);
     clearSel();
@@ -1356,6 +1362,36 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   };
   /** something with running text in it (what Listen, the position bar and page turning are for) */
   const textual = !error && (content?.type === 'flow' || content?.type === 'pdf');
+  /** where each of the book's sections starts along the position bar */
+  const sectionsOnBar = () =>
+    toc.map((t, i) => {
+      let at = -1;
+      const pages = Math.max(1, (doc.pages ?? 1) - 1);
+      if (isPdf && !liquid && t.page) at = (t.page - 1) / pages;
+      else if (scroller) {
+        const el = (t.anchor && flowRef.current?.querySelector<HTMLElement>(`#${CSS.escape(t.anchor)}`)) || (t.page ? flowRef.current?.querySelector<HTMLElement>(`.pg[data-page="${t.page}"]`) : null);
+        if (el && paged) at = Math.round(el.offsetLeft / Math.max(1, scroller.clientWidth)) / Math.max(1, pageCount(scroller) - 1);
+        else if (el) at = el.offsetTop / Math.max(1, scroller.scrollHeight - scroller.clientHeight);
+        else if (t.page && doc.pages) at = (t.page - 1) / pages;
+      }
+      // (a part not drawn yet, with no page to go by: its place in the list stands in for its place in the book)
+      return { title: t.title, at: at >= 0 ? Math.max(0, Math.min(1, at)) : i / toc.length };
+    });
+  // the slim bar shown while the controls are tucked away names the section under the finger too
+  const secCache = useRef<{ at: number; list: { title: string; at: number }[] }>({ at: 0, list: [] });
+  const edgeLabel = (v: number) => {
+    if (toc.length < 2) return barLabel(v);
+    if (performance.now() - secCache.current.at > 2000) secCache.current = { at: performance.now(), list: sectionsOnBar() };
+    let name = '';
+    for (const sct of secCache.current.list) if (sct.at <= v + 0.0005) name = sct.title;
+    return name ? `${name.length > 34 ? name.slice(0, 33) + '…' : name} · ${barLabel(v)}` : barLabel(v);
+  };
+  const goSection = (t: TocEntry | undefined) => {
+    if (!t) return;
+    if (t.page && isPdf && !liquid) goProgress(0, t.page);
+    else if (t.anchor && flowRef.current?.querySelector(`#${CSS.escape(t.anchor)}`)) showEl(flowRef.current?.querySelector(`#${CSS.escape(t.anchor)}`));
+    else if (t.page) goProgress(0, t.page);
+  };
   const barOk = !error && !!content && (liquid || isPdf) && !['sheet', 'image', 'media', 'binary'].includes(content.type);
 
   // ---------------------------------------------------------------- derived
@@ -1548,7 +1584,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
 
       {liquid && <div className="r-fade" style={{ opacity: chrome || listen ? 1 : 0.55 }} />}
 
-      {!listen && !chrome && barOk && find === null && <EdgeScrub vertical={!paged} ariaLabel="Position in the book" label={barLabel} onChange={barChange} />}
+      {!listen && !chrome && barOk && find === null && <EdgeScrub vertical={!paged} ariaLabel="Position in the book" label={edgeLabel} onChange={barChange} />}
 
       <div className={`r-dock${chrome || listen ? '' : ' hide'}`}>
         {form && !offerGone && !formOpen && (
@@ -1591,7 +1627,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
           </div>
         )}
         <div className="bar-slot" ref={setBarSlot}>
-          {!listen && barOk && <Scrub ariaLabel="Position in the book" value={barValue} label={barLabel} onChange={barChange} />}
+          {!listen && barOk && <Scrub ariaLabel="Position in the book" value={barValue} label={barLabel} onChange={barChange} sections={toc.length > 1 ? sectionsOnBar : undefined} onSection={(i) => goSection(toc[i])} />}
         </div>
         <div className="r-dock-row compact">
           <button className="timechip" onClick={() => setClockMode((m) => (m === 'time' ? 'left' : 'time'))} aria-label={tr("Clock / time left")}>
@@ -1614,10 +1650,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
               <Icon name={paged ? 'book' : 'scrollv'} size={20} />
             </button>
           )}
-          <button className="pill round sm" onClick={cycleTheme} onContextMenu={(e) => (e.preventDefault(), setSheet('type'))} aria-label={tr("Theme")}>
-            <Icon name={dark ? 'moon' : 'sun'} size={20} />
-          </button>
-          <button className="pill round sm" onClick={() => setSheet('type')} aria-label={tr("Typography")}>
+          <button className="pill round sm" onClick={() => setSheet('type')} aria-label={tr("Reading settings: theme, type and layout")}>
             <TypeGlyph size={20} />
           </button>
         </div>
@@ -1630,10 +1663,12 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         rect={selRect}
         onDefine={() => {
           const w = selectionText().split(/\s+/).slice(0, 5).join(' ');
+          const sel = window.getSelection();
+          lookupAnchor.current = liquid && flowRef.current && sel ? anchorFromSelection(flowRef.current, sel) : null;
           clearSel();
           setLookup(w);
         }}
-        onHighlight={liquid ? addHighlight : undefined}
+        onHighlight={liquid ? () => void addHighlight() : undefined}
         onListen={liquid && (!isPdf || liq.ready) ? listenFromSelection : undefined}
         onAsk={() => {
           setAskSel(selectionText().slice(0, 1500));
@@ -1650,7 +1685,7 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
           clearSel();
         }}
       />
-      <LookupCard word={lookup} lang={flowRef.current?.dataset.lang ?? 'en'} onClose={() => setLookup(null)} />
+      <LookupCard word={lookup} lang={flowRef.current?.dataset.lang ?? 'en'} onClose={() => setLookup(null)} onHighlight={liquid && lookupAnchor.current ? () => void addHighlight(lookupAnchor.current) : undefined} />
       <ZoomViewer src={zoom?.src ?? null} mask={zoom?.mask} ratio={zoom?.ratio} onClose={() => setZoom(null)} />
 
       <TypeSheet open={sheet === 'type'} onClose={() => setSheet(null)} isPdf={isPdf} mode={mode} onMode={switchMode} prep={liq} pages={doc.pages} onRetry={() => prepareNow(doc)} />

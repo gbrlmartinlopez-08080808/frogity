@@ -78,6 +78,9 @@ export interface Bookmark {
 export type ReaderTheme = 'paper' | 'white' | 'dusk' | 'night';
 export type ReaderFont = string;
 
+/** the launcher icons: the frog or the kid with a star, on paper or on the gradient */
+export type AppIconId = 'classic' | 'gradient' | 'kid' | 'gradient-kid';
+
 /** under 18 · 18–29 · 30–49 · 50–64 · 65 and over */
 export type AgeBand = 'u18' | '18' | '30' | '50' | '65';
 
@@ -116,7 +119,7 @@ export interface Settings {
   /** the first full week of reading has been reached: the gradient app icon is unlocked */
   iconUnlocked?: boolean;
   /** which app icon is in use */
-  appIcon?: 'classic' | 'gradient';
+  appIcon?: AppIconId;
   aiOk: boolean; // user agreed to send questions + short excerpts to the free AI service
 }
 

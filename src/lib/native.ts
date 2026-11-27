@@ -208,12 +208,13 @@ export async function onMediaAction(cb: (action: string) => void) {
 }
 
 // ------------------------------------------------------------------ the app's own icon (classic, or the gradient one earned with a first full week)
+type IconId = 'classic' | 'gradient' | 'kid' | 'gradient-kid';
 interface AppIconPlugin {
-  get(): Promise<{ icon: 'classic' | 'gradient' }>;
-  set(o: { icon: 'classic' | 'gradient' }): Promise<{ icon: 'classic' | 'gradient' }>;
+  get(): Promise<{ icon: IconId }>;
+  set(o: { icon: IconId }): Promise<{ icon: IconId }>;
 }
 const AppIcon = registerPlugin<AppIconPlugin>('AppIcon');
-export const appIconSet = (icon: 'classic' | 'gradient') => (isNative ? AppIcon.set({ icon }).then(() => true, () => false) : Promise.resolve(false));
+export const appIconSet = (icon: IconId) => (isNative ? AppIcon.set({ icon }).then(() => true, () => false) : Promise.resolve(false));
 export const appIconGet = () => (isNative ? AppIcon.get().then((r) => r.icon, () => undefined) : Promise.resolve(undefined));
 
 // ------------------------------------------------------------------ home-screen widgets

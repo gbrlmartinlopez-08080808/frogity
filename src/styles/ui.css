@@ -3349,97 +3349,22 @@
   }
 }
 
-/* the scene: picture A, a framed window onto picture B opens in it and grows into the whole scene (the cut through the frame) */
+/* the scene: the release picture, as it is */
 .wn-scene {
   position: relative;
   height: 216px;
   flex: none;
   overflow: hidden;
   background: #111;
-  isolation: isolate;
 }
-.wn-a,
-.wn-b {
+.wn-img {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
-}
-.wn-a {
-  animation: wnzoom 3.2s cubic-bezier(0.3, 0.2, 0.2, 1) both;
-}
-@keyframes wnzoom {
-  from {
-    transform: scale(1.12);
-  }
-  to {
-    transform: scale(1.02);
-  }
-}
-.wn-b {
-  clip-path: inset(20% 34% 20% 34% round 3px);
-  opacity: 0;
-  animation:
-    wnwin 0.45s var(--ease) 0.55s forwards,
-    wngrow 0.95s cubic-bezier(0.7, 0, 0.2, 1) 1.55s forwards,
-    wndrift 9s ease-in-out 2.5s infinite alternate;
-}
-@keyframes wnwin {
-  to {
-    opacity: 1;
-  }
-}
-@keyframes wngrow {
-  from {
-    clip-path: inset(20% 34% 20% 34% round 3px);
-    opacity: 1;
-  }
-  to {
-    clip-path: inset(0 0 0 0 round 0);
-    opacity: 1;
-  }
-}
-@keyframes wndrift {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.05);
-  }
-}
-/* the window's pale mount, like a print set into a page */
-.wn-frame {
-  position: absolute;
-  top: 20%;
-  bottom: 20%;
-  left: 34%;
-  right: 34%;
-  border: 3px solid rgba(255, 253, 246, 0.92);
-  border-radius: 4px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-  opacity: 0;
-  animation:
-    wnwin 0.45s var(--ease) 0.55s forwards,
-    wnframe 0.95s cubic-bezier(0.7, 0, 0.2, 1) 1.55s forwards;
-}
-@keyframes wnframe {
-  from {
-    top: 20%;
-    bottom: 20%;
-    left: 34%;
-    right: 34%;
-    opacity: 1;
-  }
-  70% {
-    opacity: 1;
-  }
-  to {
-    top: -3px;
-    bottom: -3px;
-    left: -3px;
-    right: -3px;
-    opacity: 0;
-  }
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  animation: fade 0.6s var(--ease) backwards;
 }
 .wn-tag {
   position: absolute;
@@ -3453,7 +3378,7 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   opacity: 0;
-  animation: wnwin 0.5s var(--ease) 2.4s forwards;
+  animation: wnwin 0.5s var(--ease) 0.5s forwards;
 }
 .wn-tag b {
   font-weight: 600;
@@ -3462,35 +3387,20 @@
   position: absolute;
   right: 12px;
   bottom: 12px;
-  width: 54%;
-  height: 26px;
+  max-width: 58%;
   font-size: 9px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   line-height: 13px;
   color: rgba(255, 255, 255, 0.86);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
   text-align: right;
 }
-/* each picture's credit, in the same place: the first one gives way to the second at the cut */
-.wn-credit span {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  max-width: 100%;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.wn-credit .c1 {
-  animation: wnfade 0.25s linear 2.1s forwards;
-}
-.wn-credit .c2 {
-  opacity: 0;
-  animation: wnwin 0.4s var(--ease) 2.4s forwards;
-}
-@keyframes wnfade {
+@keyframes wnwin {
   to {
-    opacity: 0;
+    opacity: 1;
   }
 }
 
@@ -3596,17 +3506,12 @@
   font-size: 12px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .wn-a,
-  .wn-frame,
-  .wn-credit .c1 {
-    display: none;
+  .wn-img {
+    animation: none;
   }
-  .wn-b,
-  .wn-tag,
-  .wn-credit .c2 {
+  .wn-tag {
     animation: none;
     opacity: 1;
-    clip-path: none;
   }
   .wn-tree li {
     animation: none;
@@ -3690,4 +3595,107 @@
 /* an opened word keeps its heading: the picture and meaning come under it */
 .sv-card.open.k-word .sv-face .sv-text {
   display: block;
+}
+/* the shelf's list: each cover at its own proportions (a paperback is tall, a slide deck wide), never cut to a square */
+.shelf-row .thumb,
+.thumb {
+  width: auto;
+  min-width: 42px;
+  max-width: 92px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+}
+.thumb img {
+  width: auto;
+  height: 100%;
+  max-width: 92px;
+  object-fit: contain;
+  object-position: center;
+}
+/* a wide cover (slides) leaves a short holder: it keeps room for its label and progress */
+.pocket {
+  min-height: 66px;
+}
+
+/* ------------------------------------------------------------------ app icons: the four to choose from */
+.ichoose {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0 6px;
+}
+.ich {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 8px 2px 6px;
+  border-radius: 16px;
+  min-width: 0;
+  transition: background 0.2s;
+}
+.ich img {
+  width: 100%;
+  max-width: 64px;
+  aspect-ratio: 1;
+  border-radius: 23%;
+  box-shadow: 0 0 0 1px var(--line), 0 6px 14px -8px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s var(--spring);
+}
+.ich b {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+}
+.ich small {
+  font-size: 9.5px;
+  color: var(--muted);
+}
+.ich.on {
+  background: var(--surface-2);
+}
+.ich.on img {
+  transform: scale(1.06);
+  box-shadow: 0 0 0 2px var(--ink), 0 8px 18px -8px rgba(0, 0, 0, 0.4);
+}
+/* the full-week card: seven days lighting up */
+.wk-top {
+  position: relative;
+  height: 150px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  background: radial-gradient(120% 120% at 50% 0%, #ffd23f 0%, #ff9a5a 45%, #7a5cff 100%);
+}
+.wk-days {
+  display: flex;
+  gap: 9px;
+}
+.wk-days i {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  animation: wkday 0.45s var(--spring) backwards;
+}
+@keyframes wkday {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.6);
+  }
+}
+.wk-n {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.08em;
+}
+.wk-p {
+  margin: 0 0 4px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
 }

@@ -1,11 +1,11 @@
 import { tr, loc } from '../lib/i18n';
 import { useEffect, useMemo, useState } from 'react';
-import { countdown, dateLabel, daysTo, isOn, isOver, type CurveChart, type SeatsChart, type WorldEvent } from '../lib/world';
+import { countdown, dateLabel, daysSince, daysTo, isOn, isOver, type CurveChart, type SeatsChart, type WorldEvent } from '../lib/world';
 import { loadLive, type Live, type Match } from '../lib/sports';
 import type { Daily, Story } from '../lib/interesting';
 import { Emblem } from '../ui/WikiIcon';
 import { emojiFor } from '../lib/worldx';
-import { candidates, summary, type Cand, type Wp } from '../lib/wikirace';
+import { candidates, liveResults, summary, type Cand, type LiveParty, type Wp } from '../lib/wikirace';
 import { PixelLoader } from '../ui/kit';
 import { tap } from '../lib/native';
 
@@ -432,6 +432,57 @@ function About({ e, wiki }: { e: WorldEvent; wiki: (t: string) => void }) {
   );
 }
 
+/** On voting day and the week after: the results as they come in (from the election's Wikipedia page), refreshed every few minutes. */
+function LiveResults({ e, wiki }: { e: WorldEvent; wiki: (t: string) => void }) {
+  const [res, setRes] = useState<LiveParty[] | null>(null);
+  const [at, setAt] = useState<Date | null>(null);
+  useEffect(() => {
+    let live = true;
+    const load = () =>
+      liveResults(e.wiki!).then((r) => {
+        if (!live) return;
+        setRes(r);
+        setAt(new Date());
+      });
+    void load();
+    const t = setInterval(load, 4 * 60_000);
+    return () => {
+      live = false;
+      clearInterval(t);
+    };
+  }, [e.wiki]);
+  if (!res?.length) return null;
+  const bySeats = res.some((p) => p.seats !== undefined);
+  const list = [...res].sort((a, b) => (bySeats ? (b.seats ?? 0) - (a.seats ?? 0) : (b.pct ?? 0) - (a.pct ?? 0))).slice(0, 8);
+  const max = Math.max(1, ...list.map((p) => (bySeats ? p.seats ?? 0 : p.pct ?? 0)));
+  return (
+    <section className="wd-sec live-res">
+      <h5 className="mono">
+        <i className="live-dot" aria-hidden />
+        {tr('Results')}
+        {at && <small> · {tr('updated')} {at.toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })}</small>}
+      </h5>
+      <ul>
+        {list.map((p) => (
+          <li key={p.name}>
+            <button disabled={!p.wiki} onClick={() => p.wiki && wiki(p.wiki)}>
+              <span className="lr-name">{p.name}</span>
+              <span className="lr-bar">
+                <i style={{ width: `${((bySeats ? p.seats ?? 0 : p.pct ?? 0) / max) * 100}%` }} />
+              </span>
+              <span className="lr-num mono">
+                {p.seats !== undefined && <b>{p.seats}</b>}
+                {p.pct !== undefined && <small>{p.pct}%</small>}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="wd-src mono">{tr('as counted so far · from Wikipedia, refreshed every few minutes')}</p>
+    </section>
+  );
+}
+
 export function WorldDetail({ e, d, wiki, openStory }: { e: WorldEvent; d?: Daily; wiki: (t: string) => void; openStory: (s: Story) => void }) {
   return (
     <div className="wd">
@@ -447,6 +498,7 @@ export function WorldDetail({ e, d, wiki, openStory }: { e: WorldEvent; d?: Dail
       </header>
       {e.n && <p className="wd-note">{e.n}</p>}
       <Clock e={e} />
+      {e.wiki && e.k === 'election' && (isOn(e) || (isOver(e) && daysSince(e) <= 7)) && <LiveResults e={e} wiki={wiki} />}
       {e.wiki && (e.k === 'election' || e.auto) && <About e={e} wiki={wiki} />}
       <Timeline e={e} />
       {!!e.sides?.length && (

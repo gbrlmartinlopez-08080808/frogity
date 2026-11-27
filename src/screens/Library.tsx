@@ -38,7 +38,8 @@ function Pocket({ doc, near, onClick, onMenu }: { doc: DocMeta; near: boolean; o
       alive = false;
     };
   }, [doc.coverId]); // eslint-disable-line react-hooks/exhaustive-deps
-  const ar = Math.min(1.35, Math.max(0.5, info?.ar ?? 0.72));
+  // a sensible range: from a tall paperback to a slide deck; beyond it the cover is shown whole, not cut
+  const ar = Math.min(1.8, Math.max(0.5, info?.ar ?? 0.72));
   return (
     <button
       className="pocket-wrap"

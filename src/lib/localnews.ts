@@ -2,7 +2,7 @@
 // (the shared file is built elsewhere a few times a day and may not carry every country). Cached for an hour and a half.
 import { useEffect, useState } from 'react';
 import * as db from './db';
-import { cleanSummary, type Daily, type Outlet, type Story } from './interesting';
+import { cleanSummary, isAd, type Daily, type Outlet, type Story } from './interesting';
 
 type O = { cc: string; region: string; id: string; name: string; domain: string; kind: string; about: string; feeds: string[] };
 // National outlets by country, in the country's own language (the same list the shared file uses).
@@ -156,7 +156,7 @@ export async function fetchLocal(cc: string, force = false): Promise<{ stories: 
         const r = await timed(url);
         if (!r?.ok) continue;
         try {
-          got.push(...parse(await r.text(), o).filter((x) => now - x.time < 72 * 3600e3));
+          got.push(...parse(await r.text(), o).filter((x) => now - x.time < 72 * 3600e3 && !isAd({ title: x.title, summary: x.summary, sources: [{ url: x.link }] })));
         } catch {
           /* a feed that is not readable is skipped */
         }
@@ -165,7 +165,7 @@ export async function fetchLocal(cc: string, force = false): Promise<{ stories: 
     }),
   );
   // nothing from the outlets themselves (blocked, down, or changed address): the country's headlines from Google News
-  if (lists.every((l) => !l.length)) lists.push(await googleNews(cc).catch(() => []));
+  if (lists.every((l) => !l.length)) lists.push((await googleNews(cc).catch(() => [])).filter((x) => !isAd({ title: x.title, sources: [{ url: x.link }] })));
   const picked: Item[] = [];
   const seen = new Set<string>();
   for (let i = 0; picked.length < 24 && i < 24; i++)
@@ -194,7 +194,8 @@ export async function fetchLocal(cc: string, force = false): Promise<{ stories: 
       sources: [{ id: it.o.id, title: it.title, url: it.link }],
     }));
   const sources: Record<string, Outlet> = {};
-  for (const it of picked) sources[it.o.id] = { name: it.o.name, region: it.o.region, domain: it.o.domain, kind: it.o.kind, lean: null, about: it.o.about };
+  // each outlet's own little logo (the site's icon), so the cards show who is speaking
+  for (const it of picked) sources[it.o.id] = { name: it.o.name, region: it.o.region, domain: it.o.domain, kind: it.o.kind, lean: null, about: it.o.about, ...(it.o.domain ? { logo: `https://www.google.com/s2/favicons?domain=${it.o.domain}&sz=128` } : {}) };
   if (stories.length) {
     await db.put('kv', key, { at: Date.now(), stories, sources }).catch(() => {});
     return { stories, sources };
@@ -218,7 +219,9 @@ export function useWithLocal(d: Daily, home: string): { d: Daily; state: LocalSt
     fetchLocal(home, n > 0).then(
       (r) => {
         if (!live) return;
-        setExtra({ cc: home, ...r });
+        // (a list kept from before may still hold a deal, or outlets without their logo)
+        const sources = Object.fromEntries(Object.entries(r.sources).map(([k, o]) => [k, o.logo || !o.domain ? o : { ...o, logo: `https://www.google.com/s2/favicons?domain=${o.domain}&sz=128` }]));
+        setExtra({ cc: home, stories: r.stories.filter((x) => !isAd(x)), sources });
         setState(r.stories.length ? 'done' : 'failed');
       },
       () => live && setState('failed'),

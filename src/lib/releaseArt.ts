@@ -1,6 +1,5 @@
 // The pictures at the top of the What's new card: fifty open-licence works — paintings, prints, engravings, scientific plates and
-// photographs, chosen for clean, detailed, often close-up views — kept in the app (public/art). Each update shows the next pair: a
-// picture, and a window in it onto the next one (which becomes the following update's first picture).
+// photographs, chosen for clean, detailed, often close-up views — kept in the app (public/art). Each update shows the next one.
 import type { Release } from './changelog';
 import { RELEASES } from './changelog';
 import { ART, type Art } from './releaseArtList';
@@ -8,11 +7,11 @@ import { ART, type Art } from './releaseArtList';
 export type { Art };
 export { ART };
 
-/** this release's pair: its place among all releases (oldest first) picks the next step of the rotation */
-export function artFor(r: Release): [Art, Art] {
+/** this release's picture: its place among all releases (oldest first) picks the step of the rotation */
+export function artFor(r: Release): Art {
   const order = [...RELEASES].sort((a, b) => cmp(a.v, b.v));
   const k = Math.max(0, order.findIndex((x) => x.v === r.v));
-  return [ART[k % ART.length], ART[(k + 1) % ART.length]];
+  return ART[(k + 1) % ART.length];
 }
 const cmp = (a: string, b: string) => {
   const x = a.split('.').map(Number);

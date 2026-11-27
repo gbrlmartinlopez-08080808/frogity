@@ -7,25 +7,16 @@ import { RELEASES, releaseOf, type Release } from '../lib/changelog';
 import { artFor, credit } from '../lib/releaseArt';
 import { onBack, tap } from '../lib/native';
 
-/**
- * The release picture, like a new model's announcement: an open-licence work of art or photograph fills the top of the card, a
- * framed window opens in it onto the next picture, and the window grows until it is the whole scene (a match cut through the
- * frame). Each update brings the next pair from a rotation of fifty.
- */
+/** The release picture: an open-licence work of art or photograph, shown as it is across the top of the card. */
 function Scene({ r }: { r: Release }) {
-  const [a, b] = artFor(r);
+  const a = artFor(r);
   return (
     <div className="wn-scene" aria-hidden>
-      <div className="wn-a" style={{ backgroundImage: `url(./art/${a.id}.webp)` }} />
-      <div className="wn-b" style={{ backgroundImage: `url(./art/${b.id}.webp)` }} />
-      <div className="wn-frame" />
+      <img className="wn-img" src={`./art/${a.id}.webp`} alt="" draggable={false} />
       <div className="wn-tag mono">
         frogity <b>{r.v}</b>
       </div>
-      <div className="wn-credit mono">
-        <span className="c1">{credit(a)}</span>
-        <span className="c2">{credit(b)}</span>
-      </div>
+      <div className="wn-credit mono">{credit(a)}</div>
     </div>
   );
 }

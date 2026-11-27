@@ -19,8 +19,6 @@ import { LangChips } from '../ui/LangChips';
 import { askWorkFree, workFree } from '../lib/workNotice';
 import { DictsSheet } from './Dicts';
 import { WhatsNew } from './WhatsNew';
-import { AGE_OPTIONS } from '../lib/reminderWords';
-import type { AgeBand } from '../lib/types';
 
 export function Settings({ open, onClose }: { open: boolean; onClose: () => void }) {
   const s = useStore((x) => x.settings);
@@ -82,19 +80,6 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
             maxLength={16}
             style={{ flex: 1, border: 0, outline: 0, background: 'transparent', fontSize: 16, fontWeight: 600, height: 44 }}
             aria-label={tr("Your name")}
-          />
-        </div>
-        <div className="age-row">
-          <div className="row-label">{tr("Age")}</div>
-          <Segmented<AgeBand>
-            value={(s.age ?? '') as AgeBand}
-            onChange={(v) => {
-              updateSettings({ age: v });
-              void refreshReminder();
-            }}
-            options={AGE_OPTIONS}
-            className="w100"
-            light
           />
         </div>
 
@@ -349,6 +334,21 @@ export function Settings({ open, onClose }: { open: boolean; onClose: () => void
             <Ruler value={s.dailyGoal} min={5} max={120} step={5} onChange={(v) => updateSettings({ dailyGoal: v })} format={(v) => `${v}m`} label="Daily goal" />
           </>
         )}
+        <button
+          className="row"
+          style={{ width: '100%', textAlign: 'left' }}
+          onClick={() => {
+            onClose();
+            setTimeout(() => window.dispatchEvent(new Event('frogity:week-test')), 260);
+          }}
+        >
+          <Icon name="frog" />
+          <div className="grow">
+            <div className="row-label">{tr("Try the full-week moment")}</div>
+            <div className="row-sub">{tr("See what appears after seven full days in a row, and try the icons. Your streak is not changed.")}</div>
+          </div>
+          <Icon name="right" size={18} />
+        </button>
         <button className="row ver-row" style={{ width: '100%', textAlign: 'left' }} onClick={() => setNews(true)}>
           <Icon name="info" />
           <div className="grow">

@@ -23,6 +23,16 @@ export function TypeSheet({ open, onClose, isPdf, mode, onMode, prep, pages, onR
     <Sheet open={open} onClose={onClose} title={tr("Reading")}>
       <FontsSheet open={fonts} onClose={() => setFonts(false)} />
       <div className="sheet-body" style={{ paddingBottom: 12 }}>
+        {/* the page's colours first: what was the light button on the reading bar */}
+        <div className="section-label" style={{ marginTop: 2 }}>{tr("theme")}</div>
+        <div className="themes">
+          {THEMES.map((t) => (
+            <button key={t.id} className={s.readerTheme === t.id ? 'on' : ''} style={{ background: t.bg, color: t.ink }} onClick={() => updateSettings({ readerTheme: t.id })} aria-label={t.name}>
+              {tr("Aa")}
+              <small>{tr(t.name)}</small>
+            </button>
+          ))}
+        </div>
         {isPdf && (
           <>
             <div className="section-label" style={{ marginTop: 4 }}>{tr("view")}</div>
@@ -88,12 +98,6 @@ export function TypeSheet({ open, onClose, isPdf, mode, onMode, prep, pages, onR
               <Toggle on={s.justify} onChange={(v) => updateSettings({ justify: v })} label="Justify" />
             </div>
           </>
-        </div>
-        <div className="section-label">{tr("theme")}</div>
-        <div className="themes">
-          {THEMES.map((t) => (
-            <button key={t.id} className={s.readerTheme === t.id ? 'on' : ''} style={{ background: t.bg, color: t.ink }} onClick={() => updateSettings({ readerTheme: t.id })} aria-label={t.name}>{tr("Aa")}</button>
-          ))}
         </div>
       </div>
     </Sheet>

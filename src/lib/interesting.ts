@@ -119,12 +119,41 @@ export function cleanSummary(t: string): string {
   return s;
 }
 /** one entry per story id, and one card per summary (two stories that came with the same text are one story: their outlets are joined) */
+/**
+ * Shopping and sponsored pieces are not news: deals ("Black Friday de MediaMarkt, en directo: hasta un 50 %"), discount codes,
+ * product round-ups and paid content are left out of the stories, in every language the app reads.
+ */
+const AD_WORDS = new RegExp(
+  [
+    'black friday', 'cyber monday', 'prime day', 'singles day', 'd[ií]a sin iva',
+    // plural "deals" words only (a job offer, a public offering or tax cuts are news), and never followed by work or housing
+    'ofertas(?! (de )?(empleo|trabajo|p[uú]blicas?|vivienda|pisos))', 'chollos?', 'hasta (un )?-?\\d+ ?%', '\\d+ ?% de descuento', 'c[oó]digos? (de )?descuento', 'cupones', 'precio m[ií]nimo hist[oó]rico', 'a mitad de precio', 'mejores? (precios|compras|regalos)', 'qu[eé] comprar',
+    'bons? plans?', 'codes? promo', 'meilleures? affaires',
+    'angebote(?! (f[üu]r|an) (arbeit|jobs?))', 'gutscheine?', 'schn[äa]ppchen',
+    'offerte(?! di lavoro)', 'codice sconto',
+    'promo[cç][oõ]es', 'cupom',
+    'best deals', 'deals? of the day', 'daily deals', 'discount codes?', 'coupon codes?', 'promo codes?', 'buying guide', 'gift guide', 'on sale now',
+    'patrocinad[oa]', 'publirreportaje', 'contenido (de )?marca', 'en colaboraci[oó]n con', 'sponsored', 'paid content', 'partner content', 'branded content', 'contenu sponsoris[ée]', '\\banzeige\\b', 'publi-?redazionale',
+  ].join('|'),
+  'i',
+);
+const AD_LINK = /\/(ofertas|compras|shopping|escaparate|recomendados|promociones|branded|patrocinado|bons-plans|angebote|offerte|deals|coupons|codigos-descuento|cupones)\b/i;
+/** a shop's name with a cut price */
+const SHOPS = /\b(media ?markt|amazon|el corte ingl[eé]s|carrefour|lidl|aldi|ikea|primark|decathlon|pccomponentes|fnac|worten|aliexpress|shein|temu)\b/i;
+export function isAd(s: { title: string; summary?: string; sources?: { url?: string }[] }): boolean {
+  const t = `${s.title} ${s.summary ?? ''}`;
+  if (AD_WORDS.test(s.title)) return true;
+  if ((s.sources ?? []).some((x) => x.url && AD_LINK.test(x.url))) return true;
+  if (SHOPS.test(t) && /(rebaja|descuento|oferta|chollo|discount|deal|promo|-\d+ ?%)/i.test(s.title)) return true;
+  return false;
+}
+
 function tidy(d: Daily): Daily {
   const seen = new Set<string>();
   const bySummary = new Map<string, Story>();
   const news: Story[] = [];
   for (const s0 of d.news) {
-    if (seen.has(s0.id)) continue;
+    if (seen.has(s0.id) || isAd(s0)) continue;
     seen.add(s0.id);
     const s = { ...s0, summary: cleanSummary(s0.summary) };
     const k = s.summary.toLowerCase().slice(0, 120);
@@ -136,7 +165,7 @@ function tidy(d: Daily): Daily {
     bySummary.set(k, s);
     news.push(s);
   }
-  const local = d.local ? Object.fromEntries(Object.entries(d.local).map(([cc, l]) => [cc, l.map((s) => ({ ...s, summary: cleanSummary(s.summary) }))])) : d.local;
+  const local = d.local ? Object.fromEntries(Object.entries(d.local).map(([cc, l]) => [cc, l.filter((s) => !isAd(s)).map((s) => ({ ...s, summary: cleanSummary(s.summary) }))])) : d.local;
   return { ...d, news, local };
 }
 const timed = async (url: string, ms = 9000) => {

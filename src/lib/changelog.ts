@@ -1,4 +1,5 @@
 // What each version brought, shown once after an update (the What's new card) and any time from Settings → Version.
+// Only what a reader would notice: fixes for security, privacy or the app's insides are never listed here.
 // Laid out like a folder of files: each area of the app is a folder, each change a file with one line about it.
 import * as db from './db';
 import { APP_VERSION } from './config';
@@ -14,6 +15,60 @@ export interface Release {
 }
 
 export const RELEASES: Release[] = [
+  {
+    v: '7.7',
+    date: '2026-11-28',
+    areas: [
+      {
+        dir: 'liquid',
+        items: [
+          { file: 'chapters', what: 'New chapters and sections start with space above them, and a break between scenes shows as a short line.' },
+          { file: 'titles', what: 'Only real titles become headings — a line in the middle of a sentence stays in it — and headings are set in your reading font.' },
+          { file: 'paragraphs', what: 'Sentences no longer break in two where the printed page had a wider gap or turned over.' },
+          { file: 'drop-caps', what: 'A large first letter joins its word instead of floating above the paragraph.' },
+          { file: 'printed-lines', what: 'Lines printed as pictures are read as text, so Listen reads them too.' },
+          { file: 'equations', what: 'Equations stay whole: no more cut or repeated pieces.' },
+          { file: 'page-numbers', what: 'Page numbers sit quietly in the margin instead of cutting across the text.' },
+        ],
+      },
+      {
+        dir: 'navigation',
+        items: [{ file: 'sections', what: 'Hold the position bar to see where each chapter starts; hold it still to open the list and jump straight there.' }],
+      },
+      {
+        dir: 'words',
+        items: [
+          { file: 'save', what: 'Highlight and save a word straight from its definition.' },
+          { file: 'pictures', what: 'A word’s pictures are never shown twice.' },
+          { file: 'menu', what: 'The menu over selected text uses clear icons.' },
+        ],
+      },
+      {
+        dir: 'reading',
+        items: [{ file: 'one-button', what: 'Page colours now sit with type and layout under one button, and the reading bar is centred.' }],
+      },
+      {
+        dir: 'shelf',
+        items: [{ file: 'covers', what: 'Covers keep their own shape — tall, square or wide — instead of being cropped.' }],
+      },
+      {
+        dir: 'streak',
+        items: [{ file: 'full-week', what: 'Seven full days in a row now have a moment of their own, with four app icons to choose from: the frog or the kid with a star, on paper or on the gradient.' }],
+      },
+      {
+        dir: 'news',
+        items: [
+          { file: 'no-ads', what: 'Shopping deals and sponsored pieces are left out of the news.' },
+          { file: 'logos', what: 'Local stories show their newspaper’s logo.' },
+          { file: 'elections', what: 'On election day and the week after, the results appear as they are counted.' },
+        ],
+      },
+      {
+        dir: 'updates',
+        items: [{ file: 'picture', what: 'Each update opens with its picture, shown simply, as it is.' }],
+      },
+    ],
+  },
   {
     v: '7.6',
     date: '2026-11-28',
@@ -79,11 +134,14 @@ export const RELEASES: Release[] = [
 
 export const releaseOf = (v: string) => RELEASES.find((r) => r.v === v) ?? RELEASES[0];
 
+/** The reader has this version already (a new install): its card is not shown. */
+export const markVersionSeen = () => db.put('kv', 'app:version', APP_VERSION).catch(() => {});
+
 /** Should the What's new card show now? Once per version, for readers who used an earlier one (a new install just remembers it). */
 export async function shouldShowWhatsNew(onboarded: boolean): Promise<boolean> {
   const seen = await db.get<string>('kv', 'app:version').catch(() => undefined);
   if (seen === APP_VERSION) return false;
   await db.put('kv', 'app:version', APP_VERSION).catch(() => {});
-  // an earlier version that did not remember its number: the reader had finished the welcome steps before this update
-  return onboarded && RELEASES.some((r) => r.v === APP_VERSION);
+  // every update shows it (a version without its own notes shows the latest ones); a new install has nothing to compare with
+  return onboarded;
 }

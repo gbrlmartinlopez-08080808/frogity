@@ -4003,3 +4003,69 @@ button.tcard:active {
   text-align: center;
   color: var(--ink-2);
 }
+/* an election's results as they come in */
+.live-res h5 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.live-res h5 small {
+  font-weight: 400;
+  opacity: 0.6;
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e5484d;
+  animation: liveBlink 1.6s ease-in-out infinite;
+}
+@keyframes liveBlink {
+  50% {
+    opacity: 0.35;
+  }
+}
+.live-res ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.live-res button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 6px 0;
+}
+.lr-name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lr-bar {
+  height: 8px;
+  border-radius: 6px;
+  background: var(--line);
+  overflow: hidden;
+}
+.lr-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--ink);
+}
+.lr-num {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+}
+.lr-num small {
+  opacity: 0.6;
+}

@@ -398,8 +398,9 @@ export async function wiki(term: string, exactOnly = false): Promise<WikiCard | 
     let images: WikiImage[] = [];
     if (page) {
       images = await articleImages(page.title, page.thumbnail?.source, term).catch(() => []);
-      // the lead picture is always allowed, even if the filters above would have dropped it
-      if (page.thumbnail?.source && !images.some((i) => i.src === page!.thumbnail!.source)) {
+      // the lead picture is always allowed, even if the filters above would have dropped it (and never twice: the same file comes
+      // back at another size from the article's picture list)
+      if (page.thumbnail?.source && !images.some((i) => fileKey(i.src) === fileKey(page!.thumbnail!.source))) {
         images.unshift({ src: page.thumbnail.source, title: page.title, w: 640, h: 480 });
         images = images.slice(0, 6);
       }
@@ -410,6 +411,7 @@ export async function wiki(term: string, exactOnly = false): Promise<WikiCard | 
       const have = new Set(images.map((i) => i.title));
       images = [...images, ...more.filter((m) => !have.has(m.title))].slice(0, 5);
     }
+    images = uniqueFiles(images);
     if (!page && !images.length) return null;
     if (!page) {
       return { title: cap, extract: '', html: '', images, url: `https://commons.wikimedia.org/w/index.php?search=${encodeURIComponent(term)}&ns6=1` };
@@ -426,6 +428,28 @@ export async function wiki(term: string, exactOnly = false): Promise<WikiCard | 
     };
   });
 }
+
+/** The file a Wikimedia picture address points at, whatever its size: ".../thumb/a/ab/Heron.jpg/640px-Heron.jpg" → "heron.jpg". */
+export function fileKey(src: string): string {
+  try {
+    const parts = new URL(src).pathname.split('/');
+    const i = parts.indexOf('thumb');
+    const name = i >= 0 ? parts[i + 3] : parts.at(-1);
+    return decodeURIComponent(name ?? src).replace(/^\d+px-/, '').toLowerCase();
+  } catch {
+    return src;
+  }
+}
+/** one of each file, first one kept (the lead picture comes first) */
+export const uniqueFiles = (list: WikiImage[]) => {
+  const seen = new Set<string>();
+  return list.filter((i) => {
+    const k = fileKey(i.src);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+};
 
 /** Is this Wikipedia page really about this word (so its picture belongs on the Define tab)? */
 export function sameSubject(word: string, card: WikiCard | null): boolean {

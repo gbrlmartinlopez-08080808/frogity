@@ -12,12 +12,12 @@
 //  6. Lines are joined into paragraphs (de-hyphenated), with sub/superscripts and italics kept inline.
 
 import { openPdf, openPdfBlob, renderPage, pdfjs, type PDFDocumentProxy, type PDFPageProxy } from './pdf';
-import { slice } from '../ocr';
+import { recognize, slice } from '../ocr';
 import { escapeHtml } from '../sanitize';
 
 export type LBlock =
-  | { t: 'h'; level: number; html: string; page: number }
-  | { t: 'p'; html: string; page: number; cont?: boolean }
+  | { t: 'h'; level: number; html: string; page: number; sec?: boolean }
+  | { t: 'p'; html: string; page: number; cont?: boolean; sec?: boolean }
   | { t: 'li'; html: string; page: number }
   | { t: 'img'; blob: Blob; w: number; h: number; em: number; mask: boolean; kind: 'math' | 'figure' | 'table' | 'line' | 'scan'; page: number; alt?: string; num?: string; ref?: boolean; unread?: boolean }
   | { t: 'page'; page: number }
@@ -54,11 +54,11 @@ type Elem =
   | { k: 'line'; row: Row; col: number }
   | { k: 'img'; x0: number; x1: number; top: number; bot: number; kind: 'figure' | 'table'; col: number };
 
-const MATH_FONT = /(CMMI|CMSY|CMEX|MSAM|MSBM|EUFM|EUSM|EURM|EUEX|RSFS|STIXMath|STIXGeneral|STIXSize|LMMath|LatinModernMath|XITSMath|Cambria\s*Math|CambriaMath|Asana|esint|wasy|stmary|txsy|txmi|pxsy|pxmi|MTSY|MTMI|MathematicalPi|Symbol|TeXGyre\w*Math|NewCMMath|Euclid|rtxmi|zxmi|ntxmi|ntxsy|cmmib|cmbsy)/i;
+const MATH_FONT = /(\w*Math(?!ematica)\w*|CMMI|CMSY|CMEX|MSAM|MSBM|EUFM|EUSM|EURM|EUEX|RSFS|STIXMath|STIXGeneral|STIXSize|LMMath|LatinModernMath|XITSMath|Cambria\s*Math|CambriaMath|Asana|esint|wasy|stmary|txsy|txmi|pxsy|pxmi|MTSY|MTMI|MathematicalPi|Symbol|TeXGyre\w*Math|NewCMMath|Euclid|rtxmi|zxmi|ntxmi|ntxsy|cmmib|cmbsy)/i;
 const BIG_FONT = /(CMEX|EUEX|STIXSize|esint|txex|pxex)/i;
 const BOLD_FONT = /(Bold|CMBX|CMB\d|Black|Heavy|Semibold|SemiBold|Demi|Medi\b|,B\b|-B$|\.B$)/i;
 const ITALIC_FONT = /(Italic|Oblique|CMTI|CMSL|-It\b|-Ital|,I\b)/i;
-const MATH_CHARS = /[∑∏∫∮√∞≤≥≠≈≡∈∉⊂⊃⊆⊇∪∩∀∃∂∇±∓×÷→←↔⇒⇐⇔↦∝∼≃≅⊕⊗⊥∥∠⟨⟩‖αβγδεζηθικλμνξπρστυφχψωΓΔΘΛΞΠΣΥΦΨΩϵϑϕϱ∘·⋅∗†‡ℓℝℕℤℚℂ𝔼]/u;
+const MATH_CHARS = /[∑∏∫∮√∞≤≥≠≈≡∈∉⊂⊃⊆⊇∪∩∀∃∂∇±∓×÷→←↔⇒⇐⇔↦∝∼≃≅⊕⊗⊥∥∠⟨⟩‖αβγδεζηθικλμνξπρστυφχψωΓΔΘΛΞΠΣΥΦΨΩϵϑϕϱ∘·⋅∗†‡ℓℝℕℤℚℂ𝔼\u{1D400}-\u{1D7FF}]/u;
 
 export interface LiquidProgress {
   page: number;
@@ -85,6 +85,8 @@ export async function pdfToLiquid(
   try {
     // Prime body size from a couple of pages so page 1 (title page) does not skew it.
     await primeBodySize(pdf, ctx);
+    let prevEnd: number | undefined;
+    let prevOpen = false;
     for (let i = 1; i <= pdf.numPages; i++) {
       if (signal?.aborted) throw new DOMException('aborted', 'AbortError');
       if (opts.have?.has(i)) {
@@ -93,7 +95,7 @@ export async function pdfToLiquid(
       }
       // one strange page (a broken font, a drawing that never ends) must not stop the book: after a while, or on an
       // error, the page is handed to the reader that works from its picture instead
-      let res: { blocks: LBlock[]; scanned: boolean };
+      let res: { blocks: LBlock[]; scanned: boolean; top?: number; end?: number };
       try {
         const page = await pdf.getPage(i);
         res = await Promise.race([
@@ -106,6 +108,16 @@ export async function pdfToLiquid(
         res = { blocks: [await placeholder(i)], scanned: true };
       }
       if (res.scanned) scanned.push(i);
+      // a new chapter: the page before ended well short of its foot, or this one starts well below its head; its first paragraph or
+      // heading opens a section (space above it, and a place in the book's list of sections)
+      const lead = res.blocks.find((b) => b.t === 'p' || b.t === 'h' || b.t === 'li' || b.t === 'img');
+      // a sentence left open at the foot of the last page goes on here, even when this page starts with a capital ("Lockheed /
+      // Lightning")
+      if (lead && lead.t === 'p' && prevOpen && (prevEnd ?? 0) >= 0.68 && !(res.top !== undefined && res.top > 0.26)) lead.cont = true;
+      if (i > 1 && lead && (lead.t === 'p' || lead.t === 'h') && !(lead.t === 'p' && lead.cont) && ((prevEnd !== undefined && prevEnd < 0.68) || (res.top !== undefined && res.top > 0.26))) lead.sec = true;
+      prevEnd = res.end;
+ const lastText = [...res.blocks].reverse().find((b) => (b.t === 'p' && !/^<small/.test(b.html)) || b.t === 'h' || b.t === 'li' || b.t === 'img');
+      prevOpen = !!lastText && lastText.t === 'p' && !/[.!?:"”»)\]]\s*$/.test(lastText.html.replace(/<[^>]+>/g, ''));
       const blocks: LBlock[] = [{ t: 'page', page: i }, ...res.blocks];
       if (opts.onPage) await opts.onPage(i, blocks, res.scanned);
       else all.push(...blocks);
@@ -163,7 +175,7 @@ const modeOf = (m: Map<number, number>) => {
   return bk;
 };
 
-async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Promise<{ blocks: LBlock[]; scanned: boolean }> {
+async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Promise<{ blocks: LBlock[]; scanned: boolean; top?: number; end?: number }> {
   const vp1 = page.getViewport({ scale: 1 });
   const S = Math.min(3, Math.max(1.6, 1500 / vp1.width));
   const { canvas, viewport } = await renderPage(page, S);
@@ -198,7 +210,7 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
       rotated.push({ x0: tx[4] - fh, x1: tx[4] + fh, top: tx[5] - w, bot: tx[5] + w });
       continue;
     }
-    const math = MATH_FONT.test(family) || (MATH_CHARS.test(raw.str) && raw.str.trim().length <= 3);
+    const math = MATH_FONT.test(family) || (MATH_CHARS.test(raw.str) && raw.str.trim().length <= 3) || /^[\s\u{1D400}-\u{1D7FF}()+\-−=,.0-9]+$/u.test(raw.str) && /[\u{1D400}-\u{1D7FF}]/u.test(raw.str);
     const big = BIG_FONT.test(family);
     // TeX radicals and big operators hang below their baseline.
     const hangs = big || (math && /^[√∑∏∫]$/.test(raw.str.trim()));
@@ -346,7 +358,9 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
   for (const c of comps) {
     const w = c.x1 - c.x0;
     const h = c.bot - c.top;
-    if (h <= C * 2.2 && w > body * 3) rules.push(c);
+    // a line of printed words with no text behind it: kept (as a figure, which is then read), never dropped
+    if (h > body * 0.6 && h <= body * 2.4 && w > body * 6 && c.cells > 20 && textStrip(img, W, c, body)) figures.push(c);
+    else if (h <= C * 2.2 && w > body * 3) rules.push(c);
     else if (w > body * 3.5 && h > body * 2.2 && c.cells > 30) figures.push(c);
     else smalls.push(c);
   }
@@ -436,6 +450,27 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
 
   // ---------- 3. rows & segments ----------
   const flowItems = items.filter((i) => !absorbed.has(i));
+  // A drop cap (a big first letter beside the first two or three lines) belongs to the word next to it, on the first line: left as it
+  // is, it becomes a lone letter (or a heading) above the paragraph.
+  for (const it of flowItems) {
+    const ch = it.str.trim();
+    if (ch.length > 2 || !/^[\p{Lu}“"'¿¡]/u.test(ch) || it.fh < body * 1.7) continue;
+    const beside = flowItems
+      .filter((o) => o !== it && o.fh < body * 1.3 && o.x0 >= it.x1 - body * 0.3 && o.x0 < it.x1 + body * 2.5 && o.base > it.top - body * 0.3 && o.top < it.bot)
+      .sort((a, b) => a.base - b.base || a.x0 - b.x0);
+    const next = beside[0];
+    if (!next) continue;
+    const w = Math.min(it.x1 - it.x0, next.fh * 0.8 * ch.length);
+    it.x1 = next.x0 - 0.2;
+    it.x0 = it.x1 - w;
+    it.fh = next.fh;
+    it.base = next.base;
+    it.top = next.top;
+    it.bot = next.bot;
+    it.bold = next.bold;
+    it.italic = next.italic;
+    it.math = false;
+  }
   const gutter = findGutter(flowItems, W, body);
   const rows = mergeFragments(buildRows(flowItems, body), body);
   const segs: Row[] = [];
@@ -610,14 +645,15 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
   const lineGap = Math.max(0, gaps.length ? gaps[Math.floor(gaps.length / 2)] : body * 0.2);
 
   // Walk ordered elements and assemble blocks.
-  let para: { html: string; lastRow: Row; col: number; li: boolean } | null = null;
+  let para: { html: string; lastRow: Row; col: number; li: boolean; sec?: boolean } | null = null;
+  let pendingSec = false;
   let lastBottom = -Infinity;
   let lastCol = -1;
   const deferred: LBlock[] = [];
   const flushPara = () => {
     if (para) {
       const html = para.html.trim();
-      if (html) blocks.push(para.li ? { t: 'li', html, page: pageNo } : { t: 'p', html, page: pageNo });
+      if (html) blocks.push(para.li ? { t: 'li', html, page: pageNo } : { t: 'p', html, page: pageNo, ...(para.sec ? { sec: true } : {}) });
       para = null;
     }
     if (deferred.length) blocks.push(...deferred.splice(0));
@@ -669,6 +705,27 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
     }
     if (e.k === 'img') {
       const box = { x0: e.x0, x1: e.x1, top: e.top, bot: e.bot };
+      // A strip of printed text with no text layer (a line or two the PDF's text missed) is text: it is read, and goes on with the
+      // paragraph, so nothing is left behind as a picture of words (Listen would skip it, and it looks wrong in a column of text).
+      if (e.kind === 'figure' && textStrip(img, W, box, body)) {
+        const words = await readStrip(canvas, box);
+        if (words) {
+          const prevText = para ? rowText((para as { lastRow: Row }).lastRow).trim() : '';
+          // (a strip tight under the line before is part of the same paragraph)
+          const tight = !!para && e.top - lastBottom < body * 0.7 && e.col === lastCol;
+          const goesOn = !!para && (tight || !/[.!?:"”»)]$/.test(prevText) || /^[\p{Ll}(]/u.test(words));
+          if (goesOn && para) (para as { html: string }).html += (/[A-Za-z]-$/.test((para as { html: string }).html) ? '' : ' ') + escapeHtml(words);
+          else {
+            flushPara();
+            const row: Row = { items: [], x0: e.x0, x1: e.x1, top: e.top, bot: e.bot, base: e.bot, fh: body };
+            para = { html: escapeHtml(words), lastRow: row, col: e.col, li: false };
+          }
+          if (para) (para as { lastRow: Row }).lastRow = { items: [{ str: words, x0: e.x0, x1: e.x1, base: e.bot, top: e.top, bot: e.bot, fh: body, font: '', math: false, bold: false, italic: false, big: false }], x0: e.x0, x1: e.x1, top: e.top, bot: e.bot, base: e.bot, fh: body };
+          lastBottom = e.bot;
+          lastCol = e.col;
+          continue;
+        }
+      }
       const blk = await imgBlock(canvas, box, e.kind, pageNo, body, undefined, proseItems);
       // A figure dropped in mid-sentence waits until the paragraph ends.
       const p = para as { html: string } | null;
@@ -688,12 +745,23 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
       // gather consecutive math rows of the same column that are vertically close
       const group: Row[] = [r];
       let j = i + 1;
+      // the rows of one equation stay together: numerators and denominators set on lines of their own ("4  8", "L"), a left-hand
+      // side ("P_M =") or a row that overlaps the equation are pieces of it, not text between two halves of it (which would
+      // cut the equation into strips and show parts of it twice)
+      const fragment = (row: Row) => {
+        const t = rowText(row).trim();
+        return t.length <= 24 && !t.split(/\s+/).some((w) => /^[A-Za-z]{4,}[.,;:]?$/.test(w) && !/^(sin|cos|tan|log|exp|max|min|lim|sup|inf|det|mod)$/i.test(w));
+      };
       while (j < ordered.length) {
         const n = ordered[j];
-        if (n.k !== 'line' || n.col !== e.col || !isMathRow.has(n.row)) break;
-        const prev = group[group.length - 1];
-        if (n.row.top - prev.bot > body * 1.4) break;
+        if (n.k !== 'line' || n.col !== e.col) break;
+        const bottom = Math.max(...group.map((g) => g.bot));
+        const gapN = n.row.top - bottom;
+        const overlaps = n.row.top < bottom - 2;
+        if (!(isMathRow.has(n.row) || overlaps || (fragment(n.row) && gapN < body * 1.1))) break;
+        if (gapN > body * 1.4) break;
         group.push(n.row);
+        isMathRow.add(n.row);
         j++;
       }
       i = j - 1;
@@ -707,7 +775,8 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
       box.x1 = Math.min(W, box.x1 + pad);
       box.top = Math.max(0, box.top - pad);
       box.bot = Math.min(H, box.bot + pad);
-      const blk = await imgBlock(canvas, box, 'math', pageNo, body, group.map(rowText).join(' '), [...proseItems, ...numItems]);
+      const inGroup = new Set(group.flatMap((g) => g.items));
+      const blk = await imgBlock(canvas, box, 'math', pageNo, body, group.map(rowText).join(' '), [...proseItems.filter((it) => !inGroup.has(it)), ...numItems]);
       if (blk.t === 'img' && numItems.length) blk.num = numItems.map((n) => n.str.trim()).join(' ');
       blocks.push(blk);
       lastBottom = box.bot;
@@ -721,11 +790,30 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
     const gap = r.top - lastBottom;
     const sizeRatio = r.fh / body;
     const allBold = r.items.every((it) => it.bold || !/[A-Za-z]/.test(it.str));
+    // A heading looks like one: it starts with a capital or a number, is short, does not run on (no trailing comma, hyphen or
+    // "the"/"a"/"of"…), and does not sit inside a sentence that is still open. A line set a little larger in the middle of a
+    // paragraph (common in scanned and newspaper PDFs) is text, not a title.
+    const nWords = plain.split(/\s+/).length;
+    const openSentence = !!para && !/[.!?:"”»)]\s*$/.test(rowText((para as { lastRow: Row }).lastRow).trim()) && gap < body * 2.2;
+    const runsOn = /([,;\-–]|\b(the|a|an|of|and|or|to|in|on|at|for|with|by|from|that|which|el|la|los|las|de|del|y|en|un|una|le|les|des|et|du|der|die|das|und)$)/i.test(plain);
+    const titleLike = /^[\p{Lu}0-9§«“"¿¡(]/u.test(plain) && !runsOn && nWords <= 16 && plain.length < 120 && !openSentence;
+    // a short line on its own, centred in the column, after space: "CHAPTER IV", "Part Two", "XII", "* * *"
+    const centred = Math.abs((r.x0 + r.x1) / 2 - (cb.l + cb.r) / 2) < (cb.r - cb.l) * 0.06 && r.x1 - r.x0 < (cb.r - cb.l) * 0.6;
+    const marker = /^((chapter|cap[ií]tulo|chapitre|kapitel|capitolo|part|parte|partie|teil|book|libro|livre|section|secci[oó]n|act|acto|scene|escena|prologue|pr[oó]logo|epilogue|ep[ií]logo|introduction|introducci[oó]n|preface|prefacio|pr[eé]face)\b.{0,40}|[IVXLCDM]{1,7}\.?|\d{1,3}\.?)$/i.test(plain);
     const isHeading =
-      plain.length < 120 &&
-      !/[,;]$/.test(plain) &&
+      titleLike &&
       ((sizeRatio > 1.18 && plain.length > 1) ||
-        (allBold && plain.length < 80 && !/\.$/.test(plain) && (gap > body * 0.5 || lastCol !== e.col) && /^[A-Z0-9§]/.test(plain)));
+        (allBold && plain.length < 80 && !/\.$/.test(plain) && (gap > body * 0.5 || lastCol !== e.col)) ||
+        (marker && (centred || gap > body * 1.2 || sizeRatio > 1.05)) ||
+        (centred && sizeRatio > 1.02 && nWords <= 8 && gap > body * 1.2));
+    // "* * *", "⁂", "~": a break between scenes
+    if (/^([*·•⁂~#◆◇❧§]\s*){1,5}$/.test(plain) && (centred || plain.length <= 5)) {
+      flushPara();
+      pendingSec = true;
+      lastBottom = r.bot;
+      lastCol = e.col;
+      continue;
+    }
     if (isHeading) {
       // merge multi-line headings with same size
       const prevBlock = blocks[blocks.length - 1];
@@ -733,8 +821,10 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
         prevBlock.html += ' ' + text;
       } else {
         flushPara();
-        const level = sizeRatio > 1.6 ? 1 : sizeRatio > 1.3 ? 2 : 3;
-        const hb = { t: 'h' as const, level, html: text, page: pageNo } as LBlock & { _s?: number };
+        const level = sizeRatio > 1.6 || (marker && sizeRatio > 1.25) ? 1 : sizeRatio > 1.3 || marker ? 2 : 3;
+        // a heading is plain type in its own style: the bold and italics of the printed line are not carried over
+        const hb = { t: 'h' as const, level, html: text.replace(/<\/?(b|i)>/g, ''), page: pageNo, sec: pendingSec || gap > body * 2.5 } as LBlock & { _s?: number };
+        pendingSec = false;
         hb._s = sizeRatio;
         blocks.push(hb);
       }
@@ -761,12 +851,19 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
         else if (prevShort && /[.!?:"”)]$/.test(prevText)) newPara = true;
         else if (gap > lineGap * 2.5 + body * 0.2) newPara = true;
         else if (Math.abs(r.fh - prev.fh) > body * 0.2) newPara = true;
+        // ...but a sentence that has not ended goes on: a wider gap or a slightly different size inside a sentence is how the page
+        // was set, not a new paragraph ("hundreds of pieces of a wrecked Lockheed / Lightning, found on the seabed")
+        const open = !/[.!?:"”»)\]]$/.test(prevText) || /[,;\-–]$/.test(prevText);
+        if (newPara && open && !bullet && gap < body * 2.6 && !indented) newPara = false;
       }
       if (bullet) newPara = true;
     }
     if (newPara) {
       flushPara();
-      para = { html: text, lastRow: r, col: e.col, li: bullet };
+      // a wide empty band before a paragraph is a break between sections (or scenes)
+      if (lastBottom > -Infinity && gap > Math.max(body * 2.6, lineGap * 6) && e.col === lastCol) pendingSec = true;
+      para = { html: text, lastRow: r, col: e.col, li: bullet, sec: pendingSec };
+      pendingSec = false;
     } else if (para) {
       // de-hyphenate
       if (/[A-Za-z]-$/.test(para.html) && /^[a-z]/.test(plain)) para.html = para.html.slice(0, -1) + text;
@@ -790,7 +887,11 @@ async function processPage(page: PDFPageProxy, pageNo: number, ctx: DocCtx): Pro
   const first = blocks.find((b) => b.t === 'p' || b.t === 'h' || b.t === 'img' || b.t === 'li');
   if (first && first.t === 'p' && /^[a-z(]/.test(first.html.replace(/<[^>]+>/g, ''))) first.cont = true;
 
-  return { blocks, scanned: false };
+  // where the text starts and ends on the page (a chapter often starts low on a fresh page, after a page that ended early)
+  const textRows = lineElems.filter((e) => !footRows.has(e.row)).map((e) => e.row);
+  const top = textRows.length ? Math.min(...textRows.map((r) => r.top)) / H : undefined;
+  const end = textRows.length ? Math.max(...textRows.map((r) => r.bot)) / H : undefined;
+  return { blocks, scanned: false, top, end };
 }
 
 // ---------- helpers ----------
@@ -924,6 +1025,87 @@ function looksLikeWriting(px: Uint8ClampedArray, W: number, b: Box): boolean {
     return best >= 2;
   };
   return runs.filter(lettered).length >= runs.length * 0.7;
+}
+
+/** A band of one to five lines of printed letters (not a drawing, a photo or a table): text without a text layer. */
+function textStrip(px: Uint8ClampedArray, W: number, b: Box, body: number): boolean {
+  const x0 = Math.max(0, Math.floor(b.x0));
+  const x1 = Math.min(W, Math.ceil(b.x1));
+  const y0 = Math.max(0, Math.floor(b.top));
+  const y1 = Math.ceil(b.bot);
+  const w = x1 - x0;
+  const h = y1 - y0;
+  if (w < body * 6 || h > body * 7.5 || h < body * 0.6) return false;
+  const rows: number[] = [];
+  let dark = 0;
+  let mid = 0;
+  let n = 0;
+  for (let y = y0; y < y1; y++) {
+    let k = 0;
+    for (let x = x0, p = (y * W + x0) * 4; x < x1; x += 2, p += 8) {
+      const v = (px[p] * 3 + px[p + 1] * 6 + px[p + 2]) / 10;
+      n++;
+      if (v < 140) k++, dark++;
+      else if (v < 215) mid++;
+    }
+    rows.push(k / Math.ceil(w / 2));
+  }
+  if (mid > n * 0.2 || dark > n * 0.35 || dark < n * 0.015) return false;
+  const runs: { a: number; b: number }[] = [];
+  let st = -1;
+  for (let y = 0; y <= rows.length; y++) {
+    const on = y < rows.length && rows[y] > 0.004;
+    if (on && st < 0) st = y;
+    else if (!on && st >= 0) {
+      if (y - st >= 2) runs.push({ a: st, b: y });
+      st = -1;
+    }
+  }
+  if (!runs.length || runs.length > 6) return false;
+  if (!runs.every((r) => r.b - r.a > body * 0.35 && r.b - r.a < body * 2.2)) return false;
+  // each line is many small marks side by side (letters), not long strokes (rules, axes, borders)
+  return runs.every((r) => {
+    const y = y0 + r.a + Math.floor((r.b - r.a) * 0.55);
+    let marks = 0;
+    let run = 0;
+    let longest = 0;
+    let was = false;
+    for (let x = x0, p = (y * W + x0) * 4; x < x1; x++, p += 4) {
+      const ink = (px[p] * 3 + px[p + 1] * 6 + px[p + 2]) / 10 < 160;
+      if (ink) {
+        if (!was) marks++;
+        run++;
+        if (run > longest) longest = run;
+      } else run = 0;
+      was = ink;
+    }
+    return marks >= Math.max(8, w / (body * 1.2)) && longest < body * 1.6;
+  });
+}
+
+/** Reads a strip of printed text from the rendered page (enlarged for the reader); empty when it is not confident words. */
+async function readStrip(canvas: HTMLCanvasElement, b: Box): Promise<string> {
+  try {
+    const pad = 4;
+    const x = Math.max(0, Math.floor(b.x0 - pad));
+    const y = Math.max(0, Math.floor(b.top - pad));
+    const w = Math.min(canvas.width - x, Math.ceil(b.x1 - b.x0 + pad * 2));
+    const h = Math.min(canvas.height - y, Math.ceil(b.bot - b.top + pad * 2));
+    const k = Math.min(2, 2400 / Math.max(1, w));
+    const c = document.createElement('canvas');
+    c.width = Math.round(w * k);
+    c.height = Math.round(h * k);
+    const cx = c.getContext('2d')!;
+    cx.imageSmoothingQuality = 'high';
+    cx.drawImage(canvas, x, y, w, h, 0, 0, c.width, c.height);
+    const r = await recognize(c, undefined, 6, 20_000);
+    // (a capital I at the start of a line is often read as a bracket or a bar)
+    const text = r.text.replace(/\s+/g, ' ').replace(/(\w)- (\w)/g, '$1$2').trim().replace(/^[[|l1]\s(?=\p{Ll})/u, 'I ');
+    const letters = (text.match(/\p{L}/gu) ?? []).length;
+    return r.confidence >= 60 && letters >= 6 && letters >= text.length * 0.55 ? text : '';
+  } catch {
+    return '';
+  }
 }
 
 interface Box {
@@ -1351,10 +1533,10 @@ export function blocksToHtml(blocks: LBlock[], urls: string[]): string {
         html += `<span class="pg" id="page-${b.page}" data-page="${b.page}"></span>`;
         break;
       case 'h':
-        html += `<h${b.level + 1} id="h-${hi++}" data-page="${b.page}">${b.html}</h${b.level + 1}>`;
+        html += `<h${b.level + 1} id="h-${hi++}" data-page="${b.page}"${b.sec ? ' class="sec"' : ''}>${b.html}</h${b.level + 1}>`;
         break;
       case 'p':
-        html += `<p data-page="${b.page}"${b.cont ? ' class="cont"' : ''}>${b.html}</p>`;
+        html += `<p data-page="${b.page}"${b.cont ? ' class="cont"' : b.sec ? ' class="sec"' : ''}>${b.html}</p>`;
         break;
       case 'li':
         html += `<p class="li" data-page="${b.page}">${b.html}</p>`;
