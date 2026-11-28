@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-28T08:07:25.790Z",
+ "built": "2026-11-28T17:00:45.967Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -1578,7 +1578,7 @@
    "k": "election",
    "t": "Spanish general election",
    "w": "Spain",
-   "a": "2027-05-23",
+   "a": "2026-11-29",
    "cc": [
     "es"
    ],
@@ -2015,6 +2015,21 @@
   },
   {
    "k": "election",
+   "t": "Bosnian general election",
+   "w": "Bosnia and Herzegovina",
+   "a": "2026-10-04",
+   "cc": [
+    "ba"
+   ],
+   "icon": {
+    "cc": "ba"
+   },
+   "level": "national",
+   "wiki": "2026 Bosnian general election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "first round of Brazilian presidential election, 2026",
    "w": "Brazil",
    "a": "2026-10-04",
@@ -2042,21 +2057,6 @@
    },
    "level": "national",
    "wiki": "2026 Brazilian general election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Bosnian general election",
-   "w": "Bosnia and Herzegovina",
-   "a": "2026-10-04",
-   "cc": [
-    "ba"
-   ],
-   "icon": {
-    "cc": "ba"
-   },
-   "level": "national",
-   "wiki": "2026 Bosnian general election",
    "auto": true
   },
   {
@@ -2413,38 +2413,6 @@
   },
   {
    "k": "election",
-   "t": "Maltese general election",
-   "w": "Malta",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "mt"
-   ],
-   "icon": {
-    "cc": "mt"
-   },
-   "level": "national",
-   "wiki": "2027 Maltese general election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Gambian parliamentary election",
-   "w": "The Gambia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "gm"
-   ],
-   "icon": {
-    "cc": "gm"
-   },
-   "level": "national",
-   "wiki": "2027 Gambian parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Angolan parliamentary election",
    "w": "Angola",
    "a": "2027-01-01",
@@ -2525,6 +2493,22 @@
   },
   {
    "k": "election",
+   "t": "Maltese general election",
+   "w": "Malta",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "mt"
+   ],
+   "icon": {
+    "cc": "mt"
+   },
+   "level": "national",
+   "wiki": "2027 Maltese general election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Barbadian parliamentary election",
    "w": "Barbados",
    "a": "2027-01-01",
@@ -2569,6 +2553,22 @@
    },
    "level": "national",
    "wiki": "2027 Mongolian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Gambian parliamentary election",
+   "w": "The Gambia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "gm"
+   ],
+   "icon": {
+    "cc": "gm"
+   },
+   "level": "national",
+   "wiki": "2027 Gambian parliamentary election",
    "auto": true
   },
   {
@@ -2835,6 +2835,51 @@
   },
   {
    "k": "election",
+   "t": "Madrilenian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Madrilenian regional election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Cantabrian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Cantabrian regional election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Valencian regional election",
+   "w": "Spain",
+   "a": "2027-05-23",
+   "cc": [
+    "es"
+   ],
+   "icon": {
+    "cc": "es"
+   },
+   "level": "regional",
+   "wiki": "Valencian regional election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Sarawak state election",
    "w": "Malaysia",
    "a": "2027-06-16",
@@ -2985,21 +3030,6 @@
   },
   {
    "k": "election",
-   "t": "Malagasy presidential election",
-   "w": "Madagascar",
-   "a": "2027-11-01",
-   "cc": [
-    "mg"
-   ],
-   "icon": {
-    "cc": "mg"
-   },
-   "level": "national",
-   "wiki": "2027 Malagasy presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Nicaraguan general election",
    "w": "Nicaragua",
    "a": "2027-11-01",
@@ -3011,6 +3041,21 @@
    },
    "level": "national",
    "wiki": "2027 Nicaraguan general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Malagasy presidential election",
+   "w": "Madagascar",
+   "a": "2027-11-01",
+   "cc": [
+    "mg"
+   ],
+   "icon": {
+    "cc": "mg"
+   },
+   "level": "national",
+   "wiki": "2027 Malagasy presidential election",
    "auto": true
   },
   {
@@ -3437,22 +3482,6 @@
   },
   {
    "k": "election",
-   "t": "Indian general election",
-   "w": "India",
-   "a": "2029-01-01",
-   "when": "2029",
-   "cc": [
-    "in"
-   ],
-   "icon": {
-    "cc": "in"
-   },
-   "level": "national",
-   "wiki": "Indian general election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Turkmenistan presidential election",
    "w": "Turkmenistan",
    "a": "2029-01-01",
@@ -3481,6 +3510,22 @@
    },
    "level": "national",
    "wiki": "2029 Equatorial Guinean presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Indian general election",
+   "w": "India",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "in"
+   ],
+   "icon": {
+    "cc": "in"
+   },
+   "level": "national",
+   "wiki": "Indian general election",
    "auto": true
   },
   {
