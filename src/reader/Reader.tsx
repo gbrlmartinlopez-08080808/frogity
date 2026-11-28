@@ -23,7 +23,7 @@ import { ListenBar } from './ListenBar';
 import { ContentsSheet, MoreSheet, THEMES, TypeSheet, type MoreAction } from './sheets';
 import { BinaryView, CodeView, ImageView, MediaView, SheetView } from './OtherViews';
 import { kindOf, OPEN_SAVE_EVENT, SavesIntro, savesChanged } from '../screens/Saved';
-import { anchorFromSelection, applyHighlights, clearMarks, findAll, wordAt, wrapSentences } from './dom';
+import { anchorFromSelection, applyHighlights, clearMarks, findAll, locateHighlights, selectionSpan, spanText, wordAt, wrapSentences } from './dom';
 import { AskSheet } from './Ask';
 import { EndNote, useEndPull } from './EndPull';
 import { flowKids, windowFlow, windowMoved, type Windowed } from './windowing';
@@ -79,6 +79,14 @@ function friendlyError(e: string, kind: string): string {
 
 const READY_PREP = { known: true, ready: true, none: false, progress: 1, busy: false, info: '', eta: 0, error: undefined } as unknown as Prep;
 
+/** a title squeezed for comparing: no case, accents, spaces or punctuation ("1.1 Topologische Räume" ~ "1.1  topologische raume") */
+const squashTitle = (t: string) =>
+  t
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '');
+
 export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; onClose: () => void; onConvert: (doc: DocMeta, root?: HTMLElement | null) => void; onOpenDoc?: (id: string) => void }) {
   const id = doc.id;
   const settings = useStore((s) => s.settings);
@@ -107,6 +115,8 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
   const [listenFrom, setListenFrom] = useState<number | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [hlMenu, setHlMenu] = useState<{ id: string; rect: DOMRect; text: string } | null>(null);
+  /** the highlight the selected words lie in (its button then takes the highlight away instead of adding another) */
+  const [selHl, setSelHl] = useState<string | null>(null);
   const highlightsRef = useRef(highlights);
   highlightsRef.current = highlights;
   const [savesIntro, setSavesIntro] = useState(false);
@@ -517,21 +527,57 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     bookLang(root);
     if (isPdf) {
       restoreLiquidPage(root);
-      // Use liquid headings when the PDF has no outline
-      // the book's own parts when the PDF has no outline: its headings, and the sections that open without one (a new chapter on a
-      // fresh page, a break between scenes), named by their first words
+      // the book's parts. With the PDF's own outline, each entry goes to its title in the text (not just to the top of its page);
+      // without one, the titles found in the text — and, only when it has almost none, the sections that open without a title (a new
+      // chapter on a fresh page, a break between scenes), named by their first words. A list of contents is never a source of parts.
+      const titles = Array.from(root.querySelectorAll<HTMLElement>('h2,h3,h4,h5')).filter((h) => !h.classList.contains('toc-h') && (h.textContent ?? '').trim().length > 0 && (h.textContent ?? '').length < 160);
+      const headingFor = (title: string, page?: number) => {
+        const n = squashTitle(title);
+        if (!n) return null;
+        // (an outline may leave out the number the page gives the title: "Baz" is "3 Baz", "Introduction" is "1. Introduction")
+        const bare = (t: string) => squashTitle(t.replace(/^\s*(chapter|cap[ií]tulo|chapitre|kapitel|part|parte|teil)?\s*(\d+(\.\d+)*|[IVXLC]+)\.?\s+/i, ''));
+        const same = (h: HTMLElement) => {
+          const m = squashTitle(h.textContent ?? '');
+          if (!m) return false;
+          if (m === n || (Math.min(m.length, n.length) > 3 && (m.startsWith(n) || n.startsWith(m)))) return true;
+          const a = bare(h.textContent ?? '');
+          const b = bare(title);
+          return a.length > 2 && a === b;
+        };
+        const near = page ? titles.filter((h) => (Number(h.dataset.page) || 0) >= page - 1 && (Number(h.dataset.page) || 0) <= page + 2) : [];
+        // the first title on or after the outline's page that matches (the same title can come back in another chapter)
+        const pick = near.filter(same).sort((a, b) => Math.abs((Number(a.dataset.page) || 0) - (page ?? 0)) - Math.abs((Number(b.dataset.page) || 0) - (page ?? 0)));
+        return pick[0] ?? (page ? null : titles.find(same) ?? null);
+      };
       setToc((t) => {
-        if (t.length) return t;
-        let n = 0;
-        return Array.from(root.querySelectorAll<HTMLElement>('h2,h3,h4,p.sec'))
-          .filter((h) => (h.textContent ?? '').trim().length > 0 && (h.textContent ?? '').length < (h.tagName === 'P' ? 100000 : 100))
-          .map((h) => {
-            if (!h.id) h.id = `sec-${n++}`;
-            const text = (h.textContent ?? '').trim().replace(/\s+/g, ' ');
-            const title = h.tagName === 'P' ? text.split(' ').slice(0, 7).join(' ') + '…' : text;
-            return { title, anchor: h.id, level: h.tagName === 'P' ? 2 : Number(h.tagName[1]) - 1, page: Number(h.dataset.page) || undefined };
+        if (t.length) {
+          let changed = false;
+          const out = t.map((x) => {
+            const h = headingFor(x.title, x.page);
+            if (!h || x.anchor === h.id) return x;
+            changed = true;
+            return { ...x, anchor: h.id };
           });
+          return changed ? out : t;
+        }
+        let n = 0;
+        const parts = titles.length >= 3 ? titles : Array.from(root.querySelectorAll<HTMLElement>('h2,h3,h4,h5,p.sec')).filter((h) => !h.classList.contains('toc-h') && (h.textContent ?? '').trim().length > 0 && (h.tagName === 'P' || (h.textContent ?? '').length < 160));
+        return parts.map((h) => {
+          if (!h.id) h.id = `sec-${n++}`;
+          const text = (h.textContent ?? '').trim().replace(/\s+/g, ' ');
+          const title = h.tagName === 'P' ? text.split(' ').slice(0, 7).join(' ') + '…' : text;
+          return { title, anchor: h.id, level: h.tagName === 'P' ? 2 : Number(h.tagName[1]) - 1, page: Number(h.dataset.page) || undefined };
+        });
       });
+      // the book's own list of contents: each entry leads to its chapter
+      for (const e of Array.from(root.querySelectorAll<HTMLElement>('p.toc'))) {
+        const title = Array.from(e.childNodes)
+          .filter((c) => !(c instanceof HTMLElement && c.classList.contains('tocn')))
+          .map((c) => c.textContent ?? '')
+          .join('');
+        const h = headingFor(title);
+        if (h) e.dataset.go = h.id;
+      }
     }
     setFlowReady((n) => n + 1);
   };
@@ -793,6 +839,11 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       if (!scroller.contains(r.commonAncestorContainer)) return setSelRect(null);
       const b = r.getBoundingClientRect();
       if (!b.width && !b.height) return;
+      // (by position in the text, not by element: a selection can begin at the very edge of a highlight, just outside its mark)
+      const root = flowRef.current;
+      const span = root && highlightsRef.current.length ? selectionSpan(root, sel) : null;
+      const inHl = span ? locateHighlights(root!, highlightsRef.current).find((p) => p.s <= span.s && p.e >= span.e) : undefined;
+      setSelHl(inHl?.id ?? null);
       setSelRect((old) => (old && Math.abs(old.top - b.top) < 1 && Math.abs(old.left - b.left) < 1 && Math.abs(old.width - b.width) < 1 ? old : b));
     };
     // wait for the selection (and its drag handles) to settle before showing the menu
@@ -948,6 +999,16 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
       setHlMenu({ id: mk.dataset.id, rect: parts[0].getBoundingClientRect(), text: parts.map((p) => p.textContent ?? '').join('') });
       return;
     }
+    // an entry of the book's own list of contents: straight to that chapter
+    const entry = target.closest<HTMLElement>('p.toc[data-go]');
+    if (entry?.dataset.go) {
+      const h = flowRef.current?.querySelector<HTMLElement>(`#${CSS.escape(entry.dataset.go)}`);
+      if (h) {
+        tap('select');
+        showEl(h);
+        return;
+      }
+    }
     if (target.closest('a')) {
       const a = target.closest('a')!;
       const href = a.getAttribute('href') ?? '';
@@ -992,17 +1053,34 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
 
   // the words a lookup was opened for, so the word sheet can highlight them too
   const lookupAnchor = useRef<ReturnType<typeof anchorFromSelection>>(null);
+  /** Highlights the selected words (or the words a lookup was opened for). Words already highlighted are not highlighted again; a
+   * selection that overlaps highlights joins them into one, so a passage is only ever marked once (and removed with one tap). */
   const addHighlight = async (given?: ReturnType<typeof anchorFromSelection>) => {
     const root = flowRef.current;
     const sel = window.getSelection();
     if (!root || (!given && !sel)) return;
-    const a = given ?? anchorFromSelection(root, sel!);
+    let span = given ? locateHighlights(root, [{ id: '_', text: given.text, prefix: given.prefix }])[0] ?? null : selectionSpan(root, sel!);
+    if (!span) return;
+    const placed = locateHighlights(root, highlightsRef.current);
+    if (placed.some((p) => p.s <= span!.s && p.e >= span!.e)) {
+      clearSel();
+      return void toast(tr('Already highlighted'));
+    }
+    const touching = placed.filter((p) => p.s <= span!.e && p.e >= span!.s);
+    span = { s: Math.min(span.s, ...touching.map((p) => p.s)), e: Math.max(span.e, ...touching.map((p) => p.e)) };
+    let a = spanText(root, span.s, span.e);
     if (!a) return;
-    if (given && highlightsRef.current.some((h) => h.prefix === a.prefix && h.text === a.text)) return void toast(tr('Already saved'));
-    const h: Highlight = { id: db.uid(), docId: id, text: a.text, prefix: a.prefix, at: Date.now(), progress, lang: flowRef.current?.dataset.lang };
+    // (no stray spaces at either end)
+    const lead = a.text.length - a.text.trimStart().length;
+    const tail = a.text.length - a.text.trimEnd().length;
+    if (lead || tail) a = spanText(root, span.s + lead, span.e - tail);
+    if (!a || !a.text.trim()) return;
+    const old = highlightsRef.current.filter((h) => touching.some((t) => t.id === h.id));
+    await Promise.all(old.map((o) => db.del('marks', `${id}:h:${o.id}`)));
+    const h: Highlight = { id: db.uid(), docId: id, text: a.text, prefix: a.prefix, at: old.length ? Math.min(...old.map((o) => o.at)) : Date.now(), progress, lang: flowRef.current?.dataset.lang };
     await db.put('marks', `${id}:h:${h.id}`, h);
     clearSel();
-    setHighlights((l) => [...l, h]);
+    setHighlights((l) => [...l.filter((x) => !old.some((o) => o.id === x.id)), h]);
     tap();
     savesChanged();
     // every highlight is also a save; the first one ever says where they all go
@@ -1010,8 +1088,60 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
     if (!seen) {
       db.put('kv', 'saves:intro', true).catch(() => {});
       setSavesIntro(true);
-    } else toast(tr(kindOf(a.text) === 'word' ? 'Saved · see all your saves' : 'Highlighted and saved · see all'), undefined, () => window.dispatchEvent(new Event('frogity:show-saves')));
+    } else if (old.length) toast(tr('Joined with your highlight'));
+    else toast(tr(kindOf(a.text) === 'word' ? 'Saved · see all your saves' : 'Highlighted and saved · see all'), undefined, () => window.dispatchEvent(new Event('frogity:show-saves')));
   };
+  /** Takes a highlight away (with Undo). */
+  const removeHighlight = async (hid: string) => {
+    const gone = highlightsRef.current.find((h) => h.id === hid);
+    if (!gone) return;
+    await db.del('marks', `${id}:h:${hid}`);
+    setHighlights((l) => l.filter((x) => x.id !== hid));
+    savesChanged();
+    tap('light');
+    toast(tr('Highlight removed · Undo'), undefined, () => {
+      // (only if nothing has been highlighted over the same words since)
+      const root = flowRef.current;
+      if (highlightsRef.current.some((h) => h.id === gone.id)) return;
+      if (root) {
+        const [g] = locateHighlights(root, [gone]);
+        if (g && locateHighlights(root, highlightsRef.current).some((p) => p.s < g.e && p.e > g.s)) return;
+      }
+      void db.put('marks', `${id}:h:${gone.id}`, gone).then(() => {
+        setHighlights((l) => (l.some((x) => x.id === gone.id) ? l : [...l, gone]));
+        savesChanged();
+      });
+    });
+  };
+  // highlights saved twice over the same words (by earlier versions) become one, once, when the book opens
+  const tidiedHl = useRef(false);
+  useEffect(() => {
+    const root = flowRef.current;
+    if (!root || !flowReady || tidiedHl.current || highlights.length < 2) return;
+    tidiedHl.current = true;
+    const placed = locateHighlights(root, highlights).sort((a, b) => a.s - b.s || b.e - a.e);
+    const drop: string[] = [];
+    let keep = placed[0];
+    for (const p of placed.slice(1)) {
+      if (keep && p.s < keep.e) {
+        // the later one goes when it lies inside the first; overlapping ones are joined into the first
+        if (p.e > keep.e) {
+          const a = spanText(root, keep.s, p.e);
+          const k = highlights.find((h) => h.id === keep.id);
+          if (a && k) {
+            const merged = { ...k, text: a.text, prefix: a.prefix };
+            void db.put('marks', `${id}:h:${k.id}`, merged);
+            setHighlights((l) => l.map((x) => (x.id === k.id ? merged : x)));
+          }
+          keep = { ...keep, e: p.e };
+        }
+        drop.push(p.id);
+      } else keep = p;
+    }
+    if (!drop.length) return;
+    void Promise.all(drop.map((d) => db.del('marks', `${id}:h:${d}`))).then(savesChanged);
+    setHighlights((l) => l.filter((x) => !drop.includes(x.id)));
+  }, [flowReady, highlights]); // eslint-disable-line react-hooks/exhaustive-deps
   // opened from Saved: go to that passage once the text is there
   useEffect(() => {
     if (!flowReady) return;
@@ -1693,22 +1823,10 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
           navigator.clipboard?.writeText(hlMenu?.text ?? '').then(() => toast(tr('Copied')), () => {});
           setHlMenu(null);
         }}
-        onRemove={async () => {
+        onRemove={() => {
           const hid = hlMenu?.id;
           setHlMenu(null);
-          if (!hid) return;
-          const gone = highlightsRef.current.find((h) => h.id === hid);
-          await db.del('marks', `${id}:h:${hid}`);
-          setHighlights((l) => l.filter((x) => x.id !== hid));
-          savesChanged();
-          tap('light');
-          toast(tr('Highlight removed · Undo'), undefined, () => {
-            if (!gone) return;
-            void db.put('marks', `${id}:h:${gone.id}`, gone).then(() => {
-              setHighlights((l) => [...l, gone]);
-              savesChanged();
-            });
-          });
+          if (hid) void removeHighlight(hid);
         }}
       />
       <SelectionMenu
@@ -1720,7 +1838,8 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
           clearSel();
           setLookup(w);
         }}
-        onHighlight={liquid ? () => void addHighlight() : undefined}
+        onHighlight={liquid ? () => (selHl ? (clearSel(), void removeHighlight(selHl)) : void addHighlight()) : undefined}
+        highlighted={!!selHl}
         onListen={liquid && (!isPdf || liq.ready) ? listenFromSelection : undefined}
         onAsk={() => {
           setAskSel(selectionText().slice(0, 1500));
@@ -1753,8 +1872,8 @@ export function Reader({ doc, onClose, onConvert, onOpenDoc }: { doc: DocMeta; o
         }}
         onGo={(t) => {
           setSheet(null);
-          if (t.page && isPdf) goProgress(0, t.page);
-          else if (t.anchor) showEl(flowRef.current?.querySelector(`#${CSS.escape(t.anchor)}`));
+          // (in Liquid, to the chapter's own title — a chapter often starts part-way down its page)
+          goSection(t);
         }}
         onGoMark={(b) => {
           setSheet(null);

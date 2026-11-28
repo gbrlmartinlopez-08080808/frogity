@@ -16,6 +16,31 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    v: '8.0.1',
+    date: '2026-11-28',
+    areas: [
+      {
+        dir: 'highlights',
+        items: [{ file: 'once', what: 'Words are highlighted once. Select them again and the button takes the highlight away; highlight across one and the two become one.' }],
+      },
+      {
+        dir: 'liquid',
+        items: [
+          { file: 'columns', what: 'Pages in two or three columns read in order, column by column, with the notes at the foot gathered after the text.' },
+          { file: 'titles', what: 'Only real titles become titles: bold openings, captions, chart labels and quotations stay as text, and titles set over two lines stay whole.' },
+          { file: 'contents', what: 'A book’s own list of contents stays a list, and tapping an entry opens that chapter.' },
+          { file: 'tables', what: 'Tables are kept whole, with their column titles.' },
+          { file: 'code', what: 'Program code keeps its lines; typewritten pages read as text, without their line numbers.' },
+          { file: 'symbols', what: 'Signs like ≠ and ∉ read as they are printed.' },
+        ],
+      },
+      {
+        dir: 'navigation',
+        items: [{ file: 'chapters', what: 'Contents and the position bar go to each chapter’s own title, not just the top of its page.' }],
+      },
+    ],
+  },
+  {
     v: '8.0.0',
     date: '2026-11-27',
     areas: [

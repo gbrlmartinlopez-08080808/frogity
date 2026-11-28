@@ -249,10 +249,13 @@ export function SelectionMenu({
   onAsk,
   onCopy,
   onShare,
+  highlighted = false,
 }: {
   rect: DOMRect | null;
   onDefine: () => void;
   onHighlight?: () => void;
+  /** the words are highlighted already: the button takes the highlight away */
+  highlighted?: boolean;
   onListen?: () => void;
   onAsk?: () => void;
   onCopy: () => void;
@@ -275,8 +278,8 @@ export function SelectionMenu({
       {/* "Define" stays a word (no icon says it as clearly); the rest are icons that read at a glance */}
       <button className="sm-word" onClick={onDefine}>{tr("Define")}</button>
       {onHighlight && (
-        <button className="sm-hl" onClick={onHighlight} aria-label={tr("Highlight and save")} title={tr("Highlight and save")}>
-          <SaveMarkIcon />
+        <button className={`sm-hl${highlighted ? ' on' : ''}`} onClick={onHighlight} aria-label={tr(highlighted ? 'Remove highlight' : 'Highlight and save')} title={tr(highlighted ? 'Remove highlight' : 'Highlight and save')}>
+          <SaveMarkIcon off={highlighted} />
         </button>
       )}
       {onListen && (

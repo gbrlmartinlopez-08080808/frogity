@@ -290,6 +290,57 @@
 .flow p.cont {
   margin-top: -0.85em;
 }
+/* a figure's or table's caption: small, set apart from the text, never read as part of it */
+.flow p.cap {
+  font-size: 0.82em;
+  line-height: 1.45;
+  color: var(--r-ink-2, inherit);
+  opacity: 0.86;
+  text-align: left;
+  text-indent: 0;
+  hyphens: manual;
+  margin: -0.3em 0 1.4em;
+}
+/* program code: its own lines and indentation, in a typewriter face, scrolling sideways when wide */
+.flow p.code {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.78em;
+  line-height: 1.55;
+  text-align: left;
+  text-indent: 0;
+  hyphens: none;
+  white-space: nowrap;
+  overflow-x: auto;
+  padding: 0.7em 0.9em;
+  border-radius: 8px;
+  background: var(--r-line, rgba(127, 127, 127, 0.1));
+  margin: 0.4em 0 1.2em;
+}
+/* a book's own list of contents: one entry a line, the page number set apart at the right */
+.flow p.toc {
+  display: flex;
+  gap: 0.8em;
+  justify-content: space-between;
+  align-items: baseline;
+  text-align: left;
+  text-indent: 0;
+  hyphens: manual;
+  margin: 0 0 0.45em;
+  padding-left: calc(var(--l, 0) * 1.1em);
+  line-height: 1.35;
+}
+.flow p.toc .tocn {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.55;
+  font-size: 0.88em;
+}
+.flow p.toc[data-go] {
+  cursor: pointer;
+}
+.flow p.toc[data-go]:active {
+  opacity: 0.6;
+}
 .flow p.li {
   padding-left: 1.2em;
   text-indent: -1.2em;
@@ -309,6 +360,15 @@
   hyphens: manual;
   text-wrap: balance;
   margin: 1.9em 0 0.75em;
+}
+/* a part jumped to from the contents lands just below the reader's top bar, not under it */
+.flow h1,
+.flow h2,
+.flow h3,
+.flow h4,
+.flow h5,
+.flow p.sec {
+  scroll-margin-top: 64px;
 }
 /* a new chapter or section: clear space above, so a new part never runs straight on from the last */
 .flow h1.sec,

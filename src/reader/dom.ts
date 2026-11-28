@@ -280,25 +280,85 @@ export function anchorFromSelection(root: HTMLElement, sel: Selection) {
   return { text, prefix: before.slice(-40) };
 }
 
-export function applyHighlights(root: HTMLElement, list: { id: string; text: string; prefix: string }[]) {
-  clearMarks(root, 'hl');
-  if (!list.length) return;
-  const idx = textIndex(root);
+/** Where each highlight sits in the column's text (start and end offsets). The words are matched with their prefix first, then on
+ * their own; spaces and line breaks are not counted, so a passage that runs over two paragraphs is found too. */
+export function locateHighlights(root: HTMLElement, list: { id: string; text: string; prefix: string }[], idx = textIndex(root)) {
+  // the text without its spaces, and where each of its letters sits in the full text
+  const map: number[] = [];
+  let compact = '';
+  for (let i = 0; i < idx.text.length; i++)
+    if (!/\s/.test(idx.text[i])) {
+      compact += idx.text[i];
+      map.push(i);
+    }
+  const squash = (t: string) => t.replace(/\s+/g, '');
   const found: { id: string; s: number; e: number }[] = [];
   for (const h of list) {
     let at = idx.text.indexOf(h.prefix + h.text);
     let s = at >= 0 ? at + h.prefix.length : -1;
+    let e = s >= 0 ? s + h.text.length : -1;
     if (s < 0) {
       at = idx.text.indexOf(h.text);
-      s = at;
+      if (at >= 0) (s = at), (e = at + h.text.length);
     }
-    if (s >= 0) found.push({ id: h.id, s, e: s + h.text.length });
+    if (s < 0) {
+      const t = squash(h.text);
+      if (!t) continue;
+      const p = squash(h.prefix);
+      let c = p ? compact.indexOf(p + t) : -1;
+      c = c >= 0 ? c + p.length : compact.indexOf(t);
+      if (c >= 0) (s = map[c]), (e = map[c + t.length - 1] + 1);
+    }
+    if (s >= 0 && e > s) found.push({ id: h.id, s, e });
   }
+  return found;
+}
+
+export function applyHighlights(root: HTMLElement, list: { id: string; text: string; prefix: string }[]) {
+  clearMarks(root, 'hl');
+  if (!list.length) return;
+  const idx = textIndex(root);
+  const found = locateHighlights(root, list, idx);
   found.sort((a, b) => b.s - a.s);
   for (const f of found) {
     const r = rangeFor(idx, f.s, f.e);
     if (r) wrapRange(r, 'hl', { id: f.id });
   }
+}
+
+/** The selected words as offsets in the column's text (the same count `locateHighlights` uses). */
+export function selectionSpan(root: HTMLElement, sel: Selection): { s: number; e: number } | null {
+  if (!sel.rangeCount) return null;
+  const r = sel.getRangeAt(0);
+  if (!root.contains(r.commonAncestorContainer)) return null;
+  const idx = textIndex(root);
+  const at = (node: Node, off: number, end: boolean) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const n = idx.nodes.find((x) => x.node === node);
+      if (n) return n.start + off;
+    }
+    // an element boundary: the first text after it (or, for an end, the last text before it)
+    const probe = document.createRange();
+    let best = end ? 0 : idx.text.length;
+    for (const n of idx.nodes) {
+      probe.selectNodeContents(n.node);
+      const cmp = r.comparePoint(n.node, 0);
+      if (!end && cmp >= 0 && n.start < best && probe.comparePoint(node, 0) !== 0) best = Math.min(best, n.start);
+      if (end && cmp <= 0) best = Math.max(best, n.start + n.node.data.length);
+    }
+    return best;
+  };
+  const s = at(r.startContainer, r.startOffset, false);
+  const e = at(r.endContainer, r.endOffset, true);
+  return e > s ? { s, e } : null;
+}
+
+/** The passage between two offsets: its words (as they read, with the breaks between paragraphs) and the text just before it. */
+export function spanText(root: HTMLElement, s: number, e: number): { text: string; prefix: string } | null {
+  const idx = textIndex(root);
+  const r = rangeFor(idx, s, e);
+  if (!r) return null;
+  return { text: r.toString(), prefix: idx.text.slice(Math.max(0, s - 40), s) };
 }
 
 export function wordAt(x: number, y: number): { word: string; rect: DOMRect; range: Range } | null {
