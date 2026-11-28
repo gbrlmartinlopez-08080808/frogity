@@ -1,6 +1,6 @@
 {
  "v": 4,
- "built": "2026-11-27T14:02:02.162Z",
+ "built": "2026-11-28T00:09:31.149Z",
  "note": "Curated by Frogity; elections from Wikidata, refreshed through the day. Dates can move: check the organisers for the latest.",
  "events": [
   {
@@ -1578,7 +1578,7 @@
    "k": "election",
    "t": "Spanish general election",
    "w": "Spain",
-   "a": "2026-11-29",
+   "a": "2027-05-23",
    "cc": [
     "es"
    ],
@@ -2015,21 +2015,6 @@
   },
   {
    "k": "election",
-   "t": "first round of Brazilian presidential election, 2026",
-   "w": "Brazil",
-   "a": "2026-10-04",
-   "cc": [
-    "br"
-   ],
-   "icon": {
-    "cc": "br"
-   },
-   "level": "national",
-   "wiki": "first round of Brazilian presidential election, 2026",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Brazilian general election",
    "w": "Brazil",
    "a": "2026-10-04",
@@ -2057,6 +2042,21 @@
    },
    "level": "national",
    "wiki": "2026 Bosnian general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "first round of Brazilian presidential election, 2026",
+   "w": "Brazil",
+   "a": "2026-10-04",
+   "cc": [
+    "br"
+   ],
+   "icon": {
+    "cc": "br"
+   },
+   "level": "national",
+   "wiki": "first round of Brazilian presidential election, 2026",
    "auto": true
   },
   {
@@ -2287,21 +2287,6 @@
   },
   {
    "k": "election",
-   "t": "Guinea-Bissau general election",
-   "w": "Guinea-Bissau",
-   "a": "2026-12-06",
-   "cc": [
-    "gw"
-   ],
-   "icon": {
-    "cc": "gw"
-   },
-   "level": "national",
-   "wiki": "2026 Guinea-Bissau general election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Indonesian vice-presidential election",
    "w": "Indonesia",
    "a": "2026-12-11",
@@ -2348,54 +2333,6 @@
   },
   {
    "k": "election",
-   "t": "Albanian presidential election",
-   "w": "Albania",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "al"
-   ],
-   "icon": {
-    "cc": "al"
-   },
-   "level": "national",
-   "wiki": "2027 Albanian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Kenyan presidential election",
-   "w": "Kenya",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "ke"
-   ],
-   "icon": {
-    "cc": "ke"
-   },
-   "level": "national",
-   "wiki": "2027 Kenyan presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Slovenian presidential election",
-   "w": "Slovenia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "si"
-   ],
-   "icon": {
-    "cc": "si"
-   },
-   "level": "national",
-   "wiki": "2027 Slovenian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Papua New Guinean general election",
    "w": "Papua New Guinea",
    "a": "2027-01-01",
@@ -2424,38 +2361,6 @@
    },
    "level": "national",
    "wiki": "Slovak parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Maltese general election",
-   "w": "Malta",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "mt"
-   ],
-   "icon": {
-    "cc": "mt"
-   },
-   "level": "national",
-   "wiki": "2027 Maltese general election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Gambian parliamentary election",
-   "w": "The Gambia",
-   "a": "2027-01-01",
-   "when": "2027",
-   "cc": [
-    "gm"
-   ],
-   "icon": {
-    "cc": "gm"
-   },
-   "level": "national",
-   "wiki": "2027 Gambian parliamentary election",
    "auto": true
   },
   {
@@ -2540,6 +2445,22 @@
   },
   {
    "k": "election",
+   "t": "Maltese general election",
+   "w": "Malta",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "mt"
+   ],
+   "icon": {
+    "cc": "mt"
+   },
+   "level": "national",
+   "wiki": "2027 Maltese general election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Barbadian parliamentary election",
    "w": "Barbados",
    "a": "2027-01-01",
@@ -2588,6 +2509,38 @@
   },
   {
    "k": "election",
+   "t": "Gambian parliamentary election",
+   "w": "The Gambia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "gm"
+   ],
+   "icon": {
+    "cc": "gm"
+   },
+   "level": "national",
+   "wiki": "2027 Gambian parliamentary election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Albanian presidential election",
+   "w": "Albania",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "al"
+   ],
+   "icon": {
+    "cc": "al"
+   },
+   "level": "national",
+   "wiki": "2027 Albanian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Papua New Guinean general election",
    "w": "Papua New Guinea",
    "a": "2027-01-01",
@@ -2600,6 +2553,22 @@
    },
    "level": "national",
    "wiki": "2027 Papua New Guinean general election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Kenyan presidential election",
+   "w": "Kenya",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "ke"
+   ],
+   "icon": {
+    "cc": "ke"
+   },
+   "level": "national",
+   "wiki": "2027 Kenyan presidential election",
    "auto": true
   },
   {
@@ -2632,6 +2601,22 @@
    },
    "level": "national",
    "wiki": "2027 Vanuatuan presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Slovenian presidential election",
+   "w": "Slovenia",
+   "a": "2027-01-01",
+   "when": "2027",
+   "cc": [
+    "si"
+   ],
+   "icon": {
+    "cc": "si"
+   },
+   "level": "national",
+   "wiki": "2027 Slovenian presidential election",
    "auto": true
   },
   {
@@ -3183,22 +3168,6 @@
   },
   {
    "k": "election",
-   "t": "Austrian presidential election",
-   "w": "Austria",
-   "a": "2028-01-01",
-   "when": "2028",
-   "cc": [
-    "at"
-   ],
-   "icon": {
-    "cc": "at"
-   },
-   "level": "national",
-   "wiki": "2028 Austrian presidential election",
-   "auto": true
-  },
-  {
-   "k": "election",
    "t": "Paraguayan general election",
    "w": "Paraguay",
    "a": "2028-01-01",
@@ -3311,6 +3280,22 @@
   },
   {
    "k": "election",
+   "t": "Austrian presidential election",
+   "w": "Austria",
+   "a": "2028-01-01",
+   "when": "2028",
+   "cc": [
+    "at"
+   ],
+   "icon": {
+    "cc": "at"
+   },
+   "level": "national",
+   "wiki": "2028 Austrian presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Philippine presidential election",
    "w": "Philippines",
    "a": "2028-05-08",
@@ -3371,6 +3356,21 @@
   },
   {
    "k": "election",
+   "t": "Guinea-Bissau general election",
+   "w": "Guinea-Bissau",
+   "a": "2028-11-26",
+   "cc": [
+    "gw"
+   ],
+   "icon": {
+    "cc": "gw"
+   },
+   "level": "national",
+   "wiki": "2026 Guinea-Bissau general election",
+   "auto": true
+  },
+  {
+   "k": "election",
    "t": "Togolese parliamentary election",
    "w": "Togo",
    "a": "2028-12-01",
@@ -3382,22 +3382,6 @@
    },
    "level": "national",
    "wiki": "Togolese parliamentary election",
-   "auto": true
-  },
-  {
-   "k": "election",
-   "t": "Kazakh presidential election",
-   "w": "Kazakhstan",
-   "a": "2029-01-01",
-   "when": "2029",
-   "cc": [
-    "kz"
-   ],
-   "icon": {
-    "cc": "kz"
-   },
-   "level": "national",
-   "wiki": "2029 Kazakh presidential election",
    "auto": true
   },
   {
@@ -3482,18 +3466,18 @@
   },
   {
    "k": "election",
-   "t": "Indian general election",
-   "w": "India",
+   "t": "Kazakh presidential election",
+   "w": "Kazakhstan",
    "a": "2029-01-01",
    "when": "2029",
    "cc": [
-    "in"
+    "kz"
    ],
    "icon": {
-    "cc": "in"
+    "cc": "kz"
    },
    "level": "national",
-   "wiki": "Indian general election",
+   "wiki": "2029 Kazakh presidential election",
    "auto": true
   },
   {
@@ -3526,6 +3510,22 @@
    },
    "level": "national",
    "wiki": "2029 Equatorial Guinean presidential election",
+   "auto": true
+  },
+  {
+   "k": "election",
+   "t": "Indian general election",
+   "w": "India",
+   "a": "2029-01-01",
+   "when": "2029",
+   "cc": [
+    "in"
+   ],
+   "icon": {
+    "cc": "in"
+   },
+   "level": "national",
+   "wiki": "Indian general election",
    "auto": true
   },
   {
